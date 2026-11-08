@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatDurationShort } from '@/lib/format'
 import { durationSec } from '@/lib/workout'
-import { sampleWorkouts } from '@/data/sampleWorkouts'
+import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
-import type { Workout } from '@/types/workout'
 
 const colors = useSportColors()
 const { isDark } = useTheme()
 
-// Väliaikainen: korvataan Supabase-haulla kun taulut ovat pystyssä.
-const workouts = ref<Workout[]>([...sampleWorkouts])
+const store = useWorkouts()
+const workouts = computed(() => store.workouts)
 
 const sorted = computed(() => [...workouts.value].sort((a, b) => b.date.localeCompare(a.date)))
 
@@ -35,26 +34,6 @@ const byGroup = computed(() => {
       vars: sportVars(colors.swatchForGroup(group), isDark.value),
     }))
 })
-
-function confirmMatch(id: string) {
-  const workout = workouts.value.find((w) => w.id === id)
-  if (!workout?.pendingMatch) return
-
-  // Mitattu voittaa kirjatun: Stravan kesto korvaa oman ajastuksen.
-  workout.measured = {
-    stravaActivityId: workout.pendingMatch.stravaActivityId,
-    startedAt: workout.pendingMatch.startedAt,
-    durationSec: workout.pendingMatch.durationSec,
-  }
-  workout.pendingMatch = undefined
-}
-
-function rejectMatch(id: string) {
-  const workout = workouts.value.find((w) => w.id === id)
-  if (!workout) return
-  // Hylätystä aktiviteetista tulee oma merkintänsä kun taustapalvelu on pystyssä.
-  workout.pendingMatch = undefined
-}
 </script>
 
 <template>
@@ -154,9 +133,13 @@ function rejectMatch(id: string) {
         v-for="workout in sorted"
         :key="workout.id"
         :workout="workout"
-        @confirm-match="confirmMatch"
-        @reject-match="rejectMatch"
+        @confirm-match="store.confirmMatch"
+        @reject-match="store.rejectMatch"
       />
+
+      <p v-if="!sorted.length" class="py-6 text-center text-sm text-ink-muted">
+        Ei vielä treenejä. Kirjaa ensimmäinen alta.
+      </p>
     </section>
 
     <div class="px-5 pt-3">

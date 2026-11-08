@@ -4,23 +4,25 @@ import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatDistance, formatDurationShort, formatVolume } from '@/lib/format'
 import { distanceM, durationSec, kindOf, totalVolumeKg } from '@/lib/workout'
-import { sampleWorkouts } from '@/data/sampleWorkouts'
+import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
 import type { SportKey } from '@/types/workout'
 
 const colors = useSportColors()
 const { isDark } = useTheme()
+const store = useWorkouts()
+const workouts = computed(() => store.workouts)
 
 const totalSeconds = computed(() =>
-  sampleWorkouts.reduce((sum, workout) => sum + durationSec(workout), 0),
+  workouts.value.reduce((sum, workout) => sum + durationSec(workout), 0),
 )
 
 /** Yhteenveto lajiryhmittäin: sama jako kuin värit, joten kaavio ja kortit vastaavat toisiaan. */
 const summaries = computed(() => {
   const groups = new Map<SportGroupKey, { count: number; meters: number; volume: number; sport: SportKey }>()
 
-  for (const workout of sampleWorkouts) {
+  for (const workout of workouts.value) {
     const group = SPORT_GROUP_OF[workout.sport]
     const row = groups.get(group) ?? { count: 0, meters: 0, volume: 0, sport: workout.sport }
     row.count += 1
@@ -61,7 +63,7 @@ const summaries = computed(() => {
             class="font-display text-[52px] leading-[0.95] font-bold tracking-[-0.035em]"
             data-numeric
           >
-            {{ sampleWorkouts.length }}
+            {{ workouts.length }}
           </span>
           <span class="pb-1.5 text-[15px] text-ink-muted">treeniä</span>
         </p>
