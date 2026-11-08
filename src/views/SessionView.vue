@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import FeelPrompt from '@/components/FeelPrompt.vue'
 import SetRow from '@/components/SetRow.vue'
 import type { SetValues } from '@/components/SetRow.vue'
 import { useNow } from '@/composables/useNow'
@@ -8,15 +9,20 @@ import { useTheme } from '@/composables/useTheme'
 import { useWakeLock } from '@/composables/useWakeLock'
 import { beep, primeAudio } from '@/lib/beep'
 import { formatDuration } from '@/lib/format'
+import { sessionsFor } from '@/lib/history'
+import { suggestNext } from '@/lib/progression'
 import { canRemoveSet, isExerciseDone } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
 import { sportVars, useSportColors } from '@/stores/sportColors'
-import type { SessionBlock } from '@/types/session'
+import { useWorkouts } from '@/stores/workouts'
+import type { SessionBlock, SessionExercise } from '@/types/session'
+import type { SetEntry } from '@/types/workout'
 
 const router = useRouter()
 const session = useSession()
 const exercises = useExercises()
+const workouts = useWorkouts()
 const colors = useSportColors()
 const { isDark } = useTheme()
 const now = useNow()
@@ -76,6 +82,54 @@ function edit(blockIndex: number, exerciseIndex: number, setIndex: number, value
   void session.setValues({ block: blockIndex, exercise: exerciseIndex, set: setIndex }, values)
 }
 
+// --- tuntuma ---
+
+const kgFormat = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
+const kg = (value: number) => kgFormat.format(value)
+
+/** Tehty liike kutistuu riviksi ja kysyy tuntuman. Sarjat saa takaisin auki korjausta varten. */
+const expanded = ref(new Set<string>())
+
+const isCollapsed = (exercise: SessionExercise) =>
+  isExerciseDone(exercise) && !expanded.value.has(exercise.exerciseId)
+
+function toggleExpanded(exerciseId: string) {
+  const next = new Set(expanded.value)
+  if (next.has(exerciseId)) next.delete(exerciseId)
+  else next.add(exerciseId)
+  expanded.value = next
+}
+
+function compact(set: SetEntry, measurement: SessionExercise['measurement']): string {
+  if (measurement === 'time') return `${set.durationSec ?? 0} s`
+  if (measurement === 'reps') return `${set.reps ?? 0}`
+  return `${kg(set.weightKg ?? 0)} × ${set.reps ?? 0}`
+}
+
+/** Toistoja yhteensä yli tavoitteen: sovellus huomaa, että teit enemmän kuin ohjelmassa. */
+function surplus(exercise: SessionExercise): number {
+  if (exercise.measurement !== 'weight_reps') return 0
+  return exercise.sets.reduce((sum, set) => sum + Math.max(0, (set.reps ?? 0) - exercise.target.reps), 0)
+}
+
+/** Mitä vastaus teki: sama sääntö kuin seuraavan kerran ehdotuksessa, jotta lupaus pitää. */
+function suggestionText(exercise: SessionExercise): string | null {
+  if (exercise.feel === undefined && !exercise.feelSkipped) return null
+  const definition = exercises.byId.get(exercise.exerciseId)
+  if (!definition) return null
+
+  const earlier = sessionsFor(exercise.exerciseId, workouts.workouts, 1)
+  const suggestion = suggestNext(definition, exercise.target, [
+    { sets: exercise.sets, feel: exercise.feel },
+    ...earlier,
+  ])
+  if (!suggestion) return null
+
+  if (suggestion.kind === 'keep') return `Ensi kerralla sama paino, ${kg(suggestion.kg)} kg`
+  const delta = suggestion.toKg - suggestion.fromKg
+  return `Ensi kerralle ehdotus ${kg(suggestion.toKg)} kg (${delta > 0 ? '+' : '−'}${kg(Math.abs(delta))})`
+}
+
 const doneIn = (b: SessionBlock) =>
   b.exercises.reduce((sum, e) => sum + e.sets.filter((s) => s.done).length, 0)
 const totalIn = (b: SessionBlock) => b.exercises.reduce((sum, e) => sum + e.sets.length, 0)
@@ -132,39 +186,83 @@ async function finish() {
         <template v-if="!exercise.previous"> · ensimmäinen kerta</template>
       </p>
 
-      <div class="mt-2.5 flex flex-col gap-1.5">
-        <SetRow
-          v-for="(set, setIndex) in exercise.sets"
-          :key="setIndex"
-          :set="set"
-          :index="setIndex"
-          :state="stateOf(setIndex, exercise.sets)"
-          :measurement="exercise.measurement"
-          :hint="exercise.hint"
-          :previous="exercise.previous"
-          @complete="complete(active.currentBlock, exerciseIndex, setIndex)"
-          @undo="session.uncompleteSet({ block: active.currentBlock, exercise: exerciseIndex, set: setIndex })"
-          @edit="(values) => edit(active!.currentBlock, exerciseIndex, setIndex, values)"
-        />
-      </div>
+      <template v-if="isCollapsed(exercise)">
+        <div class="mt-2.5 flex gap-1.5">
+          <span
+            v-for="(set, setIndex) in exercise.sets"
+            :key="setIndex"
+            class="min-w-0 flex-1 rounded-xl bg-surface py-2 text-center text-sm font-semibold"
+            data-numeric
+          >
+            {{ compact(set, exercise.measurement) }}
+          </span>
+        </div>
+        <p v-if="surplus(exercise) > 0" class="mt-2 text-xs text-[var(--sport-on)]" data-numeric>
+          Toistoja {{ surplus(exercise) }} yli tavoitteen.
+        </p>
 
-      <div class="mt-2 flex gap-2">
+        <FeelPrompt
+          v-if="exercise.measurement === 'weight_reps'"
+          :feel="exercise.feel"
+          :skipped="exercise.feelSkipped"
+          :message="suggestionText(exercise)"
+          @select="(feel) => session.setFeel(active!.currentBlock, exerciseIndex, feel)"
+          @skip="session.setFeel(active!.currentBlock, exerciseIndex, 'skip')"
+        />
+
         <button
           type="button"
-          class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
-          @click="session.addSet(active.currentBlock, exerciseIndex)"
+          class="mt-2 min-h-10 w-full rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+          @click="toggleExpanded(exercise.exerciseId)"
         >
-          + Lisää sarja
+          Muokkaa sarjoja
         </button>
+      </template>
+
+      <template v-else>
+        <div class="mt-2.5 flex flex-col gap-1.5">
+          <SetRow
+            v-for="(set, setIndex) in exercise.sets"
+            :key="setIndex"
+            :set="set"
+            :index="setIndex"
+            :state="stateOf(setIndex, exercise.sets)"
+            :measurement="exercise.measurement"
+            :hint="exercise.hint"
+            :previous="exercise.previous"
+            @complete="complete(active.currentBlock, exerciseIndex, setIndex)"
+            @undo="session.uncompleteSet({ block: active.currentBlock, exercise: exerciseIndex, set: setIndex })"
+            @edit="(values) => edit(active!.currentBlock, exerciseIndex, setIndex, values)"
+          />
+        </div>
+
+        <div class="mt-2 flex gap-2">
+          <button
+            type="button"
+            class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+            @click="session.addSet(active.currentBlock, exerciseIndex)"
+          >
+            + Lisää sarja
+          </button>
+          <button
+            type="button"
+            class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)] disabled:opacity-40"
+            :disabled="!canRemoveSet(active, active.currentBlock, exerciseIndex)"
+            @click="session.removeLastSet(active.currentBlock, exerciseIndex)"
+          >
+            − Poista sarja
+          </button>
+        </div>
+
         <button
+          v-if="isExerciseDone(exercise)"
           type="button"
-          class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)] disabled:opacity-40"
-          :disabled="!canRemoveSet(active, active.currentBlock, exerciseIndex)"
-          @click="session.removeLastSet(active.currentBlock, exerciseIndex)"
+          class="mt-2 min-h-10 w-full rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+          @click="toggleExpanded(exercise.exerciseId)"
         >
-          − Poista sarja
+          Valmis
         </button>
-      </div>
+      </template>
     </section>
 
     <!-- Lepo -->
