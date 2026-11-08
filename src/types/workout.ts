@@ -170,6 +170,8 @@ export interface Workout {
   /** ISO-päivämäärä, esim. 2026-11-12 */
   date: string
   title: string
+  /** Pohja josta treeni aloitettiin. Tarvitaan poikkeamien tunnistukseen. */
+  templateId?: string
   measured?: MeasuredData
   logged?: LoggedData
   /** Odottaa vahvistusta: onko tämä sama treeni kuin mitattu aktiviteetti. */

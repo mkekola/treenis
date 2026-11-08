@@ -21,7 +21,8 @@ const DEFAULT_STEP_KG = 2.5
 const LIGHT: Feel[] = ['very_easy', 'easy']
 const HEAVY: Feel[] = ['hard', 'max']
 
-function workingWeight(session: ExerciseSession): number | null {
+/** Treenin työpaino: suurin tehty paino. Null jos painoa ei ole kirjattu. */
+export function workingWeightKg(session: ExerciseSession): number | null {
   const weights = session.sets
     .filter((set) => set.done && set.weightKg)
     .map((set) => set.weightKg as number)
@@ -77,7 +78,7 @@ export function suggestNext(
   const [last, previous] = history
   if (!last) return null
 
-  const kg = workingWeight(last)
+  const kg = workingWeightKg(last)
   if (kg === null) return null
 
   const step = exercise.weightStepKg ?? DEFAULT_STEP_KG

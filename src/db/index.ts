@@ -1,5 +1,12 @@
 import Dexie, { type Table } from 'dexie'
+import type { ActiveSession } from '@/types/session'
 import type { Workout, WorkoutTemplate } from '@/types/workout'
+
+/** Käynnissä oleva treeni. Yksi rivi, koska treenejä ei tehdä kahta yhtä aikaa. */
+export interface ActiveSessionRecord {
+  id: 'current'
+  session: ActiveSession
+}
 
 /**
  * Paikallinen tietokanta. Treenit kirjataan ensin tänne ja synkataan
@@ -8,12 +15,18 @@ import type { Workout, WorkoutTemplate } from '@/types/workout'
 class TreenisDb extends Dexie {
   workouts!: Table<Workout, string>
   templates!: Table<WorkoutTemplate, string>
+  activeSession!: Table<ActiveSessionRecord, string>
 
   constructor() {
     super('treenis')
     this.version(1).stores({
       workouts: 'id, date, sport',
       templates: 'id, name',
+    })
+    // Versio 2 lisää vain käynnissä olevan treenin. Versio 1 pidetään mukana,
+    // jotta jo luodut tietokannat päivittyvät eikä data katoa.
+    this.version(2).stores({
+      activeSession: 'id',
     })
   }
 }
