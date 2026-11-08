@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 8 vaatii Node 20.19 tai uudemman.
+  NODE_VERSION = "22"
+
+# Reititys on selaimen puolella, joten jokainen osoite (esim. /treeni) palauttaa
+# index.html:n. Oikeat tiedostot, kuten /sw.js, ohittavat tämän säännön.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Service worker ei saa jäädä välimuistiin, muuten päivitykset eivät tule perille.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
