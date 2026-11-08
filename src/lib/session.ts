@@ -29,7 +29,8 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-function localDate(date: Date): string {
+/** Paikallinen päivä muodossa 2026-11-12. toISOString antaisi UTC-päivän, joka voi olla eri. */
+export function localDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
@@ -182,6 +183,20 @@ export function addSet(session: ActiveSession, block: number, exercise: number):
   const sets = next.blocks[block]?.exercises[exercise]?.sets
   if (!sets?.length) return session
   sets.push({ ...sets[sets.length - 1], done: false })
+  return next
+}
+
+/** Viimeisen sarjan voi poistaa vain jos se on tekemättä ja liikkeelle jää vähintään yksi sarja. */
+export function canRemoveSet(session: ActiveSession, block: number, exercise: number): boolean {
+  const sets = session.blocks[block]?.exercises[exercise]?.sets
+  return !!sets && sets.length > 1 && !sets[sets.length - 1].done
+}
+
+/** Peruu lisäyksen: poistaa viimeisen tekemättömän sarjan. Tehtyä sarjaa ei koskaan poisteta. */
+export function removeLastSet(session: ActiveSession, block: number, exercise: number): ActiveSession {
+  if (!canRemoveSet(session, block, exercise)) return session
+  const next = clone(session)
+  next.blocks[block].exercises[exercise].sets.pop()
   return next
 }
 

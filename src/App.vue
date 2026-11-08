@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
+
+const route = useRoute()
 </script>
 
 <template>
@@ -9,6 +12,6 @@ import AppNav from '@/components/AppNav.vue'
     <main class="flex-1 pb-3">
       <RouterView />
     </main>
-    <AppNav />
+    <AppNav v-if="!route.meta.hideNav" />
   </div>
 </template>

@@ -10,6 +10,12 @@ export const router = createRouter({
       name: 'new-workout',
       component: () => import('@/views/NewWorkoutView.vue'),
     },
+    {
+      path: '/treeni',
+      name: 'session',
+      component: () => import('@/views/SessionView.vue'),
+      meta: { hideNav: true },
+    },
     { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
     {
       path: '/asetukset/ulkoasu',

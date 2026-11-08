@@ -53,6 +53,8 @@ export const useSession = defineStore('session', () => {
   const completeSet = (ref: SetRef) => update((s) => logic.completeSet(s, ref, new Date()))
   const uncompleteSet = (ref: SetRef) => update((s) => logic.uncompleteSet(s, ref, new Date()))
   const addSet = (block: number, exercise: number) => update((s) => logic.addSet(s, block, exercise))
+  const removeLastSet = (block: number, exercise: number) =>
+    update((s) => logic.removeLastSet(s, block, exercise))
   const setFeel = (block: number, exercise: number, feel: Feel | 'skip') =>
     update((s) => logic.setFeel(s, block, exercise, feel))
   const skipRest = () => update((s) => logic.skipRest(s))
@@ -98,6 +100,7 @@ export const useSession = defineStore('session', () => {
     completeSet,
     uncompleteSet,
     addSet,
+    removeLastSet,
     setFeel,
     skipRest,
     goToBlock,

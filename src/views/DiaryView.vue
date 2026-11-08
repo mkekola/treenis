@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import RecoveryCard from '@/components/RecoveryCard.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatDurationShort } from '@/lib/format'
 import { durationSec } from '@/lib/workout'
+import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
@@ -12,6 +14,7 @@ const colors = useSportColors()
 const { isDark } = useTheme()
 
 const store = useWorkouts()
+const session = useSession()
 const workouts = computed(() => store.workouts)
 
 const sorted = computed(() => [...workouts.value].sort((a, b) => b.date.localeCompare(a.date)))
@@ -70,6 +73,11 @@ const byGroup = computed(() => {
         </svg>
       </button>
     </header>
+
+    <!-- Keskeytynyt treeni kysytään heti avattaessa, ei jatketa hiljaa. -->
+    <div v-if="session.recovery" class="px-5 pt-4">
+      <RecoveryCard />
+    </div>
 
     <!-- Yhteenveto: täällä väri vertailee, joten se saa täyttää pinnan. -->
     <section class="px-5 pt-4.5">
