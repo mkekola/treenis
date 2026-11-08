@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { canComplete } from '@/lib/session'
 import type { PreviousResult, WeightHint } from '@/types/session'
 import { FEEL_LABELS, type Measurement, type SetEntry } from '@/types/workout'
@@ -34,10 +34,21 @@ const label = computed(() => {
 
 const ready = computed(() => canComplete(props.set, props.measurement))
 
-/** Ensimmäinen kerta: paino puuttuu, joten kysytään sitä ennen kuin mitään voi merkitä. */
-const needsWeight = computed(
-  () =>
-    props.state === 'current' && props.measurement === 'weight_reps' && !props.set.weightKg,
+/**
+ * Ensimmäinen kerta: paino puuttuu, joten sitä kysytään kentällä. Kenttä
+ * tallentaa jo kirjoittaessa, jotta ruksi aktivoituu heti, mutta silloin
+ * paino ei enää puutu. Siksi kenttä pidetään auki koko sen ajan kun sarja on
+ * vuorossa, eikä näkymä vaihdu kesken kirjoituksen ("62,5" menisi muuten
+ * rikki ensimmäiseen numeroon).
+ */
+const prompting = ref(false)
+watch(
+  () => [props.state, props.set.weightKg, props.measurement] as const,
+  ([state, weight, measurement]) => {
+    if (state !== 'current') prompting.value = false
+    else if (measurement === 'weight_reps' && !weight) prompting.value = true
+  },
+  { immediate: true },
 )
 
 /** Merkintä näytetään vain kun rivin paino on edelleen ehdotettu paino. */
@@ -119,7 +130,7 @@ const rowId = useId()
 
   <!-- Vuorossa, ensimmäinen kerta: paino puuttuu -->
   <div
-    v-else-if="needsWeight"
+    v-else-if="prompting"
     class="rounded-[14px] border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
   >
     <div class="flex items-center gap-2.5">
@@ -153,9 +164,10 @@ const rowId = useId()
       </span>
       <button
         type="button"
-        class="mt-[18px] flex size-12 flex-none items-center justify-center rounded-xl border border-line text-ink-muted"
-        :aria-label="`Merkitse sarja ${index + 1} tehdyksi (kirjaa ensin paino)`"
-        aria-disabled="true"
+        class="mt-[18px] flex size-12 flex-none items-center justify-center rounded-xl border-2 border-ink bg-transparent text-ink active:bg-action active:text-on-action disabled:opacity-40"
+        :disabled="!ready"
+        :aria-label="`Merkitse sarja ${index + 1} tehdyksi${ready ? '' : ' (kirjaa ensin paino)'}`"
+        @click="emit('complete')"
       >
         <svg class="size-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="5,13 10,18 19,7" />

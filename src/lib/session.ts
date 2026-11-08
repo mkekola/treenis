@@ -200,6 +200,10 @@ export function removeLastSet(session: ActiveSession, block: number, exercise: n
   return next
 }
 
+export function setNotes(session: ActiveSession, notes: string): ActiveSession {
+  return { ...clone(session), notes }
+}
+
 export function skipRest(session: ActiveSession): ActiveSession {
   return { ...clone(session), restEndsAt: undefined }
 }
@@ -283,6 +287,7 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
       startedAt: session.startedAt,
       durationSec: Math.max(0, Math.round((now.getTime() - started.getTime()) / 1000)),
       blocks,
+      notes: session.notes?.trim() || undefined,
     },
   }
 }

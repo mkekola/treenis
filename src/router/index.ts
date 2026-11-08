@@ -16,6 +16,12 @@ export const router = createRouter({
       component: () => import('@/views/SessionView.vue'),
       meta: { hideNav: true },
     },
+    {
+      path: '/treeni/yhteenveto',
+      name: 'summary',
+      component: () => import('@/views/SummaryView.vue'),
+      meta: { hideNav: true },
+    },
     { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
     {
       path: '/asetukset/ulkoasu',

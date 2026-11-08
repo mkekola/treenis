@@ -139,9 +139,8 @@ const hasNext = computed(
   () => !!active.value && active.value.currentBlock < active.value.blocks.length - 1,
 )
 
-async function finish() {
-  await session.finish()
-  await router.push('/')
+function finish() {
+  return router.push('/treeni/yhteenveto')
 }
 </script>
 

@@ -74,3 +74,9 @@ export function sportVars(swatch: Swatch, dark: boolean) {
     '--sport-on': pair.on,
   }
 }
+
+/** Ennätysten väri. Kiinteä eikä lajin valittavissa, jotta ennätys erottuu aina. */
+export function recordVars(dark: boolean) {
+  const pair = dark ? SWATCHES_BY_ID[RECORD_SWATCH_ID].dark : SWATCHES_BY_ID[RECORD_SWATCH_ID].light
+  return { '--record-surface': pair.surface, '--record-on': pair.on }
+}

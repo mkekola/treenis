@@ -48,6 +48,8 @@ export interface ActiveSession {
   updatedAt: string
   blocks: SessionBlock[]
   currentBlock: number
+  /** Muistiinpano, kirjoitetaan yhteenvedossa. */
+  notes?: string
   /** Levon päättymishetki. Aikaleima eikä laskuri, jotta lepo jatkuu sivun uudelleenlatauksen yli. */
   restEndsAt?: string
 }
