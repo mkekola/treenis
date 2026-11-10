@@ -30,6 +30,12 @@ const ordered = computed(() =>
 const exerciseCount = (template: WorkoutTemplate) =>
   template.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
 
+/** Tyhjä treeni: liikkeet haetaan itse, ja valmiin treenin voi tallentaa pohjaksi. */
+async function beginBlank() {
+  await session.start()
+  await router.push('/treeni')
+}
+
 async function begin(template: WorkoutTemplate) {
   await session.start(template)
   await router.push('/treeni')
@@ -106,6 +112,14 @@ async function begin(template: WorkoutTemplate) {
         <svg class="size-[18px] flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="9,6 15,12 9,18" />
         </svg>
+      </button>
+
+      <button
+        type="button"
+        class="mt-1 flex min-h-13 items-center justify-center gap-2 rounded-(--radius-button) border border-line text-base font-semibold"
+        @click="beginBlank"
+      >
+        + Aloita tyhjästä
       </button>
     </template>
   </div>

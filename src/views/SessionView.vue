@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import ExercisePicker from '@/components/ExercisePicker.vue'
 import FeelPrompt from '@/components/FeelPrompt.vue'
 import SetRow from '@/components/SetRow.vue'
 import type { SetValues } from '@/components/SetRow.vue'
@@ -11,13 +12,13 @@ import { beep, primeAudio } from '@/lib/beep'
 import { formatDuration } from '@/lib/format'
 import { sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
-import { canRemoveSet, isExerciseDone } from '@/lib/session'
+import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useWorkouts } from '@/stores/workouts'
 import type { SessionBlock, SessionExercise } from '@/types/session'
-import type { SetEntry } from '@/types/workout'
+import type { Exercise, SetEntry } from '@/types/workout'
 
 const router = useRouter()
 const session = useSession()
@@ -139,13 +140,25 @@ const hasNext = computed(
   () => !!active.value && active.value.currentBlock < active.value.blocks.length - 1,
 )
 
+// --- liikevalitsin: vaihda liike tai lisää uusi ---
+
+const picker = ref<{ mode: 'swap'; exercise: number } | { mode: 'add' } | null>(null)
+
+function onPick(exercise: Exercise) {
+  const chosen = picker.value
+  picker.value = null
+  if (!chosen || !active.value) return
+  if (chosen.mode === 'swap') void session.swapExercise(active.value.currentBlock, chosen.exercise, exercise.id)
+  else void session.addExercise(exercise.id)
+}
+
 function finish() {
   return router.push('/treeni/yhteenveto')
 }
 </script>
 
 <template>
-  <div v-if="active && block" :style="vars" class="flex min-h-dvh flex-col pb-6">
+  <div v-if="active" :style="vars" class="flex min-h-dvh flex-col pb-6">
     <header class="flex items-center justify-between gap-3 px-5 pt-4">
       <RouterLink
         to="/"
@@ -168,18 +181,32 @@ function finish() {
       <h1 class="font-display text-[26px] leading-[1.05] font-bold tracking-[-0.02em]">
         {{ active.title }}
       </h1>
-      <p class="text-xs font-semibold tracking-[0.06em] whitespace-nowrap text-ink-muted uppercase">
+      <p
+        v-if="block"
+        class="text-xs font-semibold tracking-[0.06em] whitespace-nowrap text-ink-muted uppercase"
+      >
         Liike {{ active.currentBlock + 1 }} / {{ active.blocks.length }}
       </p>
     </div>
 
     <!-- Käsillä oleva lohko. Jokainen lohkon liike saa oman korttinsa. -->
     <section
-      v-for="(exercise, exerciseIndex) in block.exercises"
+      v-for="(exercise, exerciseIndex) in block?.exercises ?? []"
       :key="exercise.exerciseId"
       class="mx-5 mt-3.5 rounded-(--radius-feature) bg-[var(--sport-surface)] p-3.5"
     >
-      <h2 class="text-lg font-bold tracking-[-0.01em]">{{ nameOf(exercise.exerciseId) }}</h2>
+      <div class="flex items-start justify-between gap-2">
+        <h2 class="text-lg font-bold tracking-[-0.01em]">{{ nameOf(exercise.exerciseId) }}</h2>
+        <!-- Vaihto vain ennen ensimmäistä tehtyä sarjaa, jottei kirjattu katoa. -->
+        <button
+          v-if="canSwap(exercise)"
+          type="button"
+          class="min-h-8 flex-none rounded-full bg-surface/55 px-3 text-[13px] font-semibold text-[var(--sport-on)]"
+          @click="picker = { mode: 'swap', exercise: exerciseIndex }"
+        >
+          Vaihda liike
+        </button>
+      </div>
       <p class="mt-0.5 text-xs text-[var(--sport-on)]" data-numeric>
         Tavoite {{ exercise.target.sets }} × {{ exercise.target.reps }}
         <template v-if="!exercise.previous"> · ensimmäinen kerta</template>
@@ -264,6 +291,21 @@ function finish() {
       </template>
     </section>
 
+    <!-- Tyhjästä aloitettu treeni: ensimmäinen liike valitaan itse. -->
+    <section v-if="!block" class="mx-5 mt-3.5 rounded-(--radius-feature) bg-surface p-4">
+      <h2 class="text-lg font-bold tracking-[-0.01em]">Ei vielä liikkeitä</h2>
+      <p class="mt-1 text-[13px] text-ink-muted">
+        Hae ensimmäinen liike. Tuttu liike tulee valmiiksi täytettynä viime kerran painolla.
+      </p>
+      <button
+        type="button"
+        class="mt-3 min-h-12 w-full rounded-(--radius-button) bg-action font-semibold text-on-action"
+        @click="picker = { mode: 'add' }"
+      >
+        + Lisää ensimmäinen liike
+      </button>
+    </section>
+
     <!-- Lepo -->
     <section v-if="restLeft > 0" class="mx-5 mt-2.5 rounded-(--radius-card) bg-surface px-3.5 py-3">
       <div class="flex items-center justify-between gap-3">
@@ -310,6 +352,14 @@ function finish() {
 
     <div class="mx-5 mt-4 flex flex-col gap-2">
       <button
+        v-if="block"
+        type="button"
+        class="min-h-11 rounded-(--radius-button) border border-dashed border-ink-muted text-sm font-semibold"
+        @click="picker = { mode: 'add' }"
+      >
+        + Lisää liike
+      </button>
+      <button
         v-if="blockDone && hasNext"
         type="button"
         class="min-h-13 rounded-(--radius-button) bg-action text-base font-semibold text-on-action"
@@ -326,5 +376,12 @@ function finish() {
         Päätä treeni
       </button>
     </div>
+
+    <ExercisePicker
+      :open="picker !== null"
+      :title="picker?.mode === 'swap' ? 'Vaihda liike' : 'Lisää liike'"
+      @select="onPick"
+      @close="picker = null"
+    />
   </div>
 </template>

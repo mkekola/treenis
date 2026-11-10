@@ -10,6 +10,11 @@ import type { Feel, SetEntry, WorkoutTemplate } from '@/types/workout'
 
 const KEY = 'current'
 
+/** Lisätyn liikkeen oletus, kun pohjaa ei ole. Sarjojen toistot ja määrä muutetaan rivillä. */
+const DEFAULT_SETS = 3
+const DEFAULT_REPS = 10
+const DEFAULT_REST_SEC = 90
+
 /**
  * Käynnissä oleva treeni. Tila tallennetaan tietokantaan jokaisen muutoksen
  * jälkeen, joten treeni säilyy kun puhelin menee lukkoon tai sovellus
@@ -46,6 +51,34 @@ export const useSession = defineStore('session', () => {
         exercises: (id) => exercises.byId.get(id),
       }),
     )
+  }
+
+  /** Rakentaa liikkeen sen omasta historiasta: tuttu liike saa viimeisen painonsa, uusi tyhjän. */
+  function buildFor(exerciseId: string, sets: number, reps: number) {
+    const exercise = exercises.byId.get(exerciseId)
+    if (!exercise) return null
+    return logic.newSessionExercise({
+      exercise,
+      sets,
+      reps,
+      history: workouts.workouts,
+      lookup: (id) => exercises.byId.get(id),
+    })
+  }
+
+  /** Vaihtaa liikkeen, ja uusi liike perii sarjamäärän ja tavoitetoistot. */
+  async function swapExercise(block: number, exercise: number, exerciseId: string) {
+    const current = active.value?.blocks[block]?.exercises[exercise]
+    if (!current) return
+    const replacement = buildFor(exerciseId, current.target.sets, current.target.reps)
+    if (replacement) await update((s) => logic.swapExercise(s, block, exercise, replacement))
+  }
+
+  async function addExercise(exerciseId: string) {
+    const built = buildFor(exerciseId, DEFAULT_SETS, DEFAULT_REPS)
+    if (!built) return
+    const restSec = active.value?.blocks.at(-1)?.restSec ?? DEFAULT_REST_SEC
+    await update((s) => logic.addBlock(s, crypto.randomUUID(), restSec, built))
   }
 
   const setValues = (ref: SetRef, values: Partial<Pick<SetEntry, 'weightKg' | 'reps' | 'durationSec'>>) =>
@@ -101,6 +134,8 @@ export const useSession = defineStore('session', () => {
     completeSet,
     uncompleteSet,
     addSet,
+    swapExercise,
+    addExercise,
     removeLastSet,
     setFeel,
     setNotes,

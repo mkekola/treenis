@@ -37,7 +37,7 @@ export function localDate(date: Date): string {
 
 // ---------------------------------------------------------------- rakentaminen
 
-function buildExercise(
+export function buildExercise(
   source: BlockExercise,
   history: Workout[],
   lookup: ExerciseLookup,
@@ -73,6 +73,37 @@ function buildExercise(
       done: false,
     })),
   }
+}
+
+/**
+ * Uuden liikkeen oletussarjat, kun liike ei tule pohjasta. Aikaliikkeelle
+ * 30 sekuntia on oletus eikä käyttäjän tieto: sen voi muuttaa sarjarivillä.
+ */
+export function defaultSets(measurement: Measurement, count: number, reps: number): SetEntry[] {
+  return Array.from({ length: count }, () =>
+    measurement === 'time' ? { durationSec: 30, done: false } : { reps, done: false },
+  )
+}
+
+/**
+ * Rakentaa liikkeen kesken treenin. Paino ja ehdotus tulevat liikkeen omasta
+ * historiasta: tuttu liike saa edellisen kerran painon, tuntematon tyhjän
+ * painon ja ensimmäisen kerran kysymyksen. Edellisen liikkeen paino ei siirry,
+ * koska kyykyn paino ei kelpaa jalkaprässiin.
+ */
+export function newSessionExercise(args: {
+  exercise: Exercise
+  sets: number
+  reps: number
+  history: Workout[]
+  lookup: ExerciseLookup
+}): SessionExercise {
+  const { exercise, sets, reps, history, lookup } = args
+  return buildExercise(
+    { exerciseId: exercise.id, sets: defaultSets(exercise.measurement, sets, reps) },
+    history,
+    lookup,
+  )
 }
 
 /**
@@ -202,6 +233,37 @@ export function removeLastSet(session: ActiveSession, block: number, exercise: n
 
 export function setNotes(session: ActiveSession, notes: string): ActiveSession {
   return { ...clone(session), notes }
+}
+
+/** Liikkeen voi vaihtaa vain ennen kuin siitä on tehty yhtään sarjaa, jottei kirjattu katoa. */
+export function canSwap(exercise: SessionExercise): boolean {
+  return !exercise.sets.some((set) => set.done)
+}
+
+export function swapExercise(
+  session: ActiveSession,
+  block: number,
+  exercise: number,
+  replacement: SessionExercise,
+): ActiveSession {
+  const current = session.blocks[block]?.exercises[exercise]
+  if (!current || !canSwap(current)) return session
+  const next = clone(session)
+  next.blocks[block].exercises[exercise] = clone(replacement)
+  return next
+}
+
+/** Lisää liikkeen treenin loppuun omana lohkonaan ja siirtää sen käsillä olevaksi. */
+export function addBlock(
+  session: ActiveSession,
+  blockId: string,
+  restSec: number,
+  exercise: SessionExercise,
+): ActiveSession {
+  const next = clone(session)
+  next.blocks.push({ id: blockId, restSec, exercises: [clone(exercise)] })
+  next.currentBlock = next.blocks.length - 1
+  return next
 }
 
 export function skipRest(session: ActiveSession): ActiveSession {

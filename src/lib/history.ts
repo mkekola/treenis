@@ -32,3 +32,23 @@ export function sessionsFor(
 
   return sessions
 }
+
+/**
+ * Viimeksi tehdyt liikkeet, uusin ensin ja kukin vain kerran. Liikevalitsin
+ * näyttää ne ensin, koska salilla vaihdetaan yleensä tuttuun liikkeeseen.
+ */
+export function recentExerciseIds(workouts: Workout[], limit = 8): string[] {
+  const ids: string[] = []
+
+  for (const workout of [...workouts].sort(newestFirst)) {
+    for (const block of workout.logged?.blocks ?? []) {
+      for (const exercise of block.exercises) {
+        if (!exercise.sets.some((set) => set.done) || ids.includes(exercise.exerciseId)) continue
+        ids.push(exercise.exerciseId)
+        if (ids.length === limit) return ids
+      }
+    }
+  }
+
+  return ids
+}
