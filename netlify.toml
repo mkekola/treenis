@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  # Testit ensin: jos jokin hajoaa, rikkinäinen versio ei päädy julkaisuun.
+  command = "npm test && npm run build"
   publish = "dist"
 
 [build.environment]
