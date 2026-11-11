@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent, nextTick, ref, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
+import AppLogo from '@/components/AppLogo.vue'
 import { useAuth } from '@/stores/auth'
 
 const auth = useAuth()
@@ -78,8 +79,8 @@ function changeEmail() {
 <template>
   <div class="flex min-h-dvh flex-col justify-center gap-6 px-5 pb-[20vh]">
     <header>
-      <h1 class="font-display text-[40px] leading-none font-bold tracking-[-0.02em]">Treenis</h1>
-      <p class="mt-2 text-[15px] text-ink-muted">
+      <h1><AppLogo class="block h-10 w-auto text-brand" /></h1>
+      <p class="mt-3.5 text-[15px] text-ink-muted">
         Kirjaudu kerran tällä laitteella. Sen jälkeen treenit kulkevat mukana myös ilman verkkoa.
       </p>
     </header>
