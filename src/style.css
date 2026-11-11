@@ -17,6 +17,12 @@
   --c-track: #f3e9e7;
   /* Logon ja sovelluskuvakkeen luumu. Vain brändille, ei toiminnoille. */
   --c-brand: #5e3b63;
+  /* Tilastojen kalenteriruudukko: yksi sävy vaaleasta tummaan, tarkistettu 2:1 kontrastiin pohjaa vasten. */
+  --c-heat-1: #c59dc3;
+  --c-heat-2: #a57ba4;
+  --c-heat-3: #82577f;
+  --c-heat-4: #5e3b63;
+  --c-on-heat: #ffffff;
   color-scheme: light;
 }
 
@@ -32,6 +38,11 @@
     --c-on-action: #18141c;
     --c-track: #2b2236;
     --c-brand: #f5e4f2;
+    --c-heat-1: #6b4d73;
+    --c-heat-2: #8e6e95;
+    --c-heat-3: #b898bb;
+    --c-heat-4: #e3cce4;
+    --c-on-heat: #18141c;
     color-scheme: dark;
   }
 }
@@ -47,6 +58,11 @@
   --c-on-action: #18141c;
   --c-track: #2b2236;
   --c-brand: #f5e4f2;
+  --c-heat-1: #6b4d73;
+  --c-heat-2: #8e6e95;
+  --c-heat-3: #b898bb;
+  --c-heat-4: #e3cce4;
+  --c-on-heat: #18141c;
   color-scheme: dark;
 }
 
