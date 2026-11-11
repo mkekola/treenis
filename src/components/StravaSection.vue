@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import connectWithStrava from '@/assets/strava/connect-with-strava.svg'
 import { formatClock, formatShortDate } from '@/lib/format'
 import { localDate } from '@/lib/session'
 import { useStrava } from '@/stores/strava'
@@ -66,13 +67,14 @@ const disconnect = () =>
         Kellon mittaamat treenit tulevat päiväkirjaan Stravan kautta: kesto, syke ja matka.
         Treenis vain lukee, eikä kirjoita Stravaan mitään.
       </p>
+      <!-- Stravan brändiohjeet vaativat virallisen napin sellaisenaan. Nimi on napin oma teksti. -->
       <button
         type="button"
         :disabled="busy"
-        class="mt-3 min-h-11 w-full rounded-(--radius-button) bg-action px-4 font-semibold text-on-action disabled:opacity-40"
+        class="mt-3 block rounded-lg disabled:opacity-40"
         @click="connect"
       >
-        Yhdistä Strava
+        <img :src="connectWithStrava" alt="Connect with Strava" width="237" height="48" class="block h-12 w-auto" />
       </button>
     </template>
 
