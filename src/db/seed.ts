@@ -20,7 +20,7 @@ export async function seedIfEmpty() {
       id: DEFAULT_PROGRAM_ID,
       name: DEFAULT_PROGRAM_NAME,
       templateIds: initialTemplates.map((t) => t.id),
-      activatedAt: new Date(0).toISOString(),
+      activatedAt: new Date().toISOString(),
     })
   }
 

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ProgramChips from '@/components/ProgramChips.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
-import { templatesOf } from '@/lib/program'
+import { programProgress, templatesOf } from '@/lib/program'
 import { exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
+import { useWorkouts } from '@/stores/workouts'
 import { DEFAULT_PROGRAM_COLOR, PROGRAM_COLORS, programVars } from '@/design/programPalette'
 import { PROGRAM_LEVEL_LABELS, type Program, type ProgramLevel, type WorkoutTemplate } from '@/types/workout'
 
@@ -17,6 +19,7 @@ const router = useRouter()
 const programs = usePrograms()
 const templates = useTemplates()
 const exercises = useExercises()
+const workouts = useWorkouts()
 const colors = useSportColors()
 const { isDark } = useTheme()
 
@@ -25,6 +28,14 @@ const vars = computed(() => sportVars(colors.swatchFor('strength'), isDark.value
 const program = computed(() => programs.byId(String(route.params.id)))
 const isActive = computed(() => program.value !== undefined && programs.active?.id === program.value.id)
 const list = computed(() => (program.value ? templatesOf(program.value, templates.templates) : []))
+
+/** Edistyminen näytetään vain käytössä olevalle ohjelmalle. */
+const progress = computed(() =>
+  program.value && isActive.value ? programProgress(program.value, workouts.workouts, new Date()) : null,
+)
+
+const tonnes = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 1 })
+const formatTonnes = (kg: number) => (kg >= 1000 ? `${tonnes.format(kg / 1000)} t` : `${Math.round(kg)} kg`)
 
 /** Liikkeiden nimet kortille, jotta treenit erottaa toisistaan avaamatta. */
 const summary = (template: WorkoutTemplate) =>
@@ -129,31 +140,66 @@ async function deleteProgram() {
     </p>
 
     <template v-else>
-      <label for="ohjelman-nimi" class="sr-only">Ohjelman nimi</label>
-      <input
-        id="ohjelman-nimi"
-        ref="nameInput"
-        v-model="nameText"
-        type="text"
-        enterkeyhint="done"
-        class="-mx-2 rounded-(--radius-field) bg-transparent px-2 py-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em] focus:bg-surface"
-        @change="commitName"
-        @keydown.enter="($event.target as HTMLInputElement).blur()"
-      />
-
-      <p
-        v-if="isActive"
-        class="flex items-center gap-2 text-[13px] text-ink-muted"
+      <!-- Juliste: sama ilme kuin ohjelmakortissa, ja käytössä olevalle ohjelmalle edistyminen. -->
+      <section
+        :style="programVars(program.color, isDark)"
+        class="relative flex flex-col gap-3 overflow-hidden rounded-(--radius-feature) bg-[var(--program-surface)] p-4 text-[var(--program-on)]"
+        aria-label="Ohjelma"
       >
+        <SportIcon
+          sport="strength"
+          :size="220"
+          class="pointer-events-none absolute -top-8 -right-16 opacity-20"
+        />
         <span
-          class="rounded-full bg-[var(--sport-surface)] px-2 py-0.5 text-[11px] font-bold tracking-[0.04em] text-[var(--sport-on)] uppercase"
+          v-if="isActive"
+          class="relative self-start rounded-full bg-[color-mix(in_srgb,var(--program-on)_18%,transparent)] px-2 py-0.5 text-[11px] font-bold tracking-[0.04em] uppercase"
         >
           Käytössä
         </span>
-        Treenit tulevat ensimmäisinä, kun aloitat salitreenin.
-      </p>
+        <label for="ohjelman-nimi" class="sr-only">Ohjelman nimi</label>
+        <input
+          id="ohjelman-nimi"
+          ref="nameInput"
+          v-model="nameText"
+          type="text"
+          enterkeyhint="done"
+          class="relative -mx-2 min-w-0 rounded-(--radius-field) bg-transparent px-2 py-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em] text-[var(--program-on)] focus:bg-[color-mix(in_srgb,var(--program-on)_14%,transparent)]"
+          @change="commitName"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+        <ProgramChips :program="program" long class="relative" />
+
+        <div v-if="progress" class="relative flex flex-col gap-2 pt-1">
+          <p class="flex items-baseline justify-between text-[13px]">
+            <span>Edistyminen</span>
+            <span>
+              <span class="font-display text-[20px] font-bold" data-numeric>Viikko {{ progress.week }}</span>
+              <span v-if="progress.totalWeeks" data-numeric> / {{ progress.totalWeeks }}</span>
+            </span>
+          </p>
+          <div
+            v-if="progress.totalWeeks"
+            class="grid gap-[3px]"
+            :style="{ gridTemplateColumns: `repeat(${progress.totalWeeks}, 1fr)` }"
+            aria-hidden="true"
+          >
+            <span
+              v-for="week in progress.totalWeeks"
+              :key="week"
+              class="h-1.5 rounded-full bg-[var(--program-on)]"
+              :class="week <= progress.week ? '' : 'opacity-25'"
+            />
+          </div>
+          <p class="text-[13px]" data-numeric>
+            {{ progress.planned ? `${progress.done} / ${progress.planned}` : progress.done }} treeniä
+            <span v-if="progress.volumeKg > 0">· {{ formatTonnes(progress.volumeKg) }} nostettu</span>
+          </p>
+        </div>
+      </section>
+
       <button
-        v-else
+        v-if="!isActive"
         type="button"
         class="min-h-12 rounded-(--radius-button) bg-action font-semibold text-on-action"
         @click="programs.makeActive(program.id)"
@@ -161,8 +207,50 @@ async function deleteProgram() {
         Ota käyttöön
       </button>
 
+      <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+        Treenit
+      </h2>
+
+      <RouterLink
+        v-for="template in list"
+        :key="template.id"
+        :to="{ name: 'template-edit', params: { programId: program.id, id: template.id } }"
+        class="flex items-center gap-3 rounded-(--radius-card) bg-surface p-3.5"
+      >
+        <span
+          aria-hidden="true"
+          class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]"
+        >
+          <SportIcon sport="strength" />
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-[17px] font-semibold tracking-[-0.01em]">{{ template.name }}</span>
+          <span class="mt-0.5 block text-[13px] text-ink-muted" data-numeric>
+            {{ exerciseCount(template) }} liikettä
+          </span>
+          <span v-if="exerciseCount(template)" class="block truncate text-[13px] text-ink-muted">
+            {{ summary(template) }}
+          </span>
+        </span>
+        <svg class="size-[18px] flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9,6 15,12 9,18" />
+        </svg>
+      </RouterLink>
+
+      <p v-if="!list.length" class="text-[13px] text-ink-muted">
+        Ei vielä treenejä. Lisää ensimmäinen, esimerkiksi ylä- tai alakropan päivä.
+      </p>
+
+      <button
+        type="button"
+        class="mt-1 flex min-h-13 items-center justify-center rounded-(--radius-button) border border-dashed border-ink-muted text-base font-semibold"
+        @click="addWorkout"
+      >
+        + Lisää treeni
+      </button>
+
       <!-- Ohjelman tiedot: väri erottaa ohjelmat toisistaan, kesto ja taso näkyvät kortilla. -->
-      <section class="flex flex-col gap-3 rounded-(--radius-feature) bg-surface p-3.5" aria-labelledby="ohjelman-tiedot">
+      <section class="mt-3 flex flex-col gap-3 rounded-(--radius-feature) bg-surface p-3.5" aria-labelledby="ohjelman-tiedot">
         <h2 id="ohjelman-tiedot" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
           Tiedot
         </h2>
@@ -232,48 +320,6 @@ async function deleteProgram() {
           </label>
         </div>
       </section>
-
-      <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
-        Treenit
-      </h2>
-
-      <RouterLink
-        v-for="template in list"
-        :key="template.id"
-        :to="{ name: 'template-edit', params: { programId: program.id, id: template.id } }"
-        class="flex items-center gap-3 rounded-(--radius-card) bg-surface p-3.5"
-      >
-        <span
-          aria-hidden="true"
-          class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]"
-        >
-          <SportIcon sport="strength" />
-        </span>
-        <span class="min-w-0 flex-1">
-          <span class="block text-[17px] font-semibold tracking-[-0.01em]">{{ template.name }}</span>
-          <span class="mt-0.5 block text-[13px] text-ink-muted" data-numeric>
-            {{ exerciseCount(template) }} liikettä
-          </span>
-          <span v-if="exerciseCount(template)" class="block truncate text-[13px] text-ink-muted">
-            {{ summary(template) }}
-          </span>
-        </span>
-        <svg class="size-[18px] flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="9,6 15,12 9,18" />
-        </svg>
-      </RouterLink>
-
-      <p v-if="!list.length" class="text-[13px] text-ink-muted">
-        Ei vielä treenejä. Lisää ensimmäinen, esimerkiksi ylä- tai alakropan päivä.
-      </p>
-
-      <button
-        type="button"
-        class="mt-1 flex min-h-13 items-center justify-center rounded-(--radius-button) border border-dashed border-ink-muted text-base font-semibold"
-        @click="addWorkout"
-      >
-        + Lisää treeni
-      </button>
 
       <!-- Poisto vahvistetaan: se vie ohjelman treenit mukanaan. -->
       <div class="mt-4 mb-6">

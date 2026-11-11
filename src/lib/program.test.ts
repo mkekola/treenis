@@ -5,10 +5,12 @@ import {
   activeProgram,
   addTemplate,
   inRotation,
+  programProgress,
   removeTemplate,
   templatesOf,
   unassigned,
 } from '@/lib/program'
+import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
 import type { Program } from '@/types/workout'
 
 const [a, b] = initialTemplates
@@ -62,5 +64,36 @@ describe('vuorottelu', () => {
     const doneB = { ...b, lastUsedAt: '2026-11-06T17:00:00Z' }
     expect(inRotation([doneA, doneB])[0].id).toBe(b.id)
     expect(inRotation([doneA, b])[0].id).toBe(b.id)
+  })
+})
+
+describe('ohjelman edistyminen', () => {
+  const activated = '2026-10-26T10:00:00Z' // maanantai
+  const base: Program = { id: 'p', name: 'Koko kroppa', templateIds: [a.id, b.id], activatedAt: activated, durationWeeks: 8 }
+  const workout = (id: string, date: string, templateId?: string) => ({
+    ...strengthWorkout(id, date, [entry('back-squat', doneSets(60, [10, 10]))], `${date}T17:00:00Z`),
+    templateId,
+  })
+  const workouts = [
+    workout('ennen', '2026-10-20', a.id),
+    workout('w1', '2026-10-27', a.id),
+    workout('w2', '2026-10-30', b.id),
+    workout('w3', '2026-11-10', a.id),
+    workout('muu', '2026-11-10', 'template-muu'),
+  ]
+
+  it('laskee viikon käyttöönotosta ja vain ohjelman omat treenit', () => {
+    const p = programProgress(base, workouts, new Date('2026-11-11T12:00:00Z'))
+    expect(p).toMatchObject({ week: 3, totalWeeks: 8, done: 3, planned: 16, volumeKg: 3 * 1200 })
+  })
+
+  it('ei mene keston yli eikä suunnittele ilman kestoa', () => {
+    expect(programProgress(base, [], new Date('2027-03-01T12:00:00Z'))?.week).toBe(8)
+    const open = programProgress({ ...base, durationWeeks: undefined }, [], new Date('2026-11-11T12:00:00Z'))
+    expect(open).toEqual({ week: 3, done: 0, volumeKg: 0 })
+  })
+
+  it('puuttuu, jos ohjelmaa ei ole otettu käyttöön', () => {
+    expect(programProgress({ ...base, activatedAt: undefined }, workouts, new Date())).toBeNull()
   })
 })

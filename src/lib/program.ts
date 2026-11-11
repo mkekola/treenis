@@ -1,4 +1,5 @@
-import type { Program, WorkoutTemplate } from '@/types/workout'
+import { totalVolumeKg } from '@/lib/workout'
+import type { Program, Workout, WorkoutTemplate } from '@/types/workout'
 
 /** Kiinteä tunniste ensimmäiselle ohjelmalle, jotta jokainen laite luo saman eikä kopioita synny. */
 export const DEFAULT_PROGRAM_ID = 'program-default'
@@ -56,4 +57,40 @@ export function inRotation(templates: WorkoutTemplate[]): WorkoutTemplate[] {
         (a.template.lastUsedAt ?? '').localeCompare(b.template.lastUsedAt ?? '') || a.index - b.index,
     )
     .map(({ template }) => template)
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+export interface ProgramProgress {
+  /** Monesko viikko käyttöönotosta, alkaen ykkösestä. */
+  week: number
+  /** Ohjelman kesto, jos se on annettu. */
+  totalWeeks?: number
+  /** Ohjelman treeneistä tehdyt kerrat käyttöönoton jälkeen. */
+  done: number
+  /** Suunnitellut kerrat koko ohjelmalle: treenien määrä × viikot. Vain kun kesto on annettu. */
+  planned?: number
+  volumeKg: number
+}
+
+/**
+ * Käytössä olevan ohjelman edistyminen. Viikot lasketaan käyttöönotosta, ja
+ * mukaan lasketaan vain ohjelman omista pohjista aloitetut treenit.
+ */
+export function programProgress(program: Program, workouts: Workout[], now: Date): ProgramProgress | null {
+  if (!program.activatedAt) return null
+  const start = Date.parse(program.activatedAt)
+  const week = Math.max(1, Math.floor((now.getTime() - start) / (7 * DAY_MS)) + 1)
+  const ids = new Set(program.templateIds)
+  const own = workouts.filter((w) => {
+    const startedAt = w.logged?.startedAt ?? `${w.date}T12:00:00`
+    return w.templateId !== undefined && ids.has(w.templateId) && Date.parse(startedAt) >= start
+  })
+  const weeks = program.durationWeeks
+  return {
+    week: weeks ? Math.min(week, weeks) : week,
+    ...(weeks ? { totalWeeks: weeks, planned: program.templateIds.length * weeks } : {}),
+    done: own.length,
+    volumeKg: own.reduce((sum, w) => sum + totalVolumeKg(w), 0),
+  }
 }
