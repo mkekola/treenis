@@ -29,12 +29,13 @@ export function remoteAction(
   remote: Synced,
   local: { updatedAt?: string } | undefined,
   pending: boolean,
+  keepTombstone = false,
 ): RemoteAction {
   if (pending) return 'skip'
   if (local?.updatedAt && Date.parse(local.updatedAt) >= Date.parse(remote.updatedAt)) {
     return 'skip'
   }
-  if (remote.deletedAt) return local ? 'delete' : 'skip'
+  if (remote.deletedAt && !keepTombstone) return local ? 'delete' : 'skip'
   return 'put'
 }
 

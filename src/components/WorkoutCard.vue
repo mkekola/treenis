@@ -8,7 +8,7 @@ import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_LABELS, type Workout } from '@/types/workout'
 
 const props = defineProps<{ workout: Workout }>()
-const emit = defineEmits<{ confirmMatch: [string]; rejectMatch: [string] }>()
+const emit = defineEmits<{ open: [string]; confirmMatch: [string]; rejectMatch: [string] }>()
 
 const colors = useSportColors()
 const { isDark } = useTheme()
@@ -21,7 +21,8 @@ const pending = computed(() => props.workout.pendingMatch)
 
 <template>
   <article :style="vars" class="rounded-(--radius-card) bg-surface">
-    <div class="flex items-center gap-3 p-3.5">
+    <!-- Koko yläosa avaa tiedot: otsikon painikkeen ::after venyy alueen yli. -->
+    <div class="relative flex items-center gap-3 p-3.5">
       <span
         aria-hidden="true"
         class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]"
@@ -47,8 +48,14 @@ const pending = computed(() => props.workout.pendingMatch)
           </span>
         </div>
 
-        <h3 class="mt-0.5 truncate text-base font-semibold tracking-[-0.01em]">
-          {{ workout.title }}
+        <h3 class="mt-0.5 text-base font-semibold tracking-[-0.01em]">
+          <button
+            type="button"
+            class="block w-full truncate text-left after:absolute after:inset-0 after:rounded-(--radius-card) focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ink"
+            @click="emit('open', workout.id)"
+          >
+            {{ workout.title }}
+          </button>
         </h3>
 
         <p class="mt-1 flex flex-wrap gap-x-3.5 text-[13px] text-ink-muted" data-numeric>

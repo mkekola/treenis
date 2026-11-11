@@ -186,12 +186,18 @@ function same(a: unknown, b: unknown): boolean {
  *   välin synkannut kirjatun treenin, johon aktiviteetti selvästi kuuluu. Silloin
  *   yhdistetään ja tupla poistetaan. Epävarmaa osumaa ei kysytä uudelleen, koska
  *   pelkkä Strava-treeni syntyy myös siitä, että käyttäjä vastasi "ei sama".
+ * - Käyttäjä on poistanut treenin, johon aktiviteetti kuului: ei luoda uudelleen.
  * - Muuten resolveActivity päättää.
  */
-export function reconcile(activity: StravaActivity, workouts: Workout[], deleted = false): Reconciliation {
+export function reconcile(
+  activity: StravaActivity,
+  workouts: Workout[],
+  options: { deleted?: boolean; removed?: Workout[] } = {},
+): Reconciliation {
   const ownId = stravaWorkoutId(activity.id)
   const own = workouts.find((w) => w.id === ownId && !w.logged)
-  if (deleted) return own ? { save: [], remove: [ownId] } : NOTHING
+  if (options.deleted) return own ? { save: [], remove: [ownId] } : NOTHING
+  if (options.removed?.some((w) => referencesActivity(w, activity.id))) return NOTHING
 
   const measured = measuredFrom(activity)
   const linked = workouts.find((w) => w.id !== ownId && w.measured?.stravaActivityId === activity.id)

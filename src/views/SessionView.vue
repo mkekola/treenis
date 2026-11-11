@@ -9,7 +9,7 @@ import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { useWakeLock } from '@/composables/useWakeLock'
 import { beep, primeAudio } from '@/lib/beep'
-import { formatDuration } from '@/lib/format'
+import { formatDuration, formatSet } from '@/lib/format'
 import { sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
@@ -18,7 +18,7 @@ import { useSession } from '@/stores/session'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useWorkouts } from '@/stores/workouts'
 import type { SessionBlock, SessionExercise } from '@/types/session'
-import type { Exercise, SetEntry } from '@/types/workout'
+import type { Exercise } from '@/types/workout'
 
 const router = useRouter()
 const session = useSession()
@@ -99,12 +99,6 @@ function toggleExpanded(exerciseId: string) {
   if (next.has(exerciseId)) next.delete(exerciseId)
   else next.add(exerciseId)
   expanded.value = next
-}
-
-function compact(set: SetEntry, measurement: SessionExercise['measurement']): string {
-  if (measurement === 'time') return `${set.durationSec ?? 0} s`
-  if (measurement === 'reps') return `${set.reps ?? 0}`
-  return `${kg(set.weightKg ?? 0)} × ${set.reps ?? 0}`
 }
 
 /** Toistoja yhteensä yli tavoitteen: sovellus huomaa, että teit enemmän kuin ohjelmassa. */
@@ -220,7 +214,7 @@ function finish() {
             class="min-w-0 flex-1 rounded-xl bg-surface py-2 text-center text-sm font-semibold"
             data-numeric
           >
-            {{ compact(set, exercise.measurement) }}
+            {{ formatSet(set, exercise.measurement) }}
           </span>
         </div>
         <p v-if="surplus(exercise) > 0" class="mt-2 text-xs text-[var(--sport-on)]" data-numeric>

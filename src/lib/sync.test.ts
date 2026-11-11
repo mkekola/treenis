@@ -177,3 +177,12 @@ describe('Strava-aktiviteetin rivi', () => {
     })
   })
 })
+
+describe('treenin poistomerkintä', () => {
+  it('säilytetään, jotta poistettu Strava-treeni ei palaa', () => {
+    const deleted = { updatedAt: '2026-11-13T08:00:00Z', deletedAt: '2026-11-13T08:00:00Z' }
+    expect(remoteAction(deleted, undefined, false, true)).toBe('put')
+    expect(remoteAction(deleted, { updatedAt: '2026-11-12T08:00:00Z' }, false, true)).toBe('put')
+    expect(remoteAction(deleted, undefined, false)).toBe('skip')
+  })
+})

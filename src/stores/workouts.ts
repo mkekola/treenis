@@ -6,14 +6,19 @@ import type { Workout } from '@/types/workout'
 
 export const useWorkouts = defineStore('workouts', () => {
   const workouts = ref<Workout[]>([])
+  /** Poistetut treenit. Strava-sovitus tarvitsee ne, jottei poistettu palaa. */
+  const removed = ref<Workout[]>([])
 
   async function load() {
-    workouts.value = (await db.workouts.toArray()).filter((w) => !w.deletedAt)
+    const all = await db.workouts.toArray()
+    workouts.value = all.filter((w) => !w.deletedAt)
+    removed.value = all.filter((w) => w.deletedAt)
   }
 
   function upsertInList(workout: Workout) {
     if (workout.deletedAt) {
       workouts.value = workouts.value.filter((w) => w.id !== workout.id)
+      removed.value = [...removed.value.filter((w) => w.id !== workout.id), workout]
       return
     }
     const index = workouts.value.findIndex((w) => w.id === workout.id)
@@ -46,11 +51,6 @@ export const useWorkouts = defineStore('workouts', () => {
     upsertInList(workout)
   }
 
-  async function removeLocal(id: string) {
-    await db.workouts.delete(id)
-    workouts.value = workouts.value.filter((w) => w.id !== id)
-  }
-
   /** Mitattu voittaa kirjatun: Stravan kesto ja syke täydentävät oman kirjauksen. */
   async function confirmMatch(id: string) {
     const workout = workouts.value.find((w) => w.id === id)
@@ -73,5 +73,5 @@ export const useWorkouts = defineStore('workouts', () => {
     if (activity) await save(workoutFromActivity(activity))
   }
 
-  return { workouts, load, save, remove, applyRemote, removeLocal, confirmMatch, rejectMatch }
+  return { workouts, removed, load, save, remove, applyRemote, confirmMatch, rejectMatch }
 })

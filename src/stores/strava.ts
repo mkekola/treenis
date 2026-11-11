@@ -108,7 +108,7 @@ export const useStrava = defineStore('strava', () => {
   }
 
   async function apply(activity: StravaActivity, deleted = false): Promise<boolean> {
-    const { save, remove } = reconcile(activity, workouts.workouts, deleted)
+    const { save, remove } = reconcile(activity, workouts.workouts, { deleted, removed: workouts.removed })
     for (const workout of save) await workouts.save(workout)
     for (const id of remove) await workouts.remove(id)
     return save.length + remove.length > 0

@@ -120,10 +120,11 @@ export const useSync = defineStore('sync', () => {
     const { data, error } = await supabase.rpc('get_workouts', { since })
     if (error) throw error
     const remotes = (data ?? []) as RemoteWorkout[]
+    // Poistettu treeni jää laitteelle merkinnäksi, jotta Strava-sovitus ei luo
+    // sitä uudelleen samasta aktiviteetista.
     for (const remote of remotes) {
-      const action = remoteAction(remote, await db.workouts.get(remote.id), await isPending(remote.id))
-      if (action === 'put') await workouts.applyRemote(toLocal(remote))
-      else if (action === 'delete') await workouts.removeLocal(remote.id)
+      const action = remoteAction(remote, await db.workouts.get(remote.id), await isPending(remote.id), true)
+      if (action === 'put') await workouts.applyRemote(remote.deletedAt ? remote : toLocal(remote))
     }
     writeLastPull(latestUpdate(remotes, since))
   }
@@ -211,7 +212,7 @@ export const useSync = defineStore('sync', () => {
   /** Synkka käynnistyy, kun treeni tallennetaan, verkko palaa tai sovellus tulee esiin. */
   function start() {
     workouts.$onAction(({ name, after }) => {
-      if (name === 'save') after(() => void run())
+      if (name === 'save' || name === 'remove') after(() => void run())
     })
     templates.$onAction(({ name, after }) => {
       if (name === 'save') after(() => void run())

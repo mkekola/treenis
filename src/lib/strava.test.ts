@@ -170,8 +170,16 @@ describe('sovitus laitteen treeneihin', () => {
   })
 
   it('Stravasta poistettu aktiviteetti poistaa pelkän Strava-treenin, ei kirjattua', () => {
-    expect(reconcile(activity(), [workoutFromActivity(activity())], true)).toEqual({ save: [], remove: [own] })
+    expect(reconcile(activity(), [workoutFromActivity(activity())], { deleted: true })).toEqual({ save: [], remove: [own] })
     const merged = reconcile(activity(), [logged('w1', '2026-11-12T15:05:00Z')]).save
-    expect(reconcile(activity(), merged, true)).toEqual({ save: [], remove: [] })
+    expect(reconcile(activity(), merged, { deleted: true })).toEqual({ save: [], remove: [] })
+  })
+
+  it('poistettu treeni ei palaa seuraavassa synkassa', () => {
+    const deletedOwn = { ...workoutFromActivity(activity()), deletedAt: '2026-11-13T08:00:00Z' }
+    expect(reconcile(activity(), [], { removed: [deletedOwn] })).toEqual({ save: [], remove: [] })
+    const merged = reconcile(activity(), [logged('w1', '2026-11-12T15:05:00Z')]).save[0]
+    const deletedMerged = { ...merged, deletedAt: '2026-11-13T08:00:00Z' }
+    expect(reconcile(activity(), [], { removed: [deletedMerged] })).toEqual({ save: [], remove: [] })
   })
 })

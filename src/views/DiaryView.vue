@@ -5,6 +5,7 @@ import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
 import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
+import WorkoutSheet from '@/components/WorkoutSheet.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useNow } from '@/composables/useNow'
 import { byMonth, formatToday, thisWeek } from '@/lib/calendar'
@@ -53,6 +54,15 @@ function toggle(key: string) {
 const monthSummary = (list: typeof store.workouts) =>
   `${list.length} ${list.length === 1 ? 'treeni' : 'treeniä'} · ${formatDurationShort(list.reduce((sum, w) => sum + durationSec(w), 0))}`
 const hasStravaData = computed(() => store.workouts.some(isFromStrava))
+
+/** Kortista avattu treeni tietopaneelissa. */
+const selectedId = ref<string | null>(null)
+const selected = computed(() => store.workouts.find((w) => w.id === selectedId.value) ?? null)
+
+async function removeWorkout(id: string) {
+  selectedId.value = null
+  await store.remove(id)
+}
 
 const totalSeconds = computed(() => workouts.value.reduce((sum, w) => sum + durationSec(w), 0))
 
@@ -221,6 +231,7 @@ const byGroup = computed(() => {
             v-for="workout in month.workouts"
             :key="workout.id"
             :workout="workout"
+            @open="selectedId = $event"
             @confirm-match="store.confirmMatch"
             @reject-match="store.rejectMatch"
           />
@@ -234,5 +245,7 @@ const byGroup = computed(() => {
       <PoweredByStrava v-if="hasStravaData" class="mt-1.5 mb-1 self-center" />
     </div>
 
+
+    <WorkoutSheet :workout="selected" @close="selectedId = null" @remove="removeWorkout" />
   </div>
 </template>
