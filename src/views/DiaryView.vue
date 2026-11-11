@@ -4,8 +4,11 @@ import RecoveryCard from '@/components/RecoveryCard.vue'
 import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useTheme } from '@/composables/useTheme'
+import { useNow } from '@/composables/useNow'
+import { byMonth, formatToday, thisWeek } from '@/lib/calendar'
 import { formatDurationShort } from '@/lib/format'
 import { durationSec } from '@/lib/workout'
+import { useAuth } from '@/stores/auth'
 import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
@@ -16,9 +19,26 @@ const { isDark } = useTheme()
 
 const store = useWorkouts()
 const session = useSession()
-const workouts = computed(() => store.workouts)
+const auth = useAuth()
+// Päivä vaihtuu, vaikka sovellus olisi auki keskiyön yli.
+const nowMs = useNow(60_000)
+const now = computed(() => new Date(nowMs.value))
 
-const sorted = computed(() => [...workouts.value].sort((a, b) => b.date.localeCompare(a.date)))
+const today = computed(() => formatToday(now.value))
+const initials = computed(() =>
+  (auth.name ?? '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join(''),
+)
+
+const firstName = computed(() => (auth.name ?? '').trim().split(/\s+/)[0])
+
+/** Yhteenveto koskee vain tätä viikkoa (ma–su). Aikajana näyttää kaiken. */
+const workouts = computed(() => thisWeek(store.workouts, now.value))
+const months = computed(() => byMonth(store.workouts, now.value))
 
 const totalSeconds = computed(() => workouts.value.reduce((sum, w) => sum + durationSec(w), 0))
 
@@ -42,38 +62,25 @@ const byGroup = computed(() => {
 
 <template>
   <div class="flex min-h-full flex-col">
-    <header class="flex items-center justify-between gap-3 px-5 pt-6">
+    <!-- Ilman nimeä näkyy pelkkä päivä: mitään ei keksitä käyttäjän puolesta. -->
+    <header class="flex min-h-11 items-center justify-between gap-3 px-5 pt-6">
       <div class="flex min-w-0 items-center gap-2.5">
         <span
+          v-if="initials"
           :style="sportVars(colors.swatchForGroup('strength'), isDark)"
+          aria-hidden="true"
           class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[15px] font-bold text-[var(--sport-on)]"
         >
-          MK
+          {{ initials }}
         </span>
         <div class="min-w-0">
-          <p class="text-xs text-ink-muted">Keskiviikko 12.11.</p>
-          <p class="text-[15px] font-semibold tracking-[-0.01em]">Hei Maria</p>
+          <p :class="auth.name ? 'text-xs text-ink-muted' : 'text-[15px] font-semibold'">{{ today }}</p>
+          <p v-if="auth.name" class="truncate text-[15px] font-semibold tracking-[-0.01em]">
+            Hei {{ firstName }}
+          </p>
         </div>
       </div>
-      <SyncBadge class="ml-auto" />
-      <button
-        type="button"
-        aria-label="Haku"
-        class="flex size-11 flex-none items-center justify-center rounded-full border border-line bg-surface"
-      >
-        <svg
-          class="size-[19px]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <line x1="16.5" y1="16.5" x2="21" y2="21" />
-        </svg>
-      </button>
+      <SyncBadge />
     </header>
 
     <!-- Keskeytynyt treeni kysytään heti avattaessa, ei jatketa hiljaa. -->
@@ -106,7 +113,7 @@ const byGroup = computed(() => {
           </p>
         </div>
 
-        <div class="mt-3 flex h-2.5 gap-[3px]" aria-hidden="true">
+        <div v-if="byGroup.length" class="mt-3 flex h-2.5 gap-[3px]" aria-hidden="true">
           <span
             v-for="row in byGroup"
             :key="row.group"
@@ -128,29 +135,25 @@ const byGroup = computed(() => {
       </div>
     </section>
 
-    <!-- Aikajana: täällä luetaan, joten kortit pysyvät valkoisina. -->
-    <section class="flex flex-1 flex-col gap-2 px-5 pt-4.5">
-      <div class="flex items-baseline justify-between">
+    <!-- Aikajana: täällä luetaan, joten kortit pysyvät valkoisina. Kuukausi kerrallaan. -->
+    <div class="flex flex-1 flex-col gap-4.5 px-5 pt-4.5">
+      <section v-for="month in months" :key="month.key" class="flex flex-col gap-2">
         <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
-          Marraskuu
+          {{ month.label }}
         </h2>
-        <RouterLink to="/tilastot" class="text-[13px] font-semibold text-ink">
-          Kaikki
-        </RouterLink>
-      </div>
+        <WorkoutCard
+          v-for="workout in month.workouts"
+          :key="workout.id"
+          :workout="workout"
+          @confirm-match="store.confirmMatch"
+          @reject-match="store.rejectMatch"
+        />
+      </section>
 
-      <WorkoutCard
-        v-for="workout in sorted"
-        :key="workout.id"
-        :workout="workout"
-        @confirm-match="store.confirmMatch"
-        @reject-match="store.rejectMatch"
-      />
-
-      <p v-if="!sorted.length" class="py-6 text-center text-sm text-ink-muted">
+      <p v-if="!months.length" class="py-6 text-center text-sm text-ink-muted">
         Ei vielä treenejä. Kirjaa ensimmäinen alta.
       </p>
-    </section>
+    </div>
 
     <div class="px-5 pt-3">
       <RouterLink

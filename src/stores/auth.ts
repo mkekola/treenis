@@ -5,10 +5,11 @@ import { supabase } from '@/lib/supabase'
 
 const DEVICE_USER_KEY = 'treenis.userId'
 const DEVICE_EMAIL_KEY = 'treenis.userEmail'
+const DEVICE_NAME_KEY = 'treenis.userName'
 
 // Tämän laitteen käyttäjän data localStoragessa. Ulkoasun asetukset eivät ole
 // tässä: ne kuuluvat laitteelle, eivät tilille.
-const ACCOUNT_KEYS = [DEVICE_USER_KEY, DEVICE_EMAIL_KEY, 'treenis.lastPull', 'treenis.customExercises']
+const ACCOUNT_KEYS = [DEVICE_USER_KEY, DEVICE_EMAIL_KEY, DEVICE_NAME_KEY, 'treenis.lastPull', 'treenis.customExercises']
 
 function read(key: string): string | null {
   try {
@@ -35,12 +36,24 @@ function write(key: string, value: string) {
 export const useAuth = defineStore('auth', () => {
   const userId = ref<string | null>(read(DEVICE_USER_KEY))
   const email = ref<string | null>(read(DEVICE_EMAIL_KEY))
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session) {
+  /** Nimi on tilin tiedoissa (user_metadata), joten se kulkee kaikille laitteille. */
+  const name = ref<string | null>(read(DEVICE_NAME_KEY))
+
+  function rememberName(value: unknown) {
+    if (typeof value !== 'string' || !value) return
+    name.value = value
+    write(DEVICE_NAME_KEY, value)
+  }
+
+  // Myös tunnisteen uusinta tuo tilin tuoreet tiedot, joten toisella laitteella
+  // vaihdettu nimi päivittyy tänne seuraavassa uusinnassa.
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) {
       userId.value = session.user.id
       email.value = session.user.email ?? null
       write(DEVICE_USER_KEY, session.user.id)
       if (session.user.email) write(DEVICE_EMAIL_KEY, session.user.email)
+      rememberName(session.user.user_metadata.name)
     }
   })
 
@@ -56,6 +69,15 @@ export const useAuth = defineStore('auth', () => {
   async function verifyCode(address: string, token: string) {
     const { error } = await supabase.auth.verifyOtp({ email: address, token, type: 'email' })
     if (error) throw error
+  }
+
+  /** Tallentuu tilille, joten vaatii verkon. */
+  async function setName(value: string) {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const { error } = await supabase.auth.updateUser({ data: { name: trimmed } })
+    if (error) throw error
+    rememberName(trimmed)
   }
 
   /**
@@ -87,5 +109,5 @@ export const useAuth = defineStore('auth', () => {
     window.location.replace('/kirjaudu')
   }
 
-  return { userId, email, sendCode, verifyCode, skipInDev, signOut }
+  return { userId, email, name, sendCode, verifyCode, setName, skipInDev, signOut }
 })
