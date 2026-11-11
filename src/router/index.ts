@@ -23,6 +23,13 @@ export const router = createRouter({
       component: () => import('@/views/SummaryView.vue'),
       meta: { hideNav: true },
     },
+    { path: '/ohjelmat', name: 'programs', component: () => import('@/views/ProgramsView.vue') },
+    { path: '/ohjelmat/:id', name: 'program', component: () => import('@/views/ProgramView.vue') },
+    {
+      path: '/ohjelmat/:programId/:id',
+      name: 'template-edit',
+      component: () => import('@/views/TemplateEditView.vue'),
+    },
     { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
     {
       path: '/asetukset/ulkoasu',

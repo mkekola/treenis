@@ -4,6 +4,7 @@ import App from './App.vue'
 import { seedIfEmpty } from './db/seed'
 import { router } from './router'
 import { useExercises } from './stores/exercises'
+import { usePrograms } from './stores/programs'
 import { useSession } from './stores/session'
 import { useSync } from './stores/sync'
 import { useTemplates } from './stores/templates'
@@ -19,6 +20,7 @@ await Promise.all([
   useWorkouts(pinia).load(),
   useTemplates(pinia).load(),
   useExercises(pinia).load(),
+  usePrograms(pinia).load(),
   useSession(pinia).load(),
 ])
 

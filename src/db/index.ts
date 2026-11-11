@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { ActiveSession } from '@/types/session'
-import type { Exercise, Workout, WorkoutTemplate } from '@/types/workout'
+import { DEFAULT_PROGRAM_ID, DEFAULT_PROGRAM_NAME } from '@/lib/program'
+import type { Exercise, Program, Workout, WorkoutTemplate } from '@/types/workout'
 
 /** Käynnissä oleva treeni. Yksi rivi, koska treenejä ei tehdä kahta yhtä aikaa. */
 export interface ActiveSessionRecord {
@@ -8,12 +9,12 @@ export interface ActiveSessionRecord {
   session: ActiveSession
 }
 
-export type SyncKind = 'workout' | 'template' | 'exercise'
+export type SyncKind = 'workout' | 'template' | 'exercise' | 'program'
 
 /**
  * Laitteella muuttunut rivi, jota ei ole vielä lähetetty Supabaseen.
- * Tunnisteet eivät mene ristiin: treenit ovat UUID:ita, pohjat "template-…"
- * ja omat liikkeet "custom-…".
+ * Tunnisteet eivät mene ristiin: treenit ovat UUID:ita, pohjat "template-…",
+ * omat liikkeet "custom-…" ja ohjelmat "program-…".
  */
 export interface OutboxRecord {
   id: string
@@ -46,6 +47,7 @@ class TreenisDb extends Dexie {
   workouts!: Table<Workout, string>
   templates!: Table<WorkoutTemplate, string>
   customExercises!: Table<Exercise, string>
+  programs!: Table<Program, string>
   activeSession!: Table<ActiveSessionRecord, string>
   outbox!: Table<OutboxRecord, string>
 
@@ -86,6 +88,36 @@ class TreenisDb extends Dexie {
         const exercises = readLegacyExercises().map((e) => ({ ...e, updatedAt: now }))
         await tx.table<Exercise, string>('customExercises').bulkPut(exercises)
         await outbox.bulkPut(exercises.map((e) => ({ id: e.id, kind: 'exercise', updatedAt: now })))
+      })
+    // Versio 4 lisää ohjelmat. Laitteella jo olevat pohjat kootaan Marian
+    // nykyiseen ohjelmaan, joka otetaan käyttöön.
+    this.version(4)
+      .stores({ programs: 'id' })
+      .upgrade(async (tx) => {
+        const now = new Date().toISOString()
+        const table = tx.table<WorkoutTemplate, string>('templates')
+        const outbox = tx.table<OutboxRecord, string>('outbox')
+
+        // Treenit nimettiin numeroilla kirjainten sijaan. Itse annettuihin nimiin ei kosketa.
+        const renamed: Record<string, string> = { 'Treeni A': 'Treeni 1', 'Treeni B': 'Treeni 2' }
+        for (const template of await table.toArray()) {
+          const name = renamed[template.name]
+          if (!name) continue
+          await table.put({ ...template, name, updatedAt: now })
+          await outbox.put({ id: template.id, kind: 'template', updatedAt: now })
+        }
+
+        const templates = (await table.toArray()).filter((t) => !t.deletedAt)
+        if (!templates.length) return
+        const program: Program = {
+          id: DEFAULT_PROGRAM_ID,
+          name: DEFAULT_PROGRAM_NAME,
+          templateIds: templates.map((t) => t.id),
+          activatedAt: now,
+          updatedAt: now,
+        }
+        await tx.table<Program, string>('programs').put(program)
+        await outbox.put({ id: program.id, kind: 'program', updatedAt: now })
       })
   }
 }

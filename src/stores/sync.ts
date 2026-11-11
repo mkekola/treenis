@@ -6,15 +6,19 @@ import {
   exerciseFromRow,
   exerciseToRow,
   latestUpdate,
+  programFromRow,
+  programToRow,
   remoteAction,
   templateFromRow,
   templateToRow,
   toLocal,
   type ExerciseRow,
+  type ProgramRow,
   type RemoteWorkout,
   type TemplateRow,
 } from '@/lib/sync'
 import { useExercises } from '@/stores/exercises'
+import { usePrograms } from '@/stores/programs'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 
@@ -45,8 +49,9 @@ export const useSync = defineStore('sync', () => {
   const workouts = useWorkouts()
   const templates = useTemplates()
   const exercises = useExercises()
+  const programs = usePrograms()
   const state = ref<'idle' | 'syncing' | 'offline' | 'error'>('idle')
-  /** Laitteella olevat muutokset (treenit, pohjat, omat liikkeet), joita ei ole vielä lähetetty. */
+  /** Laitteella olevat muutokset (treenit, pohjat, ohjelmat, omat liikkeet), joita ei ole vielä lähetetty. */
   const pending = ref(0)
 
   async function countPending() {
@@ -58,6 +63,13 @@ export const useSync = defineStore('sync', () => {
 
   /** Lähettää yhden rivin. Palauttaa false, jos palvelimella oli uudempi versio. */
   async function send(entry: OutboxRecord, userId: string): Promise<boolean> {
+    if (entry.kind === 'program') {
+      const program = await db.programs.get(entry.id)
+      if (!program) return true
+      const { error } = await supabase.from('programs').upsert({ ...programToRow(program), user_id: userId })
+      if (error) throw error
+      return true
+    }
     if (entry.kind === 'template') {
       const template = await db.templates.get(entry.id)
       if (!template) return true
@@ -124,6 +136,16 @@ export const useSync = defineStore('sync', () => {
     }
   }
 
+  async function pullPrograms() {
+    const { data, error } = await supabase.from('programs').select('*')
+    if (error) throw error
+    for (const remote of (data as ProgramRow[]).map(programFromRow)) {
+      const action = remoteAction(remote, await db.programs.get(remote.id), await isPending(remote.id))
+      if (action === 'put') await programs.applyRemote(toLocal(remote))
+      else if (action === 'delete') await programs.removeLocal(remote.id)
+    }
+  }
+
   async function pullExercises() {
     const { data, error } = await supabase.from('custom_exercises').select('*')
     if (error) throw error
@@ -152,6 +174,7 @@ export const useSync = defineStore('sync', () => {
       // ohittaa aiemmassa haussa, kun oma muutos odotti jonossa.
       await pullWorkouts(serverWasNewer ? null : readLastPull())
       await pullTemplates()
+      await pullPrograms()
       await pullExercises()
       state.value = 'idle'
     } catch {
@@ -184,6 +207,9 @@ export const useSync = defineStore('sync', () => {
       if (name === 'save') after(() => void run())
     })
     templates.$onAction(({ name, after }) => {
+      if (name === 'save') after(() => void run())
+    })
+    programs.$onAction(({ name, after }) => {
       if (name === 'save') after(() => void run())
     })
     window.addEventListener('online', () => void run())

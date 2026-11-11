@@ -1,7 +1,7 @@
 import type { Block, SetEntry, WorkoutTemplate } from '@/types/workout'
 
 /**
- * Marian nykyiset kaksi treeniohjelmaa (kaksi salikertaa viikossa, A ja B).
+ * Marian nykyiset kaksi treeniä (kaksi salikertaa viikossa, 1 ja 2).
  * Tallennetaan tietokantaan ensimmäisellä käynnistyksellä, minkä jälkeen
  * pohjat elävät siellä eikä tätä tiedostoa lueta uudelleen.
  *
@@ -23,7 +23,7 @@ function straight(id: string, exerciseId: string, sets: number, reps: number): B
 export const initialTemplates: WorkoutTemplate[] = [
   {
     id: 'template-a',
-    name: 'Treeni A',
+    name: 'Treeni 1',
     blocks: [
       straight('a1', 'back-squat', 3, 10),
       straight('a2', 'dumbbell-bench-press', 3, 12),
@@ -35,7 +35,7 @@ export const initialTemplates: WorkoutTemplate[] = [
   },
   {
     id: 'template-b',
-    name: 'Treeni B',
+    name: 'Treeni 2',
     blocks: [
       straight('b1', 'trap-bar-deadlift', 3, 15),
       straight('b2', 'machine-shoulder-press', 3, 10),

@@ -256,7 +256,7 @@ describe('toWorkout', () => {
   })
 
   it('laskee edistymisen', () => {
-    // Treeni A: 3 + 3 + 3 + 3 + 2 + 3 sarjaa (yhden jalan prässi on 2 × 10).
+    // Treeni 1: 3 + 3 + 3 + 3 + 2 + 3 sarjaa (yhden jalan prässi on 2 × 10).
     expect(progress(finished())).toEqual({ done: 4, total: 17 })
   })
 })

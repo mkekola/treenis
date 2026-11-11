@@ -77,7 +77,7 @@ function onBackdropClick(event: MouseEvent) {
   <dialog
     ref="dialog"
     :aria-label="title"
-    class="fixed inset-x-0 bottom-0 m-0 mx-auto max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
+    class="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
     @close="onNativeClose"
     @click="onBackdropClick"
   >

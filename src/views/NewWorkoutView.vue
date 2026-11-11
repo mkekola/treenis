@@ -5,7 +5,10 @@ import RecoveryCard from '@/components/RecoveryCard.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatShortDate } from '@/lib/format'
+import { inRotation, templatesOf, unassigned } from '@/lib/program'
 import { localDate } from '@/lib/session'
+import { exerciseCount } from '@/lib/template'
+import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useSession } from '@/stores/session'
 import { useTemplates } from '@/stores/templates'
@@ -14,21 +17,29 @@ import type { WorkoutTemplate } from '@/types/workout'
 const router = useRouter()
 const session = useSession()
 const templates = useTemplates()
+const programs = usePrograms()
 const colors = useSportColors()
 const { isDark } = useTheme()
 
 const vars = computed(() => sportVars(colors.swatchFor('strength'), isDark.value))
 
 /**
- * Seuraavaksi ehdotetaan pohjaa, jota ei ole tehty viimeksi: kaksi ohjelmaa
- * vuorotellen kulkee itsestään. Käyttämättömät ensin, sitten vanhin.
+ * Käytössä olevan ohjelman treenit vuorojärjestyksessä: ensimmäisenä se,
+ * jota ei ole tehty pisimpään. Kaksi treeniä vuorotellen kulkee itsestään.
  */
 const ordered = computed(() =>
-  [...templates.templates].sort((a, b) => (a.lastUsedAt ?? '').localeCompare(b.lastUsedAt ?? '')),
+  programs.active ? inRotation(templatesOf(programs.active, templates.templates)) : [],
 )
 
-const exerciseCount = (template: WorkoutTemplate) =>
-  template.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
+/** Muut ohjelmat ja ohjelmattomat treenit, jotta minkä tahansa treenin voi aloittaa. */
+const others = computed(() => {
+  const groups = programs.programs
+    .filter((p) => p.id !== programs.active?.id)
+    .map((p) => ({ id: p.id, name: p.name, templates: templatesOf(p, templates.templates) }))
+  const loose = unassigned(programs.programs, templates.templates)
+  if (loose.length) groups.push({ id: 'ilman-ohjelmaa', name: 'Ilman ohjelmaa', templates: loose })
+  return groups.filter((g) => g.templates.length)
+})
 
 /** Tyhjä treeni: liikkeet haetaan itse, ja valmiin treenin voi tallentaa pohjaksi. */
 async function beginBlank() {
@@ -72,8 +83,11 @@ async function begin(template: WorkoutTemplate) {
         Pohja täyttää liikkeet ja viime kerran painot valmiiksi. Merkitset vain mitä oikeasti teit.
       </p>
 
-      <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
-        Pohjat
+      <h2
+        v-if="programs.active && ordered.length"
+        class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase"
+      >
+        {{ programs.active.name }}
       </h2>
 
       <button
@@ -121,6 +135,26 @@ async function begin(template: WorkoutTemplate) {
       >
         + Aloita tyhjästä
       </button>
+
+      <!-- Muut ohjelmat: harvemmin tarvittuja, joten tiiviimmät rivit ilman ehdotusta. -->
+      <section v-for="group in others" :key="group.id" class="mt-3 flex flex-col gap-1.5">
+        <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+          {{ group.name }}
+        </h2>
+        <button
+          v-for="template in group.templates"
+          :key="template.id"
+          type="button"
+          class="flex min-h-12 items-center justify-between gap-3 rounded-(--radius-card) bg-surface px-3.5 py-2.5 text-left"
+          @click="begin(template)"
+        >
+          <span class="font-semibold">{{ template.name }}</span>
+          <span class="text-[13px] text-ink-muted" data-numeric>
+            {{ exerciseCount(template) }} liikettä
+          </span>
+        </button>
+      </section>
+      <div class="pb-6" />
     </template>
   </div>
 </template>

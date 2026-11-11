@@ -121,8 +121,8 @@ export interface Block {
 }
 
 /**
- * Treenipohja syntyy valmiista treenistä ("Tallenna pohjaksi"), eikä sitä
- * rakenneta etukäteen. Sarjojen arvot ovat tavoitteita, done on aina false.
+ * Treenipohja rakennetaan Pohjat-sivulla tai tallennetaan valmiista treenistä.
+ * Sarjojen arvot ovat tavoitteita, done on aina false.
  */
 export interface WorkoutTemplate {
   id: string
@@ -132,6 +132,20 @@ export interface WorkoutTemplate {
   /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
   updatedAt?: string
   /** Poistettu pohja jää laitteelle merkinnäksi, jotta poisto välittyy synkassa. */
+  deletedAt?: string
+}
+
+/**
+ * Ohjelma kokoaa treenipohjia, esimerkiksi "Koko kroppa 2krt/vko" sisältää
+ * treenit A ja B. Treeni kuuluu yhteen ohjelmaan, ja ohjelma omistaa niiden
+ * järjestyksen. Käytössä on se ohjelma, joka on otettu käyttöön viimeksi.
+ */
+export interface Program {
+  id: string
+  name: string
+  templateIds: string[]
+  activatedAt?: string
+  updatedAt?: string
   deletedAt?: string
 }
 

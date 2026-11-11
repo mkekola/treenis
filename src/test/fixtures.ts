@@ -22,7 +22,7 @@ export function strengthWorkout(
     id,
     sport: 'strength',
     date,
-    title: 'Treeni A',
+    title: 'Treeni 1',
     logged: {
       startedAt,
       blocks: exercises.map((exercise, index) => ({

@@ -4,19 +4,21 @@ import {
   exerciseFromRow,
   exerciseToRow,
   latestUpdate,
+  programFromRow,
+  programToRow,
   remoteAction,
   templateFromRow,
   templateToRow,
   toLocal,
   type RemoteWorkout,
 } from '@/lib/sync'
-import type { Exercise, Workout } from '@/types/workout'
+import type { Exercise, Program, Workout } from '@/types/workout'
 
 const local = (updatedAt?: string): Workout => ({
   id: 'a',
   sport: 'strength',
   date: '2026-11-10',
-  title: 'Treeni A',
+  title: 'Treeni 1',
   updatedAt,
 })
 
@@ -93,5 +95,18 @@ describe('pohjien ja omien liikkeiden rivit', () => {
   it('välittää poistomerkinnän', () => {
     const row = templateToRow({ ...initialTemplates[1], deletedAt: '2026-11-10T12:00:00Z' })
     expect(templateFromRow(row).deletedAt).toBe('2026-11-10T12:00:00Z')
+  })
+})
+
+describe('ohjelman rivi', () => {
+  it('kulkee rivin kautta muuttumattomana', () => {
+    const program: Program = {
+      id: 'program-default',
+      name: 'Koko kroppa 2krt/vko',
+      templateIds: ['template-a', 'template-b'],
+      activatedAt: '2026-11-10T12:00:00.000Z',
+      updatedAt: '2026-11-10T12:00:00.000Z',
+    }
+    expect(toLocal(programFromRow(programToRow(program)))).toEqual(program)
   })
 })

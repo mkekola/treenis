@@ -3,6 +3,7 @@ import type {
   Exercise,
   Measurement,
   MuscleGroup,
+  Program,
   Workout,
   WorkoutTemplate,
 } from '@/types/workout'
@@ -118,6 +119,37 @@ export function exerciseFromRow(row: ExerciseRow): Exercise & Synced {
     aliases: row.aliases,
     custom: true,
     ...(row.weight_step_kg !== null ? { weightStepKg: row.weight_step_kg } : {}),
+    updatedAt: row.updated_at,
+    ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
+  }
+}
+
+export interface ProgramRow {
+  id: string
+  name: string
+  template_ids: string[]
+  activated_at: string | null
+  updated_at: string
+  deleted_at: string | null
+}
+
+export function programToRow(p: Program): ProgramRow {
+  return {
+    id: p.id,
+    name: p.name,
+    template_ids: p.templateIds,
+    activated_at: p.activatedAt ?? null,
+    updated_at: p.updatedAt ?? new Date().toISOString(),
+    deleted_at: p.deletedAt ?? null,
+  }
+}
+
+export function programFromRow(row: ProgramRow): Program & Synced {
+  return {
+    id: row.id,
+    name: row.name,
+    templateIds: row.template_ids,
+    ...(row.activated_at ? { activatedAt: row.activated_at } : {}),
     updatedAt: row.updated_at,
     ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
   }
