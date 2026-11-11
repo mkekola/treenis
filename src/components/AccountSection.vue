@@ -50,7 +50,7 @@ async function signOut() {
       <label for="tilin-nimi" class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
         Nimi
       </label>
-      <p id="tilin-nimi-ohje" class="text-[13px] text-ink-muted">Näkyy päiväkirjan tervehdyksessä.</p>
+      <p id="tilin-nimi-ohje" class="text-[13px] text-ink-muted">Nimikirjaimet näkyvät päiväkirjan pallossa.</p>
       <div class="mt-1 flex gap-2">
         <input
           id="tilin-nimi"
