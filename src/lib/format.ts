@@ -1,7 +1,8 @@
 import type { SportKey, Workout } from '@/types/workout'
 import { avgHr, distanceM, durationSec, kindOf, totalVolumeKg } from '@/lib/workout'
 
-const NBSP_THIN = ' '
+/** Kapea sitova välilyönti: luku ja yksikkö eivät rivity erilleen. */
+const NBSP_THIN = '\u202F'
 
 function fi(n: number, decimals = 0): string {
   return n.toLocaleString('fi-FI', {
@@ -21,10 +22,21 @@ export function formatDuration(sec: number): string {
 
 /** Lyhyt kesto listoihin: "58 min", "1 t 19 min". */
 export function formatDurationShort(sec: number): string {
+  return durationParts(sec)
+    .map((part) => `${part.value}${NBSP_THIN}${part.unit}`)
+    .join(' ')
+}
+
+/**
+ * Kesto osina, jotta näkymä voi näyttää yksiköt pienempinä kuin luvut.
+ * Tasatunnista jää minuutit pois: "1 t", ei "1 t 0 min".
+ */
+export function durationParts(sec: number): { value: number; unit: 't' | 'min' }[] {
   const totalMin = Math.round(sec / 60)
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
-  return h > 0 ? `${h}${NBSP_THIN}t ${m}${NBSP_THIN}min` : `${m}${NBSP_THIN}min`
+  if (h === 0) return [{ value: m, unit: 'min' }]
+  return m === 0 ? [{ value: h, unit: 't' }] : [{ value: h, unit: 't' }, { value: m, unit: 'min' }]
 }
 
 /** Uinti metreinä, muut kilometreinä. */

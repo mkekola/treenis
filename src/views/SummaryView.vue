@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { recurringDeviations, type Deviation } from '@/lib/deviation'
-import { formatDurationShort, formatShortDate } from '@/lib/format'
+import { durationParts, formatShortDate } from '@/lib/format'
 import { findRecords } from '@/lib/records'
 import { localDate, progress, toWorkout } from '@/lib/session'
 import { totalVolumeKg } from '@/lib/workout'
@@ -171,7 +171,10 @@ async function discard() {
           </p>
           <p class="border-l border-line pl-3">
             <span class="block text-[26px] font-bold tracking-[-0.02em]" data-numeric>
-              {{ formatDurationShort(workout.logged?.durationSec ?? 0) }}
+              <template v-for="(part, i) in durationParts(workout.logged?.durationSec ?? 0)" :key="part.unit"
+                >{{ i > 0 ? ' ' : '' }}{{ part.value
+                }}<span class="text-[13px] font-medium text-ink-muted">&#8239;{{ part.unit }}</span></template
+              >
             </span>
             <span class="text-xs text-ink-muted">kesto</span>
           </p>
