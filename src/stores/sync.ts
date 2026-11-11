@@ -8,6 +8,7 @@ import {
   latestUpdate,
   programFromRow,
   programToRow,
+  pushAll,
   remoteAction,
   templateFromRow,
   templateToRow,
@@ -95,18 +96,18 @@ export const useSync = defineStore('sync', () => {
     return data !== false
   }
 
-  /** Lähettää jonon. Palauttaa true, jos palvelimella oli jokin uudempi treeni. */
-  async function push(userId: string): Promise<boolean> {
-    let serverWasNewer = false
-    for (const entry of await db.outbox.toArray()) {
-      if (!(await send(entry, userId))) serverWasNewer = true
-      // Poistetaan jonosta vain jos rivi ei muuttunut lähetyksen aikana.
-      await db.transaction('rw', db.outbox, async () => {
-        const current = await db.outbox.get(entry.id)
-        if (current?.updatedAt === entry.updatedAt) await db.outbox.delete(entry.id)
-      })
-    }
-    return serverWasNewer
+  /** Lähettää jonon. Rivi poistetaan jonosta vain, jos se ei muuttunut lähetyksen aikana. */
+  async function push(userId: string) {
+    return pushAll(
+      await db.outbox.toArray(),
+      (entry) => send(entry, userId),
+      (entry) =>
+        db.transaction('rw', db.outbox, async () => {
+          const current = await db.outbox.get(entry.id)
+          if (current?.updatedAt === entry.updatedAt) await db.outbox.delete(entry.id)
+        }),
+      () => !navigator.onLine,
+    )
   }
 
   async function isPending(id: string) {
@@ -169,14 +170,14 @@ export const useSync = defineStore('sync', () => {
     }
     state.value = 'syncing'
     try {
-      const serverWasNewer = await push(data.session.user.id)
+      const { serverWasNewer, failed } = await push(data.session.user.id)
       // Jos palvelimella oli uudempi treeni, haetaan kaikki: se on voitu jo
       // ohittaa aiemmassa haussa, kun oma muutos odotti jonossa.
       await pullWorkouts(serverWasNewer ? null : readLastPull())
       await pullTemplates()
       await pullPrograms()
       await pullExercises()
-      state.value = 'idle'
+      state.value = failed > 0 ? 'error' : 'idle'
     } catch {
       // Jono säilyy, joten mitään ei menetetä: seuraava ajo yrittää uudelleen.
       state.value = navigator.onLine ? 'error' : 'offline'

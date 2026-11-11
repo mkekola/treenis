@@ -6,6 +6,7 @@ import {
   latestUpdate,
   programFromRow,
   programToRow,
+  pushAll,
   remoteAction,
   templateFromRow,
   templateToRow,
@@ -111,5 +112,36 @@ describe('ohjelman rivi', () => {
       updatedAt: '2026-11-10T12:00:00.000Z',
     }
     expect(toLocal(programFromRow(programToRow(program)))).toEqual(program)
+  })
+})
+
+describe('jonon purku', () => {
+  const sent: string[] = []
+  const done: string[] = []
+  const send = async (id: string) => {
+    if (id === 'hylatty') throw new Error('palvelin hylkäsi')
+    sent.push(id)
+    return id !== 'vanhempi'
+  }
+  const markDone = async (id: string) => void done.push(id)
+
+  it('ohittaa hylätyn rivin ja lähettää muut', async () => {
+    sent.length = 0
+    done.length = 0
+    const result = await pushAll(['a', 'hylatty', 'b'], send, markDone, () => false)
+    expect(sent).toEqual(['a', 'b'])
+    expect(done).toEqual(['a', 'b'])
+    expect(result).toEqual({ serverWasNewer: false, failed: 1 })
+  })
+
+  it('kertoo, kun palvelimella oli uudempi versio', async () => {
+    const result = await pushAll(['vanhempi'], send, markDone, () => false)
+    expect(result.serverWasNewer).toBe(true)
+  })
+
+  it('lopettaa heti, kun verkko on poissa', async () => {
+    sent.length = 0
+    await expect(pushAll(['hylatty', 'a'], send, markDone, () => true)).rejects.toThrow()
+    expect(sent).toEqual([])
   })
 })

@@ -164,3 +164,36 @@ export function programFromRow(row: ProgramRow): Program & Synced {
     ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
   }
 }
+
+export interface PushResult {
+  /** Palvelimella oli jokin uudempi versio, joten seuraava haku hakee kaiken. */
+  serverWasNewer: boolean
+  /** Palvelimen hylkäämät rivit. Ne jäävät jonoon ja yritetään seuraavalla kerralla. */
+  failed: number
+}
+
+/**
+ * Purkaa lähetysjonon rivi kerrallaan. Palvelimen hylkäämä rivi ohitetaan,
+ * jotta yksi ongelma ei pysäytä muita: muut treenit pääsevät silti perille.
+ * Verkon katkeaminen sen sijaan lopettaa purkamisen heti, koska silloin
+ * kaikki loputkin epäonnistuisivat.
+ */
+export async function pushAll<T>(
+  entries: T[],
+  send: (entry: T) => Promise<boolean>,
+  done: (entry: T) => Promise<void>,
+  isOffline: () => boolean,
+): Promise<PushResult> {
+  let serverWasNewer = false
+  let failed = 0
+  for (const entry of entries) {
+    try {
+      if (!(await send(entry))) serverWasNewer = true
+      await done(entry)
+    } catch (error) {
+      if (isOffline()) throw error
+      failed += 1
+    }
+  }
+  return { serverWasNewer, failed }
+}
