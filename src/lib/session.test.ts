@@ -9,7 +9,6 @@ import {
   canSwap,
   completeSet,
   isExerciseDone,
-  needsFeel,
   newSessionExercise,
   progress,
   removeLastSet,
@@ -162,17 +161,15 @@ describe('tuntuma', () => {
     return s
   }
 
-  it('kysytään kun liike on tehty', () => {
-    const s = benchDone()
-    expect(isExerciseDone(first(s, 1))).toBe(true)
-    expect(needsFeel(first(s, 1))).toBe(true)
+  it('liike on tehty kun kaikki sarjat on merkitty', () => {
+    expect(isExerciseDone(first(benchDone(), 1))).toBe(true)
   })
 
-  it('ei kysytä uudelleen vastauksen tai ohituksen jälkeen', () => {
-    expect(needsFeel(first(setFeel(benchDone(), 1, 0, 'easy'), 1))).toBe(false)
+  it('tallentaa vastauksen tai ohituksen', () => {
+    expect(first(setFeel(benchDone(), 1, 0, 'easy'), 1).feel).toBe('easy')
     const skipped = setFeel(benchDone(), 1, 0, 'skip')
     expect(first(skipped, 1).feelSkipped).toBe(true)
-    expect(needsFeel(first(skipped, 1))).toBe(false)
+    expect(first(skipped, 1).feel).toBeUndefined()
   })
 })
 

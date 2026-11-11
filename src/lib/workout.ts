@@ -26,13 +26,6 @@ export function isFromStrava(workout: Workout): boolean {
   return workout.measured !== undefined
 }
 
-/** Onko treenissä omaa sisältöä, vai pelkkä mittaus ilman kirjausta. */
-export function hasOwnLog(workout: Workout): boolean {
-  const logged = workout.logged
-  if (!logged) return false
-  return Boolean(logged.blocks?.length || logged.notes || logged.rpe)
-}
-
 /** Kaikki tehdyt sarjat lohkoista välittämättä, liikkeen tunnisteen kanssa. */
 function doneSets(workout: Workout) {
   return (workout.logged?.blocks ?? []).flatMap((block) =>
@@ -63,8 +56,4 @@ export function totalVolumeKg(
     const sides = isPerSide(set.exerciseId) ? 2 : 1
     return sum + set.weightKg * set.reps * sides
   }, 0)
-}
-
-export function totalSets(workout: Workout): number {
-  return doneSets(workout).length
 }

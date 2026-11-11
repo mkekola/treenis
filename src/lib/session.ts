@@ -281,20 +281,6 @@ export function isExerciseDone(exercise: SessionExercise): boolean {
   return exercise.sets.length > 0 && exercise.sets.every((set) => set.done)
 }
 
-/**
- * Tuntuma kysytään vain painoliikkeistä, koska progressiosääntö koskee vain
- * niitä, ja vain kerran: kun liike on tehty eikä kysymystä ole vielä
- * vastattu tai ohitettu.
- */
-export function needsFeel(exercise: SessionExercise): boolean {
-  return (
-    exercise.measurement === 'weight_reps' &&
-    isExerciseDone(exercise) &&
-    exercise.feel === undefined &&
-    !exercise.feelSkipped
-  )
-}
-
 export function setFeel(
   session: ActiveSession,
   block: number,

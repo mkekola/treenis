@@ -108,7 +108,7 @@ function startOf(workout: Workout): string {
 }
 
 /** Edellinen samasta pohjasta aloitettu treeni ennen annettua. */
-export function previousFromTemplate(templateId: string, current: Workout, history: Workout[]): Workout | undefined {
+function previousFromTemplate(templateId: string, current: Workout, history: Workout[]): Workout | undefined {
   return history
     .filter((w) => w.templateId === templateId && w.id !== current.id && startOf(w) < startOf(current))
     .sort((a, b) => startOf(b).localeCompare(startOf(a)))[0]

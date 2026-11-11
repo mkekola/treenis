@@ -234,6 +234,3 @@ export const SPORT_LABELS: Record<SportKey, string> = {
   pilates: 'Pilates',
   other: 'Muu',
 }
-
-/** Lajit joiden oma kirjausnäkymä on toteutettu. */
-export const ACTIVE_SPORTS: SportKey[] = ['strength']
