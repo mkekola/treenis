@@ -8,6 +8,7 @@ import {
   programToRow,
   pushAll,
   remoteAction,
+  stravaActivityFromRow,
   templateFromRow,
   templateToRow,
   toLocal,
@@ -143,5 +144,36 @@ describe('jonon purku', () => {
     sent.length = 0
     await expect(pushAll(['hylatty', 'a'], send, markDone, () => true)).rejects.toThrow()
     expect(sent).toEqual([])
+  })
+})
+
+describe('Strava-aktiviteetin rivi', () => {
+  it('jättää tyhjät kentät pois', () => {
+    expect(
+      stravaActivityFromRow({
+        id: 101,
+        sport_type: 'Run',
+        name: 'Iltalenkki',
+        started_at: '2026-11-12T15:02:00+00:00',
+        elapsed_sec: 2000,
+        moving_sec: 1900,
+        distance_m: 5012.4,
+        avg_hr: 151,
+        max_hr: null,
+        calories: null,
+        elevation_gain_m: null,
+        updated_at: '2026-11-12T16:00:00+00:00',
+        deleted_at: null,
+      }),
+    ).toEqual({
+      id: 101,
+      sportType: 'Run',
+      name: 'Iltalenkki',
+      startedAt: '2026-11-12T15:02:00+00:00',
+      elapsedSec: 2000,
+      movingSec: 1900,
+      distanceM: 5012.4,
+      avgHr: 151,
+    })
   })
 })

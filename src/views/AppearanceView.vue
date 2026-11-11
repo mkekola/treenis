@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AccountSection from '@/components/AccountSection.vue'
+import StravaSection from '@/components/StravaSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme, type ThemeMode } from '@/composables/useTheme'
 import { RECORD_SWATCH_ID, SWATCHES } from '@/design/swatches'
@@ -193,7 +194,9 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
       erottuu aina.
     </p>
 
-    <AccountSection class="mt-1" />
+    <StravaSection class="mt-1" />
+
+    <AccountSection />
 
     <!-- Noun Projectin ilmainen lisenssi vaatii tekijämaininnan. -->
     <section class="mb-6 rounded-(--radius-feature) bg-surface p-3.5">

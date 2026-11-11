@@ -218,6 +218,8 @@ export interface Workout {
   pendingMatch?: PendingMatch
   /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
   updatedAt?: string
+  /** Poistettu treeni jää laitteelle merkinnäksi, kunnes poisto on välittynyt synkassa. */
+  deletedAt?: string
 }
 
 export const SPORT_LABELS: Record<SportKey, string> = {

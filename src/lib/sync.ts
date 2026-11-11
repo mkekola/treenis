@@ -1,3 +1,4 @@
+import type { StravaActivity } from '@/lib/strava'
 import type {
   Block,
   Exercise,
@@ -199,4 +200,39 @@ export async function pushAll<T>(
     }
   }
   return { serverWasNewer, failed }
+}
+
+export interface StravaActivityRow {
+  id: number
+  sport_type: string
+  name: string
+  started_at: string
+  elapsed_sec: number
+  moving_sec: number | null
+  distance_m: number | null
+  avg_hr: number | null
+  max_hr: number | null
+  calories: number | null
+  elevation_gain_m: number | null
+  updated_at: string
+  deleted_at: string | null
+}
+
+/** Palvelimen rivi aktiviteetiksi. Tyhjät kentät jäävät pois kokonaan. */
+export function stravaActivityFromRow(row: StravaActivityRow): StravaActivity {
+  const optional = (key: keyof StravaActivity, value: number | null) =>
+    value !== null ? { [key]: value } : {}
+  return {
+    id: row.id,
+    sportType: row.sport_type,
+    name: row.name,
+    startedAt: row.started_at,
+    elapsedSec: row.elapsed_sec,
+    ...optional('movingSec', row.moving_sec),
+    ...optional('distanceM', row.distance_m),
+    ...optional('avgHr', row.avg_hr),
+    ...optional('maxHr', row.max_hr),
+    ...optional('calories', row.calories),
+    ...optional('elevationGainM', row.elevation_gain_m),
+  }
 }

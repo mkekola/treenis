@@ -44,6 +44,13 @@ export const router = createRouter({
       meta: { hideNav: true },
     },
     {
+      // Paluu Stravan lupasivulta. Julkinen, koska iPhonessa paluu voi osua Safariin.
+      path: '/strava',
+      name: 'strava-callback',
+      component: () => import('@/views/StravaCallbackView.vue'),
+      meta: { hideNav: true, public: true },
+    },
+    {
       path: '/kirjaudu',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),

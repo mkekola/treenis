@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie'
+import type { StravaActivity } from '@/lib/strava'
 import type { ActiveSession } from '@/types/session'
 import { DEFAULT_PROGRAM_ID, DEFAULT_PROGRAM_NAME } from '@/lib/program'
 import type { Exercise, Program, Workout, WorkoutTemplate } from '@/types/workout'
@@ -50,6 +51,7 @@ class TreenisDb extends Dexie {
   programs!: Table<Program, string>
   activeSession!: Table<ActiveSessionRecord, string>
   outbox!: Table<OutboxRecord, string>
+  stravaActivities!: Table<StravaActivity, number>
 
   constructor() {
     super('treenis')
@@ -119,6 +121,9 @@ class TreenisDb extends Dexie {
         await tx.table<Program, string>('programs').put(program)
         await outbox.put({ id: program.id, kind: 'program', updatedAt: now })
       })
+    // Versio 5 lisää Stravasta tuodut aktiviteetit. Sovellus yhdistää ne
+    // kirjattuihin treeneihin täällä, koska vain laite näkee synkkaamattomat treenit.
+    this.version(5).stores({ stravaActivities: 'id' })
   }
 }
 

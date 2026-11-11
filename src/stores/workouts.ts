@@ -1,16 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { db, plain } from '@/db'
+import { measuredFrom, workoutFromActivity } from '@/lib/strava'
 import type { Workout } from '@/types/workout'
 
 export const useWorkouts = defineStore('workouts', () => {
   const workouts = ref<Workout[]>([])
 
   async function load() {
-    workouts.value = await db.workouts.toArray()
+    workouts.value = (await db.workouts.toArray()).filter((w) => !w.deletedAt)
   }
 
   function upsertInList(workout: Workout) {
+    if (workout.deletedAt) {
+      workouts.value = workouts.value.filter((w) => w.id !== workout.id)
+      return
+    }
     const index = workouts.value.findIndex((w) => w.id === workout.id)
     if (index === -1) workouts.value.push(workout)
     else workouts.value[index] = workout
@@ -29,6 +34,12 @@ export const useWorkouts = defineStore('workouts', () => {
     upsertInList(saved)
   }
 
+  /** Poisto on tallennus poistomerkinnällä, jotta se välittyy muille laitteille. */
+  async function remove(id: string) {
+    const workout = await db.workouts.get(id)
+    if (workout) await save({ ...workout, deletedAt: new Date().toISOString() })
+  }
+
   /** Palvelimelta tullut versio. Ei mene jonoon, koska se on jo palvelimella. */
   async function applyRemote(workout: Workout) {
     await db.workouts.put(plain(workout))
@@ -40,24 +51,27 @@ export const useWorkouts = defineStore('workouts', () => {
     workouts.value = workouts.value.filter((w) => w.id !== id)
   }
 
-  /** Mitattu voittaa kirjatun: Stravan kesto korvaa oman ajastuksen. */
+  /** Mitattu voittaa kirjatun: Stravan kesto ja syke täydentävät oman kirjauksen. */
   async function confirmMatch(id: string) {
     const workout = workouts.value.find((w) => w.id === id)
     if (!workout?.pendingMatch) return
     const { stravaActivityId, startedAt, durationSec } = workout.pendingMatch
+    const activity = await db.stravaActivities.get(stravaActivityId)
     await save({
       ...workout,
-      measured: { stravaActivityId, startedAt, durationSec },
+      measured: activity ? measuredFrom(activity) : { stravaActivityId, startedAt, durationSec },
       pendingMatch: undefined,
     })
   }
 
-  /** Hylätystä aktiviteetista tulee oma merkintänsä kun Strava-tuonti on pystyssä. */
+  /** "Ei sama": aktiviteetista tulee oma treeninsä, eikä samaa kysytä uudelleen. */
   async function rejectMatch(id: string) {
     const workout = workouts.value.find((w) => w.id === id)
-    if (!workout) return
+    if (!workout?.pendingMatch) return
+    const activity = await db.stravaActivities.get(workout.pendingMatch.stravaActivityId)
     await save({ ...workout, pendingMatch: undefined })
+    if (activity) await save(workoutFromActivity(activity))
   }
 
-  return { workouts, load, save, applyRemote, removeLocal, confirmMatch, rejectMatch }
+  return { workouts, load, save, remove, applyRemote, removeLocal, confirmMatch, rejectMatch }
 })

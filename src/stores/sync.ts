@@ -20,6 +20,7 @@ import {
 } from '@/lib/sync'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
+import { useStrava } from '@/stores/strava'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 
@@ -48,6 +49,7 @@ function writeLastPull(value: string | null) {
  */
 export const useSync = defineStore('sync', () => {
   const workouts = useWorkouts()
+  const strava = useStrava()
   const templates = useTemplates()
   const exercises = useExercises()
   const programs = usePrograms()
@@ -177,6 +179,10 @@ export const useSync = defineStore('sync', () => {
       await pullTemplates()
       await pullPrograms()
       await pullExercises()
+      // Strava sovitetaan vasta kun laitteen treenit ovat ajan tasalla. Strava-
+      // virhe ei tee koko synkasta virheellistä: kirjatut treenit kulkivat jo.
+      const stravaChanged = await strava.sync().catch(() => false)
+      if (stravaChanged) await push(data.session.user.id)
       state.value = failed > 0 ? 'error' : 'idle'
     } catch {
       // Jono säilyy, joten mitään ei menetetä: seuraava ajo yrittää uudelleen.
