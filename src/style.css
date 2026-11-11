@@ -8,10 +8,11 @@
 :root {
   --c-bg: #fbf5f4;
   --c-surface: #ffffff;
-  --c-ink: #1f1a1c;
+  --c-ink: #2b2327;
   --c-ink-muted: #6b6066;
   --c-line: #ede3e1;
-  --c-action: #2a2328;
+  /* Syvä luumu lähes mustan sijaan: pääpainike pysyy selvänä, mutta ei ole ruudun kovin kohta. */
+  --c-action: #4a3a48;
   --c-on-action: #ffffff;
   --c-track: #f3e9e7;
   color-scheme: light;
@@ -19,27 +20,29 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --c-bg: #15121a;
-    --c-surface: #201c27;
-    --c-ink: #f3eff2;
+    --c-bg: #18141c;
+    --c-surface: #221d29;
+    --c-ink: #ece5ea;
     --c-ink-muted: #a89fa8;
     --c-line: #332d3a;
-    --c-action: #f3eff2;
-    --c-on-action: #15121a;
-    --c-track: #2a2533;
+    /* Vaalea syreeni kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
+    --c-action: #e3d6e4;
+    --c-on-action: #18141c;
+    --c-track: #2b2236;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --c-bg: #15121a;
-  --c-surface: #201c27;
-  --c-ink: #f3eff2;
+  --c-bg: #18141c;
+  --c-surface: #221d29;
+  --c-ink: #ece5ea;
   --c-ink-muted: #a89fa8;
   --c-line: #332d3a;
-  --c-action: #f3eff2;
-  --c-on-action: #15121a;
-  --c-track: #2a2533;
+  /* Vaalea syreeni kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
+  --c-action: #e3d6e4;
+  --c-on-action: #18141c;
+  --c-track: #2b2236;
   color-scheme: dark;
 }
 
@@ -57,11 +60,12 @@
   --font-display: 'Bricolage Grotesque', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
+  /* Pehmeä muoto: napit pillereitä, kortit pyöreämpiä. Kortit erottuvat sävyllä, ei viivoilla. */
   --radius-chip: 8px;
-  --radius-field: 14px;
-  --radius-button: 16px;
-  --radius-card: 18px;
-  --radius-feature: 24px;
+  --radius-field: 16px;
+  --radius-button: 999px;
+  --radius-card: 22px;
+  --radius-feature: 28px;
 }
 
 @layer base {
@@ -93,7 +97,31 @@
   }
 }
 
+/* Rauhallinen liike. Kaikki tämä jää pois, jos puhelimessa on liikkeen vähennys päällä (alla). */
+.page-enter-active {
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+/* Napin painallus joustaa hieman, jotta kosketus tuntuu. */
+:where(button, a):not(:disabled) {
+  transition: transform 120ms ease-out;
+}
+:where(button, a):not(:disabled):active {
+  transform: scale(0.98);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .page-enter-from,
+  :where(button, a):not(:disabled):active {
+    transform: none;
+  }
+
   *,
   *::before,
   *::after {

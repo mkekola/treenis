@@ -5,7 +5,7 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 const STORAGE_KEY = 'treenis.theme'
 
 /** Status bar -värit iOS:n PWA:ta varten, samat kuin --c-bg molemmissa teemoissa. */
-const THEME_COLOR = { light: '#FBF5F4', dark: '#15121A' }
+const THEME_COLOR = { light: '#FBF5F4', dark: '#18141C' }
 
 function load(): ThemeMode {
   try {

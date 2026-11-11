@@ -54,7 +54,7 @@ async function preview(template: WorkoutTemplate) {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-3 px-5 pt-5">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-5">
     <RouterLink
       to="/"
       aria-label="Takaisin päiväkirjaan"

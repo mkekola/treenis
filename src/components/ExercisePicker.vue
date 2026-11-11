@@ -106,7 +106,7 @@ function onBackdropClick(event: MouseEvent) {
         Lihasryhmä
         <select
           v-model="newGroup"
-          class="mt-1 block h-12 w-full rounded-[14px] border border-line bg-surface px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
+          class="mt-1 block h-12 w-full rounded-(--radius-field) border border-line bg-surface px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
         >
           <option v-for="(label, key) in MUSCLE_GROUP_LABELS" :key="key" :value="key">
             {{ label }}
@@ -118,7 +118,7 @@ function onBackdropClick(event: MouseEvent) {
         Mitä kirjataan
         <select
           v-model="newMeasurement"
-          class="mt-1 block h-12 w-full rounded-[14px] border border-line bg-surface px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
+          class="mt-1 block h-12 w-full rounded-(--radius-field) border border-line bg-surface px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
         >
           <option v-for="(label, key) in MEASUREMENT_LABELS" :key="key" :value="key">
             {{ label }}
@@ -159,7 +159,7 @@ function onBackdropClick(event: MouseEvent) {
           inputmode="search"
           autocomplete="off"
           placeholder="Hae liikettä, esim. kyykky"
-          class="h-12 w-full rounded-[14px] border border-line bg-surface px-3.5 text-base"
+          class="h-12 w-full rounded-(--radius-field) border border-line bg-surface px-3.5 text-base"
         />
       </div>
 
@@ -172,7 +172,7 @@ function onBackdropClick(event: MouseEvent) {
             <li v-for="exercise in recents" :key="`recent-${exercise.id}`">
               <button
                 type="button"
-                class="flex min-h-12 w-full flex-col justify-center rounded-[14px] bg-surface px-3.5 py-2 text-left"
+                class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
                 @click="emit('select', exercise)"
               >
                 <span class="text-[15px] font-semibold">{{ exercise.name }}</span>
@@ -189,7 +189,7 @@ function onBackdropClick(event: MouseEvent) {
           <li v-for="exercise in results" :key="exercise.id">
             <button
               type="button"
-              class="flex min-h-12 w-full flex-col justify-center rounded-[14px] bg-surface px-3.5 py-2 text-left"
+              class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
               @click="emit('select', exercise)"
             >
               <span class="flex items-center gap-2">

@@ -56,7 +56,7 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-3 px-5 pt-6">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-6">
     <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Ulkoasu</h1>
 
     <!-- Teema -->

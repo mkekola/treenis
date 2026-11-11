@@ -107,7 +107,7 @@ const rowId = useId()
   <!-- Tehty -->
   <div
     v-if="state === 'done'"
-    class="flex items-center gap-2.5 rounded-[14px] bg-surface py-2 pr-2 pl-3"
+    class="flex items-center gap-2.5 rounded-(--radius-field) bg-surface py-2 pr-2 pl-3"
   >
     <span
       aria-hidden="true"
@@ -131,7 +131,7 @@ const rowId = useId()
   <!-- Vuorossa, ensimmäinen kerta: paino puuttuu -->
   <div
     v-else-if="prompting"
-    class="rounded-[14px] border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
+    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
   >
     <div class="flex items-center gap-2.5">
       <span
@@ -182,7 +182,7 @@ const rowId = useId()
   <!-- Vuorossa -->
   <div
     v-else-if="state === 'current'"
-    class="rounded-[14px] border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
+    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
   >
     <div class="flex items-center gap-2.5">
       <span
@@ -267,7 +267,7 @@ const rowId = useId()
   </div>
 
   <!-- Tulossa -->
-  <div v-else class="flex items-center gap-2.5 rounded-[14px] bg-surface/55 py-2 pr-2 pl-3">
+  <div v-else class="flex items-center gap-2.5 rounded-(--radius-field) bg-surface/55 py-2 pr-2 pl-3">
     <span
       aria-hidden="true"
       class="flex size-6 flex-none items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--sport-on)_14%,transparent)] text-xs font-bold text-[var(--sport-on)]"

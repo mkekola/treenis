@@ -174,7 +174,7 @@ async function deleteTemplate() {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-3 px-5 pt-5" :style="vars">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-5" :style="vars">
     <RouterLink
       :to="backTo"
       :aria-label="`Takaisin: ${program?.name ?? 'Ohjelmat'}`"

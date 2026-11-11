@@ -82,7 +82,7 @@ async function begin() {
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col gap-3 px-5 pt-5 pb-28">
+  <div class="flex min-h-dvh flex-col gap-4 px-5 pt-5 pb-28">
     <RouterLink
       to="/treeni/uusi"
       aria-label="Takaisin treenin valintaan"

@@ -182,7 +182,7 @@ async function discard() {
           v-model="notes"
           rows="2"
           placeholder="Miltä tuntui?"
-          class="w-full resize-none rounded-[14px] border border-line bg-surface px-3 py-2.5 text-[15px]"
+          class="w-full resize-none rounded-(--radius-field) border border-line bg-surface px-3 py-2.5 text-[15px]"
           @input="session.setNotes(notes)"
         />
       </div>

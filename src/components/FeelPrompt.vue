@@ -40,7 +40,7 @@ const rows: Feel[][] = [
           v-for="option in row"
           :key="option"
           type="button"
-          class="min-h-12 flex-1 rounded-[14px] px-1 text-sm"
+          class="min-h-12 flex-1 rounded-(--radius-field) px-1 text-sm"
           :class="
             feel === option
               ? 'bg-action font-bold text-on-action'

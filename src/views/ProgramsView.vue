@@ -26,7 +26,7 @@ async function create() {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-3 px-5 pt-6">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-6">
     <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Ohjelmat</h1>
     <p class="-mt-1 text-[13px] text-ink-muted">
       Ohjelma kokoaa treenit, joita teet vuorotellen. Käytössä olevan ohjelman treenit tulevat
