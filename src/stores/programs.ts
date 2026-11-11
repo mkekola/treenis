@@ -4,7 +4,7 @@ import { db, plain } from '@/db'
 import { activate, activeProgram, addTemplate, removeTemplate } from '@/lib/program'
 import { newTemplate } from '@/lib/template'
 import { useTemplates } from '@/stores/templates'
-import type { Program } from '@/types/workout'
+import type { Program, WorkoutTemplate } from '@/types/workout'
 
 export const usePrograms = defineStore('programs', () => {
   const templates = useTemplates()
@@ -55,14 +55,24 @@ export const usePrograms = defineStore('programs', () => {
     if (program) await save(activate(program, new Date()))
   }
 
-  /** Uusi tyhjä treeni ohjelman loppuun. Palauttaa treenin tunnisteen muokkausta varten. */
-  async function createTemplate(programId: string): Promise<string | null> {
+  /** Lisää valmiin treenin ohjelman loppuun. */
+  async function addTemplateTo(programId: string, template: WorkoutTemplate) {
     const program = byId(programId)
-    if (!program) return null
-    const number = program.templateIds.length + 1
-    const template = newTemplate(`template-${crypto.randomUUID()}`, `Treeni ${number}`)
+    if (!program) return
     await templates.save(template)
     await save(addTemplate(program, template.id))
+  }
+
+  /** Seuraava vapaa oletusnimi ohjelmassa: Treeni 1, Treeni 2 … */
+  function nextTemplateName(programId: string): string {
+    return `Treeni ${(byId(programId)?.templateIds.length ?? 0) + 1}`
+  }
+
+  /** Uusi tyhjä treeni ohjelman loppuun. Palauttaa treenin tunnisteen muokkausta varten. */
+  async function createTemplate(programId: string): Promise<string | null> {
+    if (!byId(programId)) return null
+    const template = newTemplate(`template-${crypto.randomUUID()}`, nextTemplateName(programId))
+    await addTemplateTo(programId, template)
     return template.id
   }
 
@@ -100,6 +110,8 @@ export const usePrograms = defineStore('programs', () => {
     ownerOf,
     create,
     makeActive,
+    addTemplateTo,
+    nextTemplateName,
     createTemplate,
     deleteTemplate,
     remove,

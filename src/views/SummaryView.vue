@@ -5,6 +5,7 @@ import { formatDurationShort, formatShortDate } from '@/lib/format'
 import { findRecords } from '@/lib/records'
 import { localDate, progress, toWorkout } from '@/lib/session'
 import { totalVolumeKg } from '@/lib/workout'
+import SaveTemplateSheet from '@/components/SaveTemplateSheet.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
@@ -51,6 +52,17 @@ const kgFormat = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
 const kg = (value: number) => kgFormat.format(value)
 
 const notes = ref(active.value?.notes ?? '')
+
+// Tyhjästä aloitetun treenin voi tallentaa pohjaksi. Pohjasta aloitettua ei,
+// koska sen muutokset käsitellään pohjan päivityksenä.
+const canSaveTemplate = computed(() => !active.value?.templateId)
+const savingTemplate = ref(false)
+const savedTemplate = ref('')
+
+function onTemplateSaved(templateName: string, programName: string) {
+  savingTemplate.value = false
+  savedTemplate.value = `${templateName} tallennettu ohjelmaan ${programName}.`
+}
 
 async function finish() {
   await session.finish()
@@ -177,13 +189,35 @@ async function discard() {
 
       <div class="flex-1" />
 
+      <template v-if="canSaveTemplate">
+        <p v-if="savedTemplate" role="status" class="mt-4 text-center text-[13px] text-ink-muted">
+          {{ savedTemplate }}
+        </p>
+        <button
+          v-else
+          type="button"
+          class="mt-4 min-h-13 rounded-(--radius-button) border border-line text-base font-semibold"
+          @click="savingTemplate = true"
+        >
+          Tallenna pohjaksi…
+        </button>
+      </template>
+
       <button
         type="button"
-        class="mt-4 min-h-13 rounded-(--radius-button) bg-action text-base font-semibold text-on-action"
+        :class="canSaveTemplate ? 'mt-2' : 'mt-4'"
+        class="min-h-13 rounded-(--radius-button) bg-action text-base font-semibold text-on-action"
         @click="finish"
       >
         Valmis
       </button>
+
+      <SaveTemplateSheet
+        :open="savingTemplate"
+        :session="active"
+        @close="savingTemplate = false"
+        @saved="onTemplateSaved"
+      />
     </template>
   </div>
 </template>

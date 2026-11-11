@@ -5,6 +5,7 @@ import {
   canJoin,
   canMove,
   detach,
+  fromSession,
   joinWithPrevious,
   move,
   newTemplate,
@@ -14,6 +15,7 @@ import {
   targetOf,
 } from '@/lib/template'
 import { exercise } from '@/test/fixtures'
+import type { ActiveSession } from '@/types/session'
 import type { WorkoutTemplate } from '@/types/workout'
 
 const templateA = initialTemplates[0]
@@ -110,5 +112,62 @@ describe('supersarja', () => {
 
   it('poisto supersarjasta jättää lohkon toisen liikkeen', () => {
     expect(ids(removeExercise(joined, { block: 1, exercise: 0 }))[1]).toEqual(['calf-raise'])
+  })
+})
+
+describe('pohja treenistä', () => {
+  const session: ActiveSession = {
+    id: 's',
+    title: 'Salitreeni',
+    startedAt: '2026-11-11T16:00:00Z',
+    updatedAt: '2026-11-11T17:00:00Z',
+    currentBlock: 0,
+    blocks: [
+      {
+        id: 'b1',
+        restSec: 120,
+        exercises: [
+          {
+            exerciseId: 'back-squat',
+            measurement: 'weight_reps',
+            target: { sets: 3, reps: 10 },
+            // Lisätty neljäs sarja, ja toistoja muutettu 12:een.
+            sets: [
+              { reps: 12, weightKg: 60, done: true },
+              { reps: 12, weightKg: 60, done: true },
+              { reps: 10, weightKg: 60, done: true },
+              { reps: 12, weightKg: 60, done: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'b2',
+        restSec: 60,
+        exercises: [
+          {
+            exerciseId: 'plank',
+            measurement: 'time',
+            target: { sets: 2, reps: 10 },
+            sets: [{ durationSec: 45, done: false }, { durationSec: 45, done: false }],
+          },
+        ],
+      },
+    ],
+  }
+  const t = fromSession(session, 'template-x', 'Treeni 3')
+
+  it('ottaa sarjamäärän riveistä ja toistoiksi yleisimmän', () => {
+    expect(targetOf(t.blocks[0].exercises[0])).toMatchObject({ sets: 4, reps: 12 })
+  })
+
+  it('ottaa mukaan myös tekemättömät liikkeet, aikaliikkeelle keston', () => {
+    expect(targetOf(t.blocks[1].exercises[0])).toMatchObject({ sets: 2, durationSec: 45 })
+  })
+
+  it('pitää levot, eikä tallenna painoja tai tehtyjä merkintöjä', () => {
+    expect(t.blocks.map((b) => b.restSec)).toEqual([120, 60])
+    const sets = t.blocks.flatMap((b) => b.exercises.flatMap((e) => e.sets))
+    expect(sets.every((s) => !s.done && s.weightKg === undefined)).toBe(true)
   })
 })

@@ -1,4 +1,5 @@
 import { defaultSets } from '@/lib/session'
+import type { ActiveSession } from '@/types/session'
 import type { Block, BlockExercise, Exercise, Measurement, WorkoutTemplate } from '@/types/workout'
 
 /**
@@ -139,4 +140,49 @@ export function detach(template: WorkoutTemplate, at: ExerciseRef, blockId: stri
 
 export function exerciseCount(template: WorkoutTemplate): number {
   return template.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
+}
+
+/** Yleisin arvo. Tasapelissä ensimmäisenä tullut, eli liikkeen ensimmäinen sarja ratkaisee. */
+function mostCommon(values: number[]): number | undefined {
+  let best: number | undefined
+  let bestCount = 0
+  const counts = new Map<number, number>()
+  for (const value of values) {
+    const count = (counts.get(value) ?? 0) + 1
+    counts.set(value, count)
+    if (count > bestCount) {
+      best = value
+      bestCount = count
+    }
+  }
+  return best
+}
+
+/**
+ * Pohja treenistä sellaisena kuin se näytti lopussa: kaikki liikkeet (myös
+ * tekemättömät), sarjamäärä riveistä ja toistot rivien yleisimmästä arvosta.
+ * Näin lisätty sarja tai muutettu toistomäärä jää pohjaan, mutta oletus
+ * 3 × 10 ei jää, jos sitä muutti.
+ */
+export function fromSession(session: ActiveSession, id: string, name: string): WorkoutTemplate {
+  const blocks: Block[] = session.blocks.map((block) => ({
+    id: block.id,
+    restSec: block.restSec,
+    exercises: block.exercises.map((entry) => {
+      const time = entry.measurement === 'time'
+      const value =
+        mostCommon(
+          entry.sets
+            .map((set) => (time ? set.durationSec : set.reps))
+            .filter((v): v is number => v !== undefined && v > 0),
+        ) ?? (time ? 30 : DEFAULT_REPS)
+      return {
+        exerciseId: entry.exerciseId,
+        sets: entry.sets.map(() =>
+          time ? { durationSec: value, done: false } : { reps: value, done: false },
+        ),
+      }
+    }),
+  }))
+  return { id, name, blocks }
 }
