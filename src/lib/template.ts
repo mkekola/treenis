@@ -186,3 +186,30 @@ export function fromSession(session: ActiveSession, id: string, name: string): W
   }))
   return { id, name, blocks }
 }
+
+/** Arvioitu työaika sarjaa kohden. Tarkentuu myöhemmin, kun historiaa on. */
+const WORK_SEC_PER_SET = 40
+
+/**
+ * Arvioitu kesto: jokainen kierros on lohkon liikkeiden sarjat peräkkäin ja
+ * lepo perään. Viimeisen kierroksen jälkeen ei levätä. Pyöristetään viiteen
+ * minuuttiin, koska tarkempi luku lupaisi enemmän kuin arvio tietää.
+ */
+export function estimateDurationSec(template: WorkoutTemplate): number {
+  const rounds = template.blocks.map((block) => ({
+    count: Math.max(0, ...block.exercises.map((e) => e.sets.length)),
+    work: block.exercises.length * WORK_SEC_PER_SET,
+    rest: block.restSec,
+  }))
+  const total = rounds.reduce((sum, r) => sum + r.count * (r.work + r.rest), 0)
+  const lastRest = rounds.length ? rounds[rounds.length - 1].rest : 0
+  const fiveMin = 5 * 60
+  return Math.max(0, Math.round((total - lastRest) / fiveMin) * fiveMin)
+}
+
+export function setCount(template: WorkoutTemplate): number {
+  return template.blocks.reduce(
+    (sum, block) => sum + block.exercises.reduce((s, e) => s + e.sets.length, 0),
+    0,
+  )
+}

@@ -47,9 +47,9 @@ async function beginBlank() {
   await router.push('/treeni')
 }
 
-async function begin(template: WorkoutTemplate) {
-  await session.start(template)
-  await router.push('/treeni')
+/** Treenin napautus avaa aina esikatselun: liikkeet ja tämän kerran painot näkyvät ennen aloitusta. */
+async function preview(template: WorkoutTemplate) {
+  await router.push({ name: 'preview', params: { templateId: template.id } })
 }
 </script>
 
@@ -96,7 +96,7 @@ async function begin(template: WorkoutTemplate) {
         type="button"
         :style="vars"
         class="flex items-center gap-3 rounded-(--radius-card) bg-surface p-3.5 text-left"
-        @click="begin(template)"
+        @click="preview(template)"
       >
         <span
           aria-hidden="true"
@@ -146,7 +146,7 @@ async function begin(template: WorkoutTemplate) {
           :key="template.id"
           type="button"
           class="flex min-h-12 items-center justify-between gap-3 rounded-(--radius-card) bg-surface px-3.5 py-2.5 text-left"
-          @click="begin(template)"
+          @click="preview(template)"
         >
           <span class="font-semibold">{{ template.name }}</span>
           <span class="text-[13px] text-ink-muted" data-numeric>

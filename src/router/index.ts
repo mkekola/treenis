@@ -18,6 +18,12 @@ export const router = createRouter({
       meta: { hideNav: true },
     },
     {
+      path: '/treeni/esikatselu/:templateId',
+      name: 'preview',
+      component: () => import('@/views/WorkoutPreviewView.vue'),
+      meta: { hideNav: true },
+    },
+    {
       path: '/treeni/yhteenveto',
       name: 'summary',
       component: () => import('@/views/SummaryView.vue'),

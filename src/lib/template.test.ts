@@ -5,12 +5,14 @@ import {
   canJoin,
   canMove,
   detach,
+  estimateDurationSec,
   fromSession,
   joinWithPrevious,
   move,
   newTemplate,
   removeExercise,
   setRest,
+  setCount,
   setTarget,
   targetOf,
 } from '@/lib/template'
@@ -169,5 +171,22 @@ describe('pohja treenistä', () => {
     expect(t.blocks.map((b) => b.restSec)).toEqual([120, 60])
     const sets = t.blocks.flatMap((b) => b.exercises.flatMap((e) => e.sets))
     expect(sets.every((s) => !s.done && s.weightKg === undefined)).toBe(true)
+  })
+})
+
+describe('kestoarvio', () => {
+  it('laskee sarjat ja levot, viimeisen levon pois, viiden minuutin tarkkuudella', () => {
+    // Treeni 1: 17 sarjaa × (40 s + 90 s) − 90 s ≈ 35 min
+    expect(setCount(templateA)).toBe(17)
+    expect(estimateDurationSec(templateA)).toBe(35 * 60)
+  })
+
+  it('supersarjassa levätään vasta kierroksen jälkeen', () => {
+    const joined = joinWithPrevious(templateA, 2)
+    expect(estimateDurationSec(joined)).toBeLessThan(estimateDurationSec(templateA))
+  })
+
+  it('tyhjä pohja on nolla minuuttia', () => {
+    expect(estimateDurationSec(newTemplate('t', 'Tyhjä'))).toBe(0)
   })
 })
