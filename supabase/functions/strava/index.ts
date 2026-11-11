@@ -8,6 +8,10 @@
 //               sovelluksessa paluu voi osua Safariin, joten käyttäjän kertoo state
 //   import      hakee uudet aktiviteetit (sovellus kutsuu avattaessa)
 //   disconnect  katkaisee yhteyden ja poistaa tuodut aktiviteetit
+//
+// Webhook: Strava vahvistaa tilauksen GET-pyynnöllä ja ilmoittaa muutoksista
+// POST-pyynnöllä ilman actionia. Osoite on julkinen, joten ilmoituksen
+// sisältöön ei luoteta: jokainen tapahtuma tarkistetaan Stravalta.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -17,6 +21,10 @@ const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET') ?? ''
 // Stravan API siirtyy osoitteeseen https://api-v3.strava.com 4.1.2027, joten osoitteet ovat asetuksia.
 const API_BASE = Deno.env.get('STRAVA_API_BASE') ?? 'https://www.strava.com/api/v3'
 const OAUTH_BASE = Deno.env.get('STRAVA_OAUTH_BASE') ?? 'https://www.strava.com/oauth'
+const WEBHOOK_VERIFY_TOKEN = Deno.env.get('STRAVA_WEBHOOK_VERIFY_TOKEN') ?? ''
+
+// Supabasen ajoympäristö: työ jatkuu vastauksen jälkeen. Strava odottaa vastausta kahdessa sekunnissa.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void }
 
 const ALLOWED_REDIRECTS = [/^https:\/\/treenis\.kekola\.fi\//, /^http:\/\/localhost:\d+\//]
 const STATE_MAX_AGE_MS = 15 * 60 * 1000
@@ -228,13 +236,72 @@ async function disconnect(userId: string) {
   return { connected: false }
 }
 
+// ---------------------------------------------------------------------- webhook
+
+/** Stravan tilausvahvistus: vastataan haasteeseen, jos tunniste täsmää. */
+function verifySubscription(url: URL): Response {
+  const ok =
+    url.searchParams.get('hub.mode') === 'subscribe' &&
+    WEBHOOK_VERIFY_TOKEN !== '' &&
+    url.searchParams.get('hub.verify_token') === WEBHOOK_VERIFY_TOKEN
+  if (!ok) return json({ error: 'Tuntematon tilaus.' }, 403)
+  return json({ 'hub.challenge': url.searchParams.get('hub.challenge') })
+}
+
+interface WebhookEvent {
+  object_type: 'activity' | 'athlete'
+  object_id: number
+  aspect_type: 'create' | 'update' | 'delete'
+  owner_id: number
+}
+
+async function handleEvent(event: WebhookEvent) {
+  const { data: conn } = await admin
+    .from('strava_connections')
+    .select('user_id')
+    .eq('athlete_id', event.owner_id)
+    .maybeSingle()
+  if (!conn) return
+  const token = await accessToken(conn.user_id)
+  if (!token) return
+
+  // Luvan perumisesta kertova ilmoitus: varmistetaan kysymällä Stravalta itseltään.
+  if (event.object_type === 'athlete') {
+    const res = await fetch(`${API_BASE}/athlete`, { headers: { Authorization: `Bearer ${token}` } })
+    if (res.status === 401) await forget(conn.user_id)
+    return
+  }
+
+  const res = await fetch(`${API_BASE}/activities/${event.object_id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const now = new Date().toISOString()
+  if (res.status === 404) {
+    // Aktiviteettia ei enää ole: merkitään poistetuksi, jotta sovellus siivoaa oman merkintänsä.
+    await admin
+      .from('strava_activities')
+      .update({ deleted_at: now, updated_at: now })
+      .eq('user_id', conn.user_id)
+      .eq('id', event.object_id)
+    return
+  }
+  if (!res.ok) return
+  const activity = (await res.json()) as StravaSummary
+  await admin.from('strava_activities').upsert(rowOf(conn.user_id, activity, now))
+}
+
 // ---------------------------------------------------------------------- reititys
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (req.method === 'GET') return verifySubscription(new URL(req.url))
   if (req.method !== 'POST') return json({ error: 'Tuntematon pyyntö.' }, 405)
 
   const body = await req.json().catch(() => ({}))
+  if (body.action === undefined && body.aspect_type) {
+    EdgeRuntime.waitUntil(handleEvent(body as WebhookEvent).catch((e) => console.error(e)))
+    return json({ ok: true })
+  }
   try {
     switch (body.action) {
       case 'start':
