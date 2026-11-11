@@ -25,7 +25,7 @@ export const ICON_CREDITS: IconCredit[] = [
   { sport: 'bike', iconName: 'Bike', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/bike-3202509/' },
   { sport: 'climb', iconName: 'climb', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/climb-2195072/' },
   { sport: 'windsurf', iconName: 'sail', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/sail-4592630/' },
-  { sport: 'wingfoil', iconName: 'watersport', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/watersport-4847150/' },
+  { sport: 'kitesurf', iconName: 'watersport', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/watersport-4847150/' },
   { sport: 'yoga', iconName: 'yoga', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/yoga-2334496/' },
   { sport: 'pilates', iconName: 'Pilates', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/pilates-4310910/' },
   { sport: 'alpine', iconName: 'freestyle', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/freestyle-4516834/' },

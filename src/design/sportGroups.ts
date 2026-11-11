@@ -36,7 +36,7 @@ export const SPORT_GROUP_OF: Record<SportKey, SportGroupKey> = {
   bike: 'cycling',
   swim: 'water',
   windsurf: 'water',
-  wingfoil: 'water',
+  kitesurf: 'water',
   nordic: 'winter',
   alpine: 'winter',
   skating: 'winter',
