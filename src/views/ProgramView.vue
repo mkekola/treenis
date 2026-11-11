@@ -9,7 +9,8 @@ import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
-import type { WorkoutTemplate } from '@/types/workout'
+import { DEFAULT_PROGRAM_COLOR, PROGRAM_COLORS, programVars } from '@/design/programPalette'
+import { PROGRAM_LEVEL_LABELS, type Program, type ProgramLevel, type WorkoutTemplate } from '@/types/workout'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +62,31 @@ onMounted(async () => {
   nameInput.value?.focus()
   nameInput.value?.select()
 })
+
+// ---------------------------------------------------------------- tiedot
+
+const currentColor = computed(() => program.value?.color ?? DEFAULT_PROGRAM_COLOR)
+
+/** Tavallisimmat jaksojen pituudet. Jo tallennettu muu arvo pysyy listalla. */
+const durationOptions = computed(() => {
+  const common = [4, 6, 8, 10, 12, 16]
+  const current = program.value?.durationWeeks
+  return current && !common.includes(current) ? [...common, current].sort((a, b) => a - b) : common
+})
+
+function update(change: Partial<Program>) {
+  if (program.value) void programs.save({ ...program.value, ...change })
+}
+
+function onDuration(event: Event) {
+  const value = Number((event.target as HTMLSelectElement).value)
+  update({ durationWeeks: value > 0 ? value : undefined })
+}
+
+function onLevel(event: Event) {
+  const value = (event.target as HTMLSelectElement).value as ProgramLevel | ''
+  update({ level: value || undefined })
+}
 
 // ------------------------------------------------------------ toiminnot
 
@@ -134,6 +160,78 @@ async function deleteProgram() {
       >
         Ota käyttöön
       </button>
+
+      <!-- Ohjelman tiedot: väri erottaa ohjelmat toisistaan, kesto ja taso näkyvät kortilla. -->
+      <section class="flex flex-col gap-3 rounded-(--radius-feature) bg-surface p-3.5" aria-labelledby="ohjelman-tiedot">
+        <h2 id="ohjelman-tiedot" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+          Tiedot
+        </h2>
+
+        <!-- Seitsemän väriä yhdellä rivillä: yksin jäävä väri näyttäisi unohtuneelta. -->
+        <fieldset class="grid grid-cols-7 gap-1.5">
+          <legend class="sr-only">Ohjelman väri</legend>
+          <label
+            v-for="color in PROGRAM_COLORS"
+            :key="color.id"
+            :style="programVars(color.id, isDark)"
+            class="flex justify-center"
+          >
+            <input
+              type="radio"
+              name="ohjelman-vari"
+              class="peer sr-only"
+              :value="color.id"
+              :checked="currentColor === color.id"
+              @change="update({ color: color.id })"
+            />
+            <span class="sr-only">{{ color.name }}</span>
+            <span
+              aria-hidden="true"
+              class="flex aspect-square w-full max-w-11 items-center justify-center rounded-full bg-[var(--program-surface)] text-[var(--program-on)] peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-ink peer-focus-visible:ring-2 peer-focus-visible:ring-ink peer-focus-visible:ring-offset-2"
+            >
+              <svg
+                v-if="currentColor === color.id"
+                class="size-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="5,13 10,18 19,7" />
+              </svg>
+            </span>
+          </label>
+        </fieldset>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
+            Kesto
+            <select
+              :value="program.durationWeeks ?? ''"
+              class="mt-1 block h-12 w-full rounded-(--radius-field) border border-line bg-bg px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
+              @change="onDuration"
+            >
+              <option value="">Ei kestoa</option>
+              <option v-for="weeks in durationOptions" :key="weeks" :value="weeks">{{ weeks }} viikkoa</option>
+            </select>
+          </label>
+          <label class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
+            Taso
+            <select
+              :value="program.level ?? ''"
+              class="mt-1 block h-12 w-full rounded-(--radius-field) border border-line bg-bg px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
+              @change="onLevel"
+            >
+              <option value="">Ei tasoa</option>
+              <option v-for="(label, level) in PROGRAM_LEVEL_LABELS" :key="level" :value="level">
+                {{ label }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </section>
 
       <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
         Treenit

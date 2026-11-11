@@ -104,6 +104,9 @@ describe('ohjelman rivi', () => {
       id: 'program-default',
       name: 'Koko kroppa 2krt/vko',
       templateIds: ['template-a', 'template-b'],
+      color: 'luumu',
+      durationWeeks: 8,
+      level: 'intermediate',
       activatedAt: '2026-11-10T12:00:00.000Z',
       updatedAt: '2026-11-10T12:00:00.000Z',
     }

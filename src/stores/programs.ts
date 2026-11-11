@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db, plain } from '@/db'
+import { DEFAULT_PROGRAM_COLOR, nextFreeColor } from '@/design/programPalette'
 import { activate, activeProgram, addTemplate, removeTemplate } from '@/lib/program'
 import { newTemplate } from '@/lib/template'
 import { useTemplates } from '@/stores/templates'
@@ -45,7 +46,13 @@ export const usePrograms = defineStore('programs', () => {
     programs.value.find((p) => p.templateIds.includes(templateId))
 
   async function create(name: string): Promise<Program> {
-    const program: Program = { id: `program-${crypto.randomUUID()}`, name, templateIds: [] }
+    const used = programs.value.map((p) => p.color ?? DEFAULT_PROGRAM_COLOR)
+    const program: Program = {
+      id: `program-${crypto.randomUUID()}`,
+      name,
+      templateIds: [],
+      color: nextFreeColor(used),
+    }
     await save(program)
     return program
   }

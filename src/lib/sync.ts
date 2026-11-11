@@ -4,6 +4,7 @@ import type {
   Measurement,
   MuscleGroup,
   Program,
+  ProgramLevel,
   Workout,
   WorkoutTemplate,
 } from '@/types/workout'
@@ -128,6 +129,9 @@ export interface ProgramRow {
   id: string
   name: string
   template_ids: string[]
+  color: string | null
+  duration_weeks: number | null
+  level: ProgramLevel | null
   activated_at: string | null
   updated_at: string
   deleted_at: string | null
@@ -138,6 +142,9 @@ export function programToRow(p: Program): ProgramRow {
     id: p.id,
     name: p.name,
     template_ids: p.templateIds,
+    color: p.color ?? null,
+    duration_weeks: p.durationWeeks ?? null,
+    level: p.level ?? null,
     activated_at: p.activatedAt ?? null,
     updated_at: p.updatedAt ?? new Date().toISOString(),
     deleted_at: p.deletedAt ?? null,
@@ -149,6 +156,9 @@ export function programFromRow(row: ProgramRow): Program & Synced {
     id: row.id,
     name: row.name,
     templateIds: row.template_ids,
+    ...(row.color ? { color: row.color } : {}),
+    ...(row.duration_weeks !== null ? { durationWeeks: row.duration_weeks } : {}),
+    ...(row.level ? { level: row.level } : {}),
     ...(row.activated_at ? { activatedAt: row.activated_at } : {}),
     updatedAt: row.updated_at,
     ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),

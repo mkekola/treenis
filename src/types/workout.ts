@@ -140,10 +140,23 @@ export interface WorkoutTemplate {
  * treenit A ja B. Treeni kuuluu yhteen ohjelmaan, ja ohjelma omistaa niiden
  * järjestyksen. Käytössä on se ohjelma, joka on otettu käyttöön viimeksi.
  */
+export type ProgramLevel = 'beginner' | 'intermediate' | 'advanced'
+
+export const PROGRAM_LEVEL_LABELS: Record<ProgramLevel, string> = {
+  beginner: 'Aloittelija',
+  intermediate: 'Keskitaso',
+  advanced: 'Edistynyt',
+}
+
 export interface Program {
   id: string
   name: string
   templateIds: string[]
+  /** Ohjelmapaletin väri (src/design/programPalette.ts). Puuttuessa oletusväri. */
+  color?: string
+  /** Valinnainen kesto. Ilman sitä ohjelma jatkuu, kunnes toinen otetaan käyttöön. */
+  durationWeeks?: number
+  level?: ProgramLevel
   activatedAt?: string
   updatedAt?: string
   deletedAt?: string
