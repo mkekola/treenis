@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db, plain } from '@/db'
+import { applyDeviations, keepDeviations, pruneKept, type Deviation } from '@/lib/deviation'
 import * as logic from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useTemplates } from '@/stores/templates'
@@ -112,10 +113,21 @@ export const useSession = defineStore('session', () => {
     await workouts.save(workout)
 
     const template = templates.templates.find((t) => t.id === session.templateId)
-    if (template) await templates.save({ ...template, lastUsedAt: workout.logged?.startedAt })
+    if (template) await templates.save({ ...pruneKept(template, workout), lastUsedAt: workout.logged?.startedAt })
 
     await discard()
     return workout.id
+  }
+
+  /** Toistuneet poikkeamat yhteenvedosta: päivitä pohja tai pidä se ennallaan. */
+  async function updateTemplate(deviations: Deviation[]) {
+    const template = templates.templates.find((t) => t.id === active.value?.templateId)
+    if (template) await templates.save(applyDeviations(template, deviations, () => crypto.randomUUID()))
+  }
+
+  async function keepTemplate(deviations: Deviation[]) {
+    const template = templates.templates.find((t) => t.id === active.value?.templateId)
+    if (template) await templates.save(keepDeviations(template, deviations))
   }
 
   /** Keskeytyneen treenin kuvaus palautuskorttia varten. */
@@ -143,5 +155,7 @@ export const useSession = defineStore('session', () => {
     goToBlock,
     discard,
     finish,
+    updateTemplate,
+    keepTemplate,
   }
 })

@@ -59,6 +59,7 @@ export interface TemplateRow {
   name: string
   blocks: Block[]
   last_used_at: string | null
+  kept_deviations: string[]
   updated_at: string
   deleted_at: string | null
 }
@@ -69,6 +70,7 @@ export function templateToRow(t: WorkoutTemplate): TemplateRow {
     name: t.name,
     blocks: t.blocks,
     last_used_at: t.lastUsedAt ?? null,
+    kept_deviations: t.keptDeviations ?? [],
     updated_at: t.updatedAt ?? new Date().toISOString(),
     deleted_at: t.deletedAt ?? null,
   }
@@ -80,6 +82,7 @@ export function templateFromRow(row: TemplateRow): WorkoutTemplate & Synced {
     name: row.name,
     blocks: row.blocks,
     ...(row.last_used_at ? { lastUsedAt: row.last_used_at } : {}),
+    ...(row.kept_deviations?.length ? { keptDeviations: row.kept_deviations } : {}),
     updatedAt: row.updated_at,
     ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
   }

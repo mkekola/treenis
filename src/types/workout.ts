@@ -129,6 +129,11 @@ export interface WorkoutTemplate {
   name: string
   blocks: Block[]
   lastUsedAt?: string
+  /**
+   * Toistuvat poikkeamat, joihin käyttäjä vastasi "Pidä vanha". Niistä ei
+   * kysytä uudelleen niin kauan kuin poikkeama jatkuu (src/lib/deviation.ts).
+   */
+  keptDeviations?: string[]
   /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
   updatedAt?: string
   /** Poistettu pohja jää laitteelle merkinnäksi, jotta poisto välittyy synkassa. */

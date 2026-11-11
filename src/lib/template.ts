@@ -143,7 +143,7 @@ export function exerciseCount(template: WorkoutTemplate): number {
 }
 
 /** Yleisin arvo. Tasapelissä ensimmäisenä tullut, eli liikkeen ensimmäinen sarja ratkaisee. */
-function mostCommon(values: number[]): number | undefined {
+export function mostCommon(values: number[]): number | undefined {
   let best: number | undefined
   let bestCount = 0
   const counts = new Map<number, number>()

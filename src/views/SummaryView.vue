@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { recurringDeviations, type Deviation } from '@/lib/deviation'
 import { formatDurationShort, formatShortDate } from '@/lib/format'
 import { findRecords } from '@/lib/records'
 import { localDate, progress, toWorkout } from '@/lib/session'
@@ -10,12 +11,14 @@ import { useTheme } from '@/composables/useTheme'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
 import { recordVars } from '@/stores/sportColors'
+import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 
 const router = useRouter()
 const session = useSession()
 const exercises = useExercises()
 const workouts = useWorkouts()
+const templates = useTemplates()
 const { isDark } = useTheme()
 
 // Ilman käynnissä olevaa treeniä tälle sivulle ei ole asiaa.
@@ -58,6 +61,39 @@ const notes = ref(active.value?.notes ?? '')
 const canSaveTemplate = computed(() => !active.value?.templateId)
 const savingTemplate = ref(false)
 const savedTemplate = ref('')
+
+// Pohjasta aloitettu treeni: sama muutos myös viime kerralla → kysytään pohjan päivityksestä.
+const template = computed(() => templates.templates.find((t) => t.id === active.value?.templateId))
+const recurring = computed(() =>
+  template.value && workout.value
+    ? recurringDeviations(template.value, workout.value, workouts.workouts)
+    : [],
+)
+
+// Päätöksen jälkeen kortti näyttää vahvistuksen. Muutokset otetaan talteen,
+// koska päivitetty pohja ei enää poikkea eikä lista muuten jäisi näkyviin.
+const decided = ref<{ choice: 'update' | 'keep'; templateName: string } | null>(null)
+
+function describe(d: Deviation): string {
+  switch (d.kind) {
+    case 'swap':
+      return `${nameOf(d.fromId)} → ${nameOf(d.toId)}`
+    case 'sets':
+      return `${nameOf(d.exerciseId)}: ${d.from} → ${d.to} sarjaa`
+    case 'add':
+      return `Uusi liike: ${nameOf(d.exerciseId)}`
+    case 'remove':
+      return `Pois: ${nameOf(d.exerciseId)}`
+  }
+}
+
+async function decide(choice: 'update' | 'keep') {
+  const changes = recurring.value
+  const templateName = template.value?.name ?? ''
+  if (choice === 'update') await session.updateTemplate(changes)
+  else await session.keepTemplate(changes)
+  decided.value = { choice, templateName }
+}
 
 function onTemplateSaved(templateName: string, programName: string) {
   savingTemplate.value = false
@@ -188,6 +224,42 @@ async function discard() {
       </div>
 
       <div class="flex-1" />
+
+      <p v-if="decided" role="status" class="mt-4 text-center text-[13px] text-ink-muted">
+        <template v-if="decided.choice === 'update'">{{ decided.templateName }} päivitetty.</template>
+        <template v-else>
+          {{ decided.templateName }} pysyy ennallaan, eikä näistä muutoksista kysytä uudelleen.
+        </template>
+      </p>
+      <section
+        v-else-if="recurring.length"
+        aria-labelledby="pohjan-paivitys"
+        class="mt-4 rounded-(--radius-feature) bg-surface p-4"
+      >
+        <h2 id="pohjan-paivitys" class="text-[17px] font-semibold tracking-[-0.01em]">
+          Päivitetäänkö {{ template?.name }}?
+        </h2>
+        <p class="mt-0.5 text-[13px] text-ink-muted">Teit nämä muutokset myös viime kerralla.</p>
+        <ul class="mt-2.5 flex flex-col gap-1 text-[15px]">
+          <li v-for="d in recurring" :key="d.key">{{ describe(d) }}</li>
+        </ul>
+        <div class="mt-3.5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="min-h-11 rounded-(--radius-button) border border-line text-[15px] font-semibold"
+            @click="decide('keep')"
+          >
+            Pidä vanha
+          </button>
+          <button
+            type="button"
+            class="min-h-11 rounded-(--radius-button) border border-line text-[15px] font-semibold"
+            @click="decide('update')"
+          >
+            Päivitä pohja
+          </button>
+        </div>
+      </section>
 
       <template v-if="canSaveTemplate">
         <p v-if="savedTemplate" role="status" class="mt-4 text-center text-[13px] text-ink-muted">
