@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import connectWithStrava from '@/assets/strava/connect-with-strava.svg'
+import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import { formatClock, formatShortDate } from '@/lib/format'
 import { localDate } from '@/lib/session'
 import { useStrava } from '@/stores/strava'
@@ -128,5 +129,7 @@ const disconnect = () =>
     </template>
 
     <p v-if="message" role="status" class="mt-2 text-[13px] text-ink-muted">{{ message }}</p>
+
+    <PoweredByStrava class="mt-3.5" />
   </section>
 </template>

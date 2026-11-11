@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppLogo from '@/components/AppLogo.vue'
+import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
 import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
@@ -8,7 +9,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useNow } from '@/composables/useNow'
 import { byMonth, formatToday, thisWeek } from '@/lib/calendar'
 import { formatDurationShort } from '@/lib/format'
-import { durationSec } from '@/lib/workout'
+import { durationSec, isFromStrava } from '@/lib/workout'
 import { useAuth } from '@/stores/auth'
 import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
@@ -38,6 +39,7 @@ const initials = computed(() =>
 /** Yhteenveto koskee vain tätä viikkoa (ma–su). Aikajana näyttää kaiken. */
 const workouts = computed(() => thisWeek(store.workouts, now.value))
 const months = computed(() => byMonth(store.workouts, now.value))
+const hasStravaData = computed(() => store.workouts.some(isFromStrava))
 
 const totalSeconds = computed(() => workouts.value.reduce((sum, w) => sum + durationSec(w), 0))
 
@@ -162,6 +164,8 @@ const byGroup = computed(() => {
       <p v-if="!months.length" class="py-6 text-center text-sm text-ink-muted">
         Ei vielä treenejä. Kirjaa ensimmäinen alta.
       </p>
+
+      <PoweredByStrava v-if="hasStravaData" class="mt-1.5 mb-1 self-center" />
     </div>
 
     <div class="px-5 pt-3">
