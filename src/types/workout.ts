@@ -74,6 +74,8 @@ export interface Exercise {
    * käsipainot 2 kg, laitteet 5 kg, tanko 2,5 kg (oletus jos puuttuu).
    */
   weightStepKg?: number
+  /** Vain omilla liikkeillä: asetetaan tallennuksessa synkkaa varten. */
+  updatedAt?: string
 }
 
 /**
@@ -127,6 +129,10 @@ export interface WorkoutTemplate {
   name: string
   blocks: Block[]
   lastUsedAt?: string
+  /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
+  updatedAt?: string
+  /** Poistettu pohja jää laitteelle merkinnäksi, jotta poisto välittyy synkassa. */
+  deletedAt?: string
 }
 
 /**
@@ -176,6 +182,8 @@ export interface Workout {
   logged?: LoggedData
   /** Odottaa vahvistusta: onko tämä sama treeni kuin mitattu aktiviteetti. */
   pendingMatch?: PendingMatch
+  /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
+  updatedAt?: string
 }
 
 export const SPORT_LABELS: Record<SportKey, string> = {

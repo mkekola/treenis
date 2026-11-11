@@ -10,12 +10,34 @@ export const useWorkouts = defineStore('workouts', () => {
     workouts.value = await db.workouts.toArray()
   }
 
-  /** Tallentaa tietokantaan ja päivittää listan, jotta näkymät seuraavat heti. */
-  async function save(workout: Workout) {
-    await db.workouts.put(plain(workout))
+  function upsertInList(workout: Workout) {
     const index = workouts.value.findIndex((w) => w.id === workout.id)
     if (index === -1) workouts.value.push(workout)
     else workouts.value[index] = workout
+  }
+
+  /**
+   * Tallentaa laitteelle ja laittaa lähetysjonoon samassa transaktiossa, jotta
+   * yksikään muutos ei jää lähettämättä. Lista päivittyy heti, verkkoa ei odoteta.
+   */
+  async function save(workout: Workout) {
+    const saved = { ...workout, updatedAt: new Date().toISOString() }
+    await db.transaction('rw', db.workouts, db.outbox, async () => {
+      await db.workouts.put(plain(saved))
+      await db.outbox.put({ id: saved.id, kind: 'workout', updatedAt: saved.updatedAt })
+    })
+    upsertInList(saved)
+  }
+
+  /** Palvelimelta tullut versio. Ei mene jonoon, koska se on jo palvelimella. */
+  async function applyRemote(workout: Workout) {
+    await db.workouts.put(plain(workout))
+    upsertInList(workout)
+  }
+
+  async function removeLocal(id: string) {
+    await db.workouts.delete(id)
+    workouts.value = workouts.value.filter((w) => w.id !== id)
   }
 
   /** Mitattu voittaa kirjatun: Stravan kesto korvaa oman ajastuksen. */
@@ -37,5 +59,5 @@ export const useWorkouts = defineStore('workouts', () => {
     await save({ ...workout, pendingMatch: undefined })
   }
 
-  return { workouts, load, save, confirmMatch, rejectMatch }
+  return { workouts, load, save, applyRemote, removeLocal, confirmMatch, rejectMatch }
 })

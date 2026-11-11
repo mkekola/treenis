@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuth } from '@/stores/auth'
 import DiaryView from '@/views/DiaryView.vue'
 
 export const router = createRouter({
@@ -28,6 +29,19 @@ export const router = createRouter({
       name: 'appearance',
       component: () => import('@/views/AppearanceView.vue'),
     },
+    {
+      path: '/kirjaudu',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { hideNav: true, public: true },
+    },
   ],
   scrollBehavior: () => ({ top: 0 }),
+})
+
+// Kutsutuille tehty sovellus: ilman kirjautumista näkyy vain kirjautumissivu.
+router.beforeEach((to) => {
+  const signedIn = useAuth().userId !== null
+  if (!signedIn && !to.meta.public) return { name: 'login' }
+  if (signedIn && to.name === 'login') return { name: 'diary' }
 })

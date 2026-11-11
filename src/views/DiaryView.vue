@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
+import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatDurationShort } from '@/lib/format'
@@ -54,6 +55,7 @@ const byGroup = computed(() => {
           <p class="text-[15px] font-semibold tracking-[-0.01em]">Hei Maria</p>
         </div>
       </div>
+      <SyncBadge class="ml-auto" />
       <button
         type="button"
         aria-label="Haku"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import AccountSection from '@/components/AccountSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme, type ThemeMode } from '@/composables/useTheme'
 import { RECORD_SWATCH_ID, SWATCHES } from '@/design/swatches'
@@ -182,8 +183,10 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
       erottuu aina.
     </p>
 
+    <AccountSection class="mt-1" />
+
     <!-- Noun Projectin ilmainen lisenssi vaatii tekijämaininnan. -->
-    <section class="mt-1 mb-6 rounded-(--radius-feature) bg-surface p-3.5">
+    <section class="mb-6 rounded-(--radius-feature) bg-surface p-3.5">
       <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Ikonit</h2>
       <p class="mt-2 text-[13px]">
         Lajien ikonit ovat {{ ICON_CREATOR }}'n piirtämiä, Noun Projectista.
