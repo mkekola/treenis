@@ -7,7 +7,6 @@ const items = [
   { to: '/', label: 'Päiväkirja' },
   { to: '/ohjelmat', label: 'Ohjelmat' },
   { to: '/tilastot', label: 'Tilastot' },
-  { to: '/asetukset/ulkoasu', label: 'Asetukset' },
 ] as const
 
 /** Ohjelman ja treenin muokkaus (/ohjelmat/…) kuuluvat Ohjelmat-välilehteen. */
@@ -17,7 +16,7 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
 <template>
   <nav
     aria-label="Päävalikko"
-    class="grid grid-cols-4 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
+    class="grid grid-cols-3 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
   >
     <RouterLink
       v-for="item in items"
@@ -59,7 +58,7 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
         <line x1="9" y1="18" x2="12" y2="18" />
       </svg>
       <svg
-        v-else-if="item.to === '/tilastot'"
+        v-else
         class="size-5"
         viewBox="0 0 24 24"
         fill="none"
@@ -71,21 +70,6 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
         <line x1="6" y1="20" x2="6" y2="12" />
         <line x1="12" y1="20" x2="12" y2="5" />
         <line x1="18" y1="20" x2="18" y2="9" />
-      </svg>
-      <svg
-        v-else
-        class="size-5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="3.2" />
-        <path
-          d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6"
-        />
       </svg>
       {{ item.label }}
     </RouterLink>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppLogo from '@/components/AppLogo.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
 import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
@@ -34,8 +35,6 @@ const initials = computed(() =>
     .join(''),
 )
 
-const firstName = computed(() => (auth.name ?? '').trim().split(/\s+/)[0])
-
 /** Yhteenveto koskee vain tätä viikkoa (ma–su). Aikajana näyttää kaiken. */
 const workouts = computed(() => thisWeek(store.workouts, now.value))
 const months = computed(() => byMonth(store.workouts, now.value))
@@ -62,25 +61,34 @@ const byGroup = computed(() => {
 
 <template>
   <div class="flex min-h-full flex-col">
-    <!-- Ilman nimeä näkyy pelkkä päivä: mitään ei keksitä käyttäjän puolesta. -->
+    <!-- Logo vasemmalla, oikealla synkan tila ja pallo, josta asetukset aukeavat. -->
     <header class="flex min-h-11 items-center justify-between gap-3 px-5 pt-6">
-      <div class="flex min-w-0 items-center gap-2.5">
-        <span
-          v-if="initials"
+      <AppLogo class="h-[26px] w-auto text-brand" />
+      <div class="flex items-center gap-2">
+        <SyncBadge />
+        <RouterLink
+          to="/asetukset/ulkoasu"
+          aria-label="Asetukset"
           :style="sportVars(colors.swatchForGroup('strength'), isDark)"
-          aria-hidden="true"
           class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[15px] font-bold text-[var(--sport-on)]"
         >
-          {{ initials }}
-        </span>
-        <div class="min-w-0">
-          <p :class="auth.name ? 'text-xs text-ink-muted' : 'text-[15px] font-semibold'">{{ today }}</p>
-          <p v-if="auth.name" class="truncate text-[15px] font-semibold tracking-[-0.01em]">
-            Hei {{ firstName }}
-          </p>
-        </div>
+          <span v-if="initials" aria-hidden="true">{{ initials }}</span>
+          <!-- Ilman nimeä pallossa on henkilö, ettei se ole tyhjä. -->
+          <svg
+            v-else
+            class="size-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8.5" r="3.5" />
+            <path d="M5 20a7 7 0 0 1 14 0" />
+          </svg>
+        </RouterLink>
       </div>
-      <SyncBadge />
     </header>
 
     <!-- Keskeytynyt treeni kysytään heti avattaessa, ei jatketa hiljaa. -->
@@ -90,7 +98,8 @@ const byGroup = computed(() => {
 
     <!-- Yhteenveto: täällä väri vertailee, joten se saa täyttää pinnan. -->
     <section class="px-5 pt-4.5">
-      <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.02em]">
+      <p class="text-xs font-semibold tracking-[0.08em] text-ink-muted uppercase">{{ today }}</p>
+      <h1 class="mt-1 font-display text-[32px] leading-[1.04] font-bold tracking-[-0.02em]">
         Tämä viikko
       </h1>
 

@@ -41,6 +41,7 @@ export const router = createRouter({
       path: '/asetukset/ulkoasu',
       name: 'appearance',
       component: () => import('@/views/AppearanceView.vue'),
+      meta: { hideNav: true },
     },
     {
       path: '/kirjaudu',

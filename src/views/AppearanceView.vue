@@ -56,8 +56,18 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-4 px-5 pt-6">
-    <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Ulkoasu</h1>
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <RouterLink
+      to="/"
+      aria-label="Takaisin päiväkirjaan"
+      class="flex size-11 items-center justify-center rounded-full border border-line bg-surface"
+    >
+      <svg class="size-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="11,6 5,12 11,18" />
+      </svg>
+    </RouterLink>
+    <h1 class="-mt-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Asetukset</h1>
 
     <!-- Teema -->
     <section class="rounded-(--radius-feature) bg-surface p-3.5">

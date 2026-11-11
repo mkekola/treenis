@@ -15,6 +15,8 @@
   --c-action: #4a3a48;
   --c-on-action: #ffffff;
   --c-track: #f3e9e7;
+  /* Logon ja sovelluskuvakkeen luumu. Vain brändille, ei toiminnoille. */
+  --c-brand: #5e3b63;
   color-scheme: light;
 }
 
@@ -29,6 +31,7 @@
     --c-action: #e3d6e4;
     --c-on-action: #18141c;
     --c-track: #2b2236;
+    --c-brand: #f5e4f2;
     color-scheme: dark;
   }
 }
@@ -43,6 +46,7 @@
   --c-action: #e3d6e4;
   --c-on-action: #18141c;
   --c-track: #2b2236;
+  --c-brand: #f5e4f2;
   color-scheme: dark;
 }
 
@@ -56,6 +60,7 @@
   --color-action: var(--c-action);
   --color-on-action: var(--c-on-action);
   --color-track: var(--c-track);
+  --color-brand: var(--c-brand);
 
   --font-display: 'Bricolage Grotesque', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
