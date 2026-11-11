@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AppLogo from '@/components/AppLogo.vue'
 import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
@@ -39,6 +39,19 @@ const initials = computed(() =>
 /** Yhteenveto koskee vain tätä viikkoa (ma–su). Aikajana näyttää kaiken. */
 const workouts = computed(() => thisWeek(store.workouts, now.value))
 const months = computed(() => byMonth(store.workouts, now.value))
+
+// Uusin kuukausi on auki, vanhemmat kutistettuina yhteenvetoriveiksi, jotta
+// aikajana pysyy lyhyenä vaikka Stravasta tulisi satoja treenejä.
+const opened = ref(new Set<string>())
+const isOpen = (key: string) => key === months.value[0]?.key || opened.value.has(key)
+function toggle(key: string) {
+  const next = new Set(opened.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  opened.value = next
+}
+const monthSummary = (list: typeof store.workouts) =>
+  `${list.length} ${list.length === 1 ? 'treeni' : 'treeniä'} · ${formatDurationShort(list.reduce((sum, w) => sum + durationSec(w), 0))}`
 const hasStravaData = computed(() => store.workouts.some(isFromStrava))
 
 const totalSeconds = computed(() => workouts.value.reduce((sum, w) => sum + durationSec(w), 0))
@@ -146,28 +159,7 @@ const byGroup = computed(() => {
       </div>
     </section>
 
-    <!-- Aikajana: täällä luetaan, joten kortit pysyvät valkoisina. Kuukausi kerrallaan. -->
-    <div class="flex flex-1 flex-col gap-4.5 px-5 pt-4.5">
-      <section v-for="month in months" :key="month.key" class="flex flex-col gap-2">
-        <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
-          {{ month.label }}
-        </h2>
-        <WorkoutCard
-          v-for="workout in month.workouts"
-          :key="workout.id"
-          :workout="workout"
-          @confirm-match="store.confirmMatch"
-          @reject-match="store.rejectMatch"
-        />
-      </section>
-
-      <p v-if="!months.length" class="py-6 text-center text-sm text-ink-muted">
-        Ei vielä treenejä. Kirjaa ensimmäinen alta.
-      </p>
-
-      <PoweredByStrava v-if="hasStravaData" class="mt-1.5 mb-1 self-center" />
-    </div>
-
+    <!-- Kirjaus heti yhteenvedon alla: se on sovelluksen tärkein toiminto, eikä sitä haeta listan lopusta. -->
     <div class="px-5 pt-3">
       <RouterLink
         to="/treeni/uusi"
@@ -188,5 +180,59 @@ const byGroup = computed(() => {
         Kirjaa treeni
       </RouterLink>
     </div>
+
+    <!-- Aikajana: täällä luetaan, joten kortit pysyvät valkoisina. Kuukausi kerrallaan. -->
+    <div class="flex flex-1 flex-col px-5 pt-3.5">
+      <section v-for="(month, index) in months" :key="month.key" class="flex flex-col">
+        <h2 v-if="index === 0" class="flex min-h-11 items-center text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+          {{ month.label }}
+        </h2>
+        <h2 v-else :class="isOpen(month.key) ? '' : 'border-b border-line'">
+          <button
+            type="button"
+            :aria-expanded="isOpen(month.key)"
+            :aria-controls="`kuukausi-${month.key}`"
+            class="flex min-h-11 w-full items-center justify-between gap-3 text-left"
+            @click="toggle(month.key)"
+          >
+            <span class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+              {{ month.label }}
+            </span>
+            <span class="flex items-center gap-2 text-[13px] text-ink-muted" data-numeric>
+              {{ monthSummary(month.workouts) }}
+              <svg
+                class="size-4 transition-transform motion-reduce:transition-none"
+                :class="isOpen(month.key) ? 'rotate-180' : ''"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6,9 12,15 18,9" />
+              </svg>
+            </span>
+          </button>
+        </h2>
+        <div v-if="isOpen(month.key)" :id="`kuukausi-${month.key}`" class="mb-4 flex flex-col gap-2">
+          <WorkoutCard
+            v-for="workout in month.workouts"
+            :key="workout.id"
+            :workout="workout"
+            @confirm-match="store.confirmMatch"
+            @reject-match="store.rejectMatch"
+          />
+        </div>
+      </section>
+
+      <p v-if="!months.length" class="py-6 text-center text-sm text-ink-muted">
+        Ei vielä treenejä. Kirjaa ensimmäinen alta.
+      </p>
+
+      <PoweredByStrava v-if="hasStravaData" class="mt-1.5 mb-1 self-center" />
+    </div>
+
   </div>
 </template>
