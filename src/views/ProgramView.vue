@@ -321,8 +321,17 @@ async function deleteProgram() {
         </div>
       </section>
 
+      <!-- Muutokset tallentuvat heti, joten Valmis vain palaa takaisin. Se kertoo, että kaikki on tallessa. -->
+      <RouterLink
+        :to="{ name: 'programs' }"
+        class="mt-3 flex min-h-13 items-center justify-center rounded-full bg-action text-base font-semibold text-on-action"
+      >
+        Valmis
+      </RouterLink>
+      <p class="-mt-1 text-center text-[13px] text-ink-muted">Muutokset tallentuvat automaattisesti.</p>
+
       <!-- Poisto vahvistetaan: se vie ohjelman treenit mukanaan. -->
-      <div class="mt-4 mb-6">
+      <div class="mt-2 mb-6">
         <button
           v-if="!confirmingDelete"
           type="button"

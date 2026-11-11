@@ -291,15 +291,24 @@ async function deleteTemplate() {
         + Lisää liike
       </button>
 
+      <!-- Muutokset tallentuvat heti, joten Valmis vain palaa takaisin. Se kertoo, että kaikki on tallessa. -->
+      <RouterLink
+        :to="backTo"
+        class="mt-3 flex min-h-13 items-center justify-center rounded-full bg-action text-base font-semibold text-on-action"
+      >
+        Valmis
+      </RouterLink>
+      <p class="-mt-1 text-center text-[13px] text-ink-muted">Muutokset tallentuvat automaattisesti.</p>
+
       <!-- Poisto vahvistetaan, koska pohjan rakentaminen on työtä. -->
-      <div class="mt-4 mb-6">
+      <div class="mt-2 mb-6">
         <button
           v-if="!confirmingDelete"
           type="button"
           class="min-h-11 w-full text-sm font-semibold text-ink-muted underline"
           @click="confirmingDelete = true"
         >
-          Poista pohja
+          Poista treeni
         </button>
         <div v-else class="rounded-(--radius-card) bg-surface p-3.5">
           <p class="text-[15px]">
