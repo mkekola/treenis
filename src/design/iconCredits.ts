@@ -32,4 +32,5 @@ export const ICON_CREDITS: IconCredit[] = [
   { sport: 'nordic', iconName: 'Ski', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/ski-4516841/' },
   { sport: 'skating', iconName: 'Ice Skating', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/ice-skating-8320557/' },
   { sport: 'hike', iconName: 'Trail', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/trail-4236407/' },
+  { sport: 'walk', iconName: 'Walk', creator: ICON_CREATOR, url: 'https://thenounproject.com/icon/walk-1826969/' },
 ]

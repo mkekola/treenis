@@ -3,7 +3,7 @@ import type { SportKey } from '@/types/workout'
 /**
  * Väri koodaa lajiryhmän, ei yksittäistä lajia.
  *
- * Kolmetoista lajia tarkoittaisi kolmeatoista lähes samanvaaleaa pastellia,
+ * Neljätoista lajia tarkoittaisi neljäätoista lähes samanvaaleaa pastellia,
  * joita ei erota toisistaan. Ryhmä on se taso jolla väri pystyy tekemään
  * työtä: aikajanalta näkee yhdellä silmäyksellä paljonko on ollut vettä,
  * talvea tai voimaa. Yksittäisen lajin kertoo ikoni ja tekstilabel.
@@ -20,7 +20,7 @@ export type SportGroupKey =
 
 export const SPORT_GROUP_LABELS: Record<SportGroupKey, string> = {
   strength: 'Voima',
-  land: 'Juoksu ja vaellus',
+  land: 'Kävely ja juoksu',
   cycling: 'Pyöräily',
   water: 'Vesilajit',
   winter: 'Talvilajit',
@@ -33,6 +33,7 @@ export const SPORT_GROUP_OF: Record<SportKey, SportGroupKey> = {
   strength: 'strength',
   run: 'land',
   hike: 'land',
+  walk: 'land',
   bike: 'cycling',
   swim: 'water',
   windsurf: 'water',

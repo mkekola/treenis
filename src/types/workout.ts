@@ -6,6 +6,7 @@ export type SportKey =
   | 'nordic'
   | 'skating'
   | 'hike'
+  | 'walk'
   | 'climb'
   | 'alpine'
   | 'windsurf'
@@ -29,6 +30,7 @@ export const SPORT_KIND: Record<SportKey, SportKind> = {
   nordic: 'distance',
   skating: 'distance',
   hike: 'distance',
+  walk: 'distance',
   climb: 'session',
   alpine: 'session',
   windsurf: 'session',
@@ -226,6 +228,7 @@ export const SPORT_LABELS: Record<SportKey, string> = {
   nordic: 'Hiihto',
   skating: 'Luistelu',
   hike: 'Vaellus',
+  walk: 'Kävely',
   climb: 'Kiipeily',
   alpine: 'Laskettelu',
   windsurf: 'Purjelautailu',
