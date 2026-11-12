@@ -67,11 +67,14 @@ export const useSession = defineStore('session', () => {
     })
   }
 
-  /** Vaihtaa liikkeen, ja uusi liike perii sarjamäärän ja tavoitetoistot. */
+  /**
+   * Vaihtaa liikkeen, ja uusi liike perii sarjamäärän ja tavoitetoistot.
+   * Aikaliikkeellä (lankku) ei ole toistotavoitetta, joten silloin käytetään oletusta.
+   */
   async function swapExercise(block: number, exercise: number, exerciseId: string) {
     const current = active.value?.blocks[block]?.exercises[exercise]
     if (!current) return
-    const replacement = buildFor(exerciseId, current.target.sets, current.target.reps)
+    const replacement = buildFor(exerciseId, current.target.sets, current.target.reps || DEFAULT_REPS)
     if (replacement) await update((s) => logic.swapExercise(s, block, exercise, replacement))
   }
 
