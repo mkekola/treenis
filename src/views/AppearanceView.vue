@@ -37,10 +37,19 @@ function toggle(group: SportGroupKey) {
 
 function swatchState(swatchId: string, group: SportGroupKey) {
   if (swatchId === RECORD_SWATCH_ID) return 'reserved' as const
-  const owner = colors.ownerOf(swatchId)
-  if (owner === group) return 'selected' as const
-  if (owner) return 'taken' as const
+  const users = colors.usersOf(swatchId)
+  if (users.includes(group)) return 'selected' as const
+  if (users.length) return 'shared' as const
   return 'free' as const
+}
+
+/** Muut ryhmät, joilla sama väri on käytössä, ruudunlukijaa varten. */
+function sharedWith(swatchId: string, group: SportGroupKey) {
+  return colors
+    .usersOf(swatchId)
+    .filter((g) => g !== group)
+    .map((g) => SPORT_GROUP_LABELS[g])
+    .join(', ')
 }
 
 function pairFor(swatchId: string) {
@@ -50,7 +59,7 @@ function pairFor(swatchId: string) {
 
 function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
   const state = swatchState(swatchId, group)
-  if (state === 'taken') return `${name}, käytössä toisella ryhmällä`
+  if (state === 'shared') return `${name}, käytössä myös: ${sharedWith(swatchId, group)}`
   if (state === 'reserved') return `${name}, varattu ennätyksille`
   return name
 }
@@ -155,7 +164,7 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
             outlineOffset: '1px',
           }"
           :aria-pressed="swatchState(swatch.id, row.group) === 'selected'"
-          :aria-disabled="swatchState(swatch.id, row.group) !== 'free'"
+          :aria-disabled="swatchState(swatch.id, row.group) === 'reserved'"
           :aria-label="swatchLabel(swatch.id, swatch.name, row.group)"
           @click="colors.assign(row.group, swatch.id)"
         >
@@ -172,8 +181,14 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
           >
             <polyline points="5,13 10,18 19,7" />
           </svg>
+          <!-- Toisen ryhmän käyttämä väri: pieni piste kertoo sen, mutta värin voi silti valita. -->
+          <span
+            v-else-if="swatchState(swatch.id, row.group) === 'shared'"
+            class="size-2 rounded-full bg-current opacity-60"
+            aria-hidden="true"
+          />
           <svg
-            v-else-if="swatchState(swatch.id, row.group) !== 'free'"
+            v-else-if="swatchState(swatch.id, row.group) === 'reserved'"
             class="size-4 opacity-60"
             viewBox="0 0 24 24"
             fill="none"

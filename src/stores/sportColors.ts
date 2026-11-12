@@ -44,15 +44,20 @@ export const useSportColors = defineStore('sportColors', () => {
     return swatchForGroup(SPORT_GROUP_OF[sport])
   }
 
-  /** Mihin ryhmään swatch on varattu, tai null jos vapaa. */
-  const ownerOf = computed(() => (swatchId: string): SportGroupKey | null => {
-    const entry = Object.entries(assignments.value).find(([, id]) => id === swatchId)
-    return entry ? (entry[0] as SportGroupKey) : null
-  })
+  /** Ryhmät, joilla swatch on käytössä. Saman värin saa antaa useammalle ryhmälle. */
+  const usersOf = computed(() => (swatchId: string): SportGroupKey[] =>
+    (Object.entries(assignments.value) as [SportGroupKey, string][])
+      .filter(([, id]) => id === swatchId)
+      .map(([group]) => group),
+  )
 
+  /**
+   * Värin voi valita vapaasti, myös toisen ryhmän värin: jos tilastoissa kaksi
+   * ryhmää näyttää samalta, se on käyttäjän oma valinta. Ruusu on varattu
+   * ennätyksille, jotta ennätys erottuu aina.
+   */
   function assign(group: SportGroupKey, swatchId: string) {
     if (swatchId === RECORD_SWATCH_ID) return
-    if (ownerOf.value(swatchId)) return
     assignments.value = { ...assignments.value, [group]: swatchId }
   }
 
@@ -60,7 +65,7 @@ export const useSportColors = defineStore('sportColors', () => {
     assignments.value = { ...DEFAULT_GROUP_SWATCHES }
   }
 
-  return { assignments, swatchFor, swatchForGroup, ownerOf, assign, reset }
+  return { assignments, swatchFor, swatchForGroup, usersOf, assign, reset }
 })
 
 /**
