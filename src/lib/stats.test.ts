@@ -6,6 +6,7 @@ import {
   liftProgress,
   periodLabel,
   periodOf,
+  regularityRows,
   secondsByGroup,
   shiftPeriod,
   sportTotals,
@@ -130,5 +131,29 @@ describe('salikehitys', () => {
       strengthWorkout('w3', '2026-11-08', [{ exerciseId: 'plank', sets: [{ durationSec: 60, done: true }] }]),
     ]
     expect(liftProgress(workouts, lookup)).toEqual([{ exerciseId: 'back-squat', weights: [50, 55] }])
+  })
+})
+
+describe('taulukkonäkymä', () => {
+  const workouts = [
+    measured('2026-05-20', 'walk', 60),
+    measured('2026-05-20', 'climb', 40),
+    measured('2026-05-11', 'walk', 30),
+    measured('2026-06-03', 'walk', 50),
+  ]
+
+  it('vuosi kuukausittain: treenit, treenipäivät ja aika', () => {
+    expect(regularityRows(workouts, periodOf('year', TODAY))).toEqual([
+      { key: '2026-05', label: 'Toukokuu', workouts: 3, days: 2, seconds: 130 * 60 },
+      { key: '2026-06', label: 'Kesäkuu', workouts: 1, days: 1, seconds: 50 * 60 },
+    ])
+  })
+
+  it('kuukausi päivittäin, vain treenipäivät', () => {
+    const may = workouts.filter((w) => w.date.startsWith('2026-05'))
+    expect(regularityRows(may, periodOf('month', '2026-05-15')).map((r) => [r.label, r.workouts])).toEqual([
+      ['11.5.', 1],
+      ['20.5.', 2],
+    ])
   })
 })

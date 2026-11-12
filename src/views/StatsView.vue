@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ChartNumbers from '@/components/stats/ChartNumbers.vue'
 import DaySheet from '@/components/stats/DaySheet.vue'
 import FootChart from '@/components/stats/FootChart.vue'
 import PeriodCalendar from '@/components/stats/PeriodCalendar.vue'
@@ -19,6 +20,7 @@ import {
   liftProgress,
   periodLabel,
   periodOf,
+  regularityRows,
   secondsByDay,
   secondsByGroup,
   shiftPeriod,
@@ -71,6 +73,7 @@ const delta = computed(() => {
 // ------------------------------------------------------------- säännöllisyys
 
 const byDay = computed(() => secondsByDay(workouts.value))
+const regularity = computed(() => regularityRows(workouts.value, period.value))
 const streak = computed(() => weekStreak(store.workouts, period.value, today.value))
 const streakText = computed(() => {
   const s = streak.value
@@ -214,6 +217,27 @@ const lifts = computed(() =>
           <span v-for="level in 4" :key="level" :style="{ background: `var(--c-heat-${level})` }" class="size-2.5 rounded-[2px]" aria-hidden="true" />
           paljon
         </p>
+        <ChartNumbers v-if="regularity.length">
+          <table class="w-full text-left text-sm" data-numeric>
+            <caption class="sr-only">Treenit {{ period.view === 'year' ? 'kuukausittain' : 'päivittäin' }}</caption>
+            <thead class="text-xs text-ink-muted">
+              <tr>
+                <th scope="col" class="py-1.5 font-semibold">{{ period.view === 'year' ? 'Kuukausi' : 'Päivä' }}</th>
+                <th scope="col" class="py-1.5 text-right font-semibold">Treenit</th>
+                <th v-if="period.view === 'year'" scope="col" class="py-1.5 text-right font-semibold">Päivät</th>
+                <th scope="col" class="py-1.5 text-right font-semibold">Aika</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in regularity" :key="row.key" class="border-t border-line">
+                <th scope="row" class="py-1.5 font-normal">{{ row.label }}</th>
+                <td class="py-1.5 text-right">{{ row.workouts }}</td>
+                <td v-if="period.view === 'year'" class="py-1.5 text-right">{{ row.days }}</td>
+                <td class="py-1.5 text-right">{{ formatDurationShort(row.seconds) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </ChartNumbers>
       </div>
     </section>
 
@@ -251,6 +275,25 @@ const lifts = computed(() =>
           {{ period.view === 'year' ? 'kuukausittain' : period.view === 'month' ? 'viikoittain' : 'päivittäin' }}
         </p>
         <FootChart v-if="hasFoot" :buckets="buckets" :style="landVars" />
+        <ChartNumbers v-if="hasFoot">
+          <table class="w-full text-left text-sm" data-numeric>
+            <caption class="sr-only">Kilometrit jalan</caption>
+            <thead class="text-xs text-ink-muted">
+              <tr>
+                <th scope="col" class="py-1.5 font-semibold">
+                  {{ period.view === 'year' ? 'Kuukausi' : period.view === 'month' ? 'Viikko' : 'Päivä' }}
+                </th>
+                <th scope="col" class="py-1.5 text-right font-semibold">Kilometrit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="bucket in buckets.filter((b) => !b.future)" :key="bucket.title" class="border-t border-line">
+                <th scope="row" class="py-1.5 font-normal">{{ bucket.title }}</th>
+                <td class="py-1.5 text-right">{{ kmFormat(bucket.meters / 1000) }} km</td>
+              </tr>
+            </tbody>
+          </table>
+        </ChartNumbers>
         <p v-else class="text-[13px] text-ink-muted">Ei kävelyä, juoksua eikä vaellusta tällä jaksolla.</p>
         <ul v-if="otherDistance.length" class="mt-1.5 grid text-sm">
           <li v-for="row in otherDistance" :key="row.label" class="flex justify-between gap-2 border-t border-line py-2">

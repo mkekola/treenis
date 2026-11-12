@@ -263,3 +263,36 @@ export function liftProgress(
       weights: [...list].sort((a, b) => a.date.localeCompare(b.date)).map((s) => s.kg),
     }))
 }
+
+// ------------------------------------------------------------ taulukkonäkymä
+
+export interface TableRow {
+  key: string
+  label: string
+  workouts: number
+  days: number
+  seconds: number
+}
+
+/**
+ * Säännöllisyyden luvut taulukkona: vuosi kuukausittain, muuten treenipäivät
+ * yksitellen. Kaavion vaihtoehto ruudunlukijalle ja kaikille, joille sävyjen
+ * erottaminen on vaikeaa.
+ */
+export function regularityRows(workouts: Workout[], period: Period): TableRow[] {
+  const groups = new Map<string, Workout[]>()
+  for (const w of [...workouts].sort((a, b) => a.date.localeCompare(b.date))) {
+    const key = period.view === 'year' ? w.date.slice(0, 7) : w.date
+    groups.set(key, [...(groups.get(key) ?? []), w])
+  }
+  return [...groups.entries()].map(([key, list]) => {
+    const name = MONTHS[Number(key.slice(5, 7)) - 1]
+    return {
+      key,
+      label: period.view === 'year' ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : shortDate(key),
+      workouts: list.length,
+      days: new Set(list.map((w) => w.date)).size,
+      seconds: totalSeconds(list),
+    }
+  })
+}
