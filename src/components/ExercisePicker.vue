@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useVisibleViewport } from '@/composables/useVisibleViewport'
 import { MEASUREMENT_LABELS, MUSCLE_GROUP_LABELS } from '@/data/exerciseLibrary'
 import { recentExerciseIds } from '@/lib/history'
 import { useExercises } from '@/stores/exercises'
@@ -13,6 +14,8 @@ const exercises = useExercises()
 const workouts = useWorkouts()
 
 const dialog = ref<HTMLDialogElement>()
+// Koko näkyvän alueen korkuinen ja yläreunaan kiinnitetty: näppäimistö ei peitä hakua eikä listaa.
+const viewport = useVisibleViewport()
 const query = ref('')
 
 // --- oma liike ---
@@ -77,7 +80,8 @@ function onBackdropClick(event: MouseEvent) {
   <dialog
     ref="dialog"
     :aria-label="title"
-    class="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
+    :style="{ height: `${viewport.height.value}px`, top: `${viewport.offsetTop.value}px` }"
+    class="fixed inset-x-0 bottom-auto m-0 mx-auto max-h-none w-full max-w-[480px] flex-col overflow-hidden bg-bg p-0 pt-[env(safe-area-inset-top)] text-ink backdrop:bg-black/40 open:flex"
     @close="onNativeClose"
     @click="onBackdropClick"
   >

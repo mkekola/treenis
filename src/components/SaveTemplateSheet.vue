@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import { useVisibleViewport } from '@/composables/useVisibleViewport'
 import { fromSession } from '@/lib/template'
 import { usePrograms } from '@/stores/programs'
 import type { ActiveSession } from '@/types/session'
@@ -9,6 +10,8 @@ const emit = defineEmits<{ close: []; saved: [templateName: string, programName:
 
 const programs = usePrograms()
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
+// Näppäimistön ollessa auki paneeli nousee sen yläpuolelle.
+const viewport = useVisibleViewport()
 
 /** Jos kaikki ohjelmat on poistettu, pohjalle luodaan oma ohjelma. */
 const FALLBACK_PROGRAM_NAME = 'Omat treenit'
@@ -67,7 +70,8 @@ function onBackdropClick(event: MouseEvent) {
   <dialog
     ref="dialog"
     aria-labelledby="tallenna-pohjaksi"
-    class="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[480px] flex-col rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
+    :style="{ bottom: `${viewport.keyboardInset.value}px` }"
+    class="fixed inset-x-0 top-auto m-0 mx-auto w-full max-w-[480px] flex-col rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
     @close="onNativeClose"
     @click="onBackdropClick"
   >
