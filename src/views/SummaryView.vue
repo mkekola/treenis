@@ -2,15 +2,18 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { recurringDeviations, type Deviation } from '@/lib/deviation'
-import { durationParts, formatShortDate } from '@/lib/format'
+import { durationParts, formatDurationShort, formatShortDate } from '@/lib/format'
+import { startedAtOf, timeOf } from '@/lib/manual'
 import { findRecords } from '@/lib/records'
-import { localDate, progress, toWorkout } from '@/lib/session'
+import { localDate, progress, toWorkout, withTiming } from '@/lib/session'
 import { totalVolumeKg } from '@/lib/workout'
+import DateChips from '@/components/DateChips.vue'
+import DurationInput from '@/components/DurationInput.vue'
 import SaveTemplateSheet from '@/components/SaveTemplateSheet.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
-import { recordVars } from '@/stores/sportColors'
+import { recordVars, sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 
@@ -20,6 +23,8 @@ const exercises = useExercises()
 const workouts = useWorkouts()
 const templates = useTemplates()
 const { isDark } = useTheme()
+const colors = useSportColors()
+const vars = computed(() => sportVars(colors.swatchFor('strength'), isDark.value))
 
 // Ilman käynnissä olevaa treeniä tälle sivulle ei ole asiaa.
 onBeforeMount(() => {
@@ -31,7 +36,21 @@ const active = computed(() => session.active)
 /** Kesto lasketaan yhteenvedon avaushetkellä, ei kasvamaan jäävänä kellona. */
 const openedAt = new Date()
 
-const workout = computed(() => (active.value ? toWorkout(active.value, openedAt) : null))
+const timed = computed(() => (active.value ? toWorkout(active.value, openedAt) : null))
+
+// Ajankohdan voi korjata, kun treeni kirjataan jälkikäteen: oletuksena ajastimen arvot.
+const editingWhen = ref(false)
+const date = ref(active.value ? localDate(new Date(active.value.startedAt)) : '')
+const startTime = ref(active.value ? timeOf(active.value.startedAt) : '')
+const durationSec = ref(timed.value?.logged?.durationSec ?? 0)
+const timerSec = timed.value?.logged?.durationSec ?? 0
+
+const timing = computed(() => ({
+  date: date.value,
+  startedAt: startedAtOf(date.value, startTime.value),
+  durationSec: durationSec.value,
+}))
+const workout = computed(() => (timed.value ? withTiming(timed.value, timing.value) : null))
 const counts = computed(() => (active.value ? progress(active.value) : { done: 0, total: 0 }))
 
 const volume = computed(() =>
@@ -101,7 +120,7 @@ function onTemplateSaved(templateName: string, programName: string) {
 }
 
 async function finish() {
-  await session.finish()
+  await session.finish(timing.value)
   await router.push('/')
 }
 
@@ -125,7 +144,7 @@ async function discard() {
     </RouterLink>
 
     <p class="mt-3.5 text-xs font-semibold tracking-[0.08em] text-ink-muted uppercase">
-      {{ active.title }} · {{ formatShortDate(localDate(new Date(active.startedAt))) }}
+      {{ active.title }} · {{ formatShortDate(date) }}
     </p>
     <h1 class="mt-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">
       Treeni valmis
@@ -182,6 +201,51 @@ async function discard() {
         <p class="mt-2.5 text-xs text-ink-muted">
           Kello täydentää keston ja sykkeen kun Strava synkkaa.
         </p>
+      </section>
+
+      <!-- Ajankohta: jälkikäteen kirjatulle treenille oikea päivä ja kesto. -->
+      <section :style="vars" aria-labelledby="ajankohta" class="mt-2.5 rounded-(--radius-feature) bg-surface p-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <h2 id="ajankohta" class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Ajankohta</h2>
+          <button
+            type="button"
+            :aria-expanded="editingWhen"
+            aria-controls="ajankohdan-kentat"
+            class="min-h-9 rounded-full px-2 text-sm font-semibold"
+            @click="editingWhen = !editingWhen"
+          >
+            {{ editingWhen ? 'Valmis' : 'Muokkaa' }}
+          </button>
+        </div>
+        <p v-if="!editingWhen" class="text-[15px]" data-numeric>
+          {{ formatShortDate(date) }}<template v-if="startTime"> klo {{ startTime.replace(':', '.') }}</template>
+          · {{ formatDurationShort(durationSec) }}
+        </p>
+        <div v-else id="ajankohdan-kentat" class="mt-1 flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <span id="ajankohta-paiva" class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Päivä</span>
+            <DateChips v-model="date" label-id="ajankohta-paiva" />
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="flex min-w-0 flex-col gap-1">
+              <span class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Alkoi klo</span>
+              <input
+                id="ajankohta-alku"
+                v-model="startTime"
+                type="time"
+                class="h-12 w-full min-w-0 rounded-(--radius-field) border border-line bg-bg px-3 text-base"
+                data-numeric
+              />
+            </label>
+            <div class="flex min-w-0 flex-col gap-1">
+              <span id="ajankohta-kesto" class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Kesto</span>
+              <DurationInput v-model="durationSec" label-id="ajankohta-kesto" />
+            </div>
+          </div>
+          <p class="text-[13px] text-ink-muted" data-numeric>
+            Ajastimen mukaan {{ formatDurationShort(timerSec) }}. Korjaa, jos kirjasit treenin jälkikäteen.
+          </p>
+        </div>
       </section>
 
       <!-- Ennätykset: ruusunpunainen on varattu vain näille. -->

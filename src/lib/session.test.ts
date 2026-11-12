@@ -19,6 +19,7 @@ import {
   setValues,
   swapExercise,
   toWorkout,
+  withTiming,
 } from '@/lib/session'
 import { doneSets, entry, exercise, lookup, strengthWorkout } from '@/test/fixtures'
 import type { ActiveSession, SessionBlock, SetRef } from '@/types/session'
@@ -304,3 +305,20 @@ describe('kopioi uudeksi', () => {
     expect(copy).toMatchObject({ id: 's9', title: 'Treeni 1', templateId: 'template-a', startedAt: NOW.toISOString(), currentBlock: 0 })
   })
 })
+
+describe('ajankohdan korjaus', () => {
+  const workout = strengthWorkout('w1', '2026-11-12', [entry('back-squat', doneSets(80, [10]))], '2026-11-12T15:28:00.000Z')
+  const timed = { ...workout, logged: { ...workout.logged, durationSec: 240 } }
+
+  it('vaihtaa päivän, alkamisajan ja keston', () => {
+    const fixed = withTiming(timed, { date: '2026-11-11', startedAt: '2026-11-11T16:00:00.000Z', durationSec: 3900 })
+    expect(fixed).toMatchObject({ date: '2026-11-11', logged: { startedAt: '2026-11-11T16:00:00.000Z', durationSec: 3900 } })
+    expect(fixed.logged?.blocks).toEqual(workout.logged?.blocks)
+  })
+
+  it('ilman alkamisaikaa ja kestoa ajastimen arvot säilyvät', () => {
+    const fixed = withTiming(timed, { date: '2026-11-12', durationSec: 0 })
+    expect(fixed.logged).toMatchObject({ startedAt: '2026-11-12T15:28:00.000Z', durationSec: 240 })
+  })
+})
+

@@ -123,11 +123,12 @@ export const useSession = defineStore('session', () => {
    * ensin: jos sovellus kaatuu näiden välissä, sessio palautetaan ja sen voi
    * päättää uudelleen, ja sama tunniste estää tuplan.
    */
-  async function finish(): Promise<string | null> {
+  async function finish(timing?: logic.Timing): Promise<string | null> {
     const session = active.value
     if (!session) return null
 
-    const workout = logic.toWorkout(session, new Date())
+    const measuredByTimer = logic.toWorkout(session, new Date())
+    const workout = timing ? logic.withTiming(measuredByTimer, timing) : measuredByTimer
     await workouts.save(workout)
 
     const template = templates.templates.find((t) => t.id === session.templateId)
@@ -160,8 +161,8 @@ export const useSession = defineStore('session', () => {
     recovery,
     load,
     start,
-    setValues,
     startFrom,
+    setValues,
     completeSet,
     uncompleteSet,
     addSet,

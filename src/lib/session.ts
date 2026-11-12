@@ -349,6 +349,28 @@ export function setFeel(
 
 // ------------------------------------------------------------------- lopetus
 
+export interface Timing {
+  date: string
+  startedAt?: string
+  durationSec: number
+}
+
+/**
+ * Yhteenvedossa korjattu ajankohta: jälkikäteen kirjattu treeni saa oikean
+ * päivän ja keston ajastimen arvojen tilalle. Ilman alkamisaikaa alkuperäinen säilyy.
+ */
+export function withTiming(workout: Workout, timing: Timing): Workout {
+  return {
+    ...workout,
+    date: timing.date,
+    logged: {
+      ...workout.logged,
+      startedAt: timing.startedAt ?? workout.logged?.startedAt,
+      durationSec: timing.durationSec > 0 ? timing.durationSec : workout.logged?.durationSec,
+    },
+  }
+}
+
 export function progress(session: ActiveSession): { done: number; total: number } {
   const sets = session.blocks.flatMap((b) => b.exercises.flatMap((e) => e.sets))
   return { done: sets.filter((s) => s.done).length, total: sets.length }
