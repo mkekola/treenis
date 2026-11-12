@@ -6,6 +6,7 @@ import RecoveryCard from '@/components/RecoveryCard.vue'
 import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import WorkoutSheet from '@/components/WorkoutSheet.vue'
+import { useCopyWorkout } from '@/composables/useCopyWorkout'
 import { useTheme } from '@/composables/useTheme'
 import { useNow } from '@/composables/useNow'
 import { byMonth, formatToday, thisWeek } from '@/lib/calendar'
@@ -16,6 +17,7 @@ import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
+import type { Workout } from '@/types/workout'
 
 const colors = useSportColors()
 const { isDark } = useTheme()
@@ -62,6 +64,12 @@ const selected = computed(() => store.workouts.find((w) => w.id === selectedId.v
 async function removeWorkout(id: string) {
   selectedId.value = null
   await store.remove(id)
+}
+
+const copyWorkout = useCopyWorkout()
+async function copy(workout: Workout) {
+  selectedId.value = null
+  await copyWorkout(workout)
 }
 
 const totalSeconds = computed(() => workouts.value.reduce((sum, w) => sum + durationSec(w), 0))
@@ -246,6 +254,6 @@ const byGroup = computed(() => {
     </div>
 
 
-    <WorkoutSheet :workout="selected" @close="selectedId = null" @remove="removeWorkout" />
+    <WorkoutSheet :workout="selected" @close="selectedId = null" @remove="removeWorkout" @copy="copy" />
   </div>
 </template>

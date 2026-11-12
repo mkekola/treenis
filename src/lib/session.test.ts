@@ -15,6 +15,7 @@ import {
   removeLastSet,
   setFeel,
   setNotes,
+  sessionFromWorkout,
   setValues,
   swapExercise,
   toWorkout,
@@ -280,3 +281,26 @@ describe('liikkeen poisto', () => {
   })
 })
 
+describe('kopioi uudeksi', () => {
+  const done = strengthWorkout('w9', '2026-11-10', [
+    entry('back-squat', [...doneSets(80, [10, 10]), { reps: 10, weightKg: 80, done: false }]),
+    entry('plank', [{ durationSec: 45, done: true }]),
+  ])
+  const copy = sessionFromWorkout({ id: 's9', now: NOW, workout: { ...done, templateId: 'template-a' }, history: [done], exercises: lookup })
+
+  it('samat liikkeet, tehdyt sarjat ja painot, kaikki tekemättöminä', () => {
+    const squat = copy.blocks[0].exercises[0]
+    expect(squat.sets).toEqual([
+      { weightKg: 80, reps: 10, done: false },
+      { weightKg: 80, reps: 10, done: false },
+    ])
+    expect(squat.target).toEqual({ sets: 2, reps: 10 })
+    expect(squat.previous?.weightKg).toBe(80)
+    expect(squat.hint).toBeUndefined()
+    expect(copy.blocks[1].exercises[0].measurement).toBe('time')
+  })
+
+  it('pohja ja nimi säilyvät, aloitus on nyt', () => {
+    expect(copy).toMatchObject({ id: 's9', title: 'Treeni 1', templateId: 'template-a', startedAt: NOW.toISOString(), currentBlock: 0 })
+  })
+})

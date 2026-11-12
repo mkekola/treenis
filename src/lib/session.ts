@@ -138,6 +138,44 @@ export function buildSession(args: {
   }
 }
 
+/**
+ * Uusi treeni tehdyn treenin pohjalta: samat liikkeet, sarjat ja painot, ja
+ * kaikki sarjat tekemättöminä. Liikkeen edellinen kerta tulee historiasta kuten
+ * pohjasta aloitettaessa, mutta painoja ei ehdoteta: kopio käyttää kopioituja.
+ * Pohja säilyy, joten kopio lasketaan saman treenin kerraksi ohjelmassa.
+ */
+export function sessionFromWorkout(args: {
+  id: string
+  now: Date
+  workout: Workout
+  history: Workout[]
+  exercises: ExerciseLookup
+}): ActiveSession {
+  const { id, now, workout, history, exercises } = args
+  const timestamp = now.toISOString()
+
+  const blocks: SessionBlock[] = (workout.logged?.blocks ?? []).map((block) => ({
+    id: block.id,
+    restSec: block.restSec,
+    exercises: block.exercises.map((entry) => {
+      const done = entry.sets.filter((set) => set.done)
+      const sets = (done.length ? done : entry.sets).map((set) => ({ ...set, done: false }))
+      const built = buildExercise({ exerciseId: entry.exerciseId, sets }, history, exercises)
+      return { ...built, hint: undefined, sets }
+    }),
+  }))
+
+  return {
+    id,
+    title: workout.title,
+    templateId: workout.templateId,
+    startedAt: timestamp,
+    updatedAt: timestamp,
+    blocks,
+    currentBlock: 0,
+  }
+}
+
 // ----------------------------------------------------------------------- sarjat
 
 function setAt(session: ActiveSession, ref: SetRef): SetEntry | undefined {

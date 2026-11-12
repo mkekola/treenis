@@ -7,7 +7,7 @@ import { useExercises } from '@/stores/exercises'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 import type { ActiveSession, SetRef } from '@/types/session'
-import type { Feel, SetEntry, WorkoutTemplate } from '@/types/workout'
+import type { Feel, SetEntry, Workout, WorkoutTemplate } from '@/types/workout'
 
 const KEY = 'current'
 
@@ -48,6 +48,19 @@ export const useSession = defineStore('session', () => {
         id: crypto.randomUUID(),
         now: new Date(),
         template,
+        history: workouts.workouts,
+        exercises: (id) => exercises.byId.get(id),
+      }),
+    )
+  }
+
+  /** Kopioi uudeksi: aloittaa treenin tehdyn treenin liikkeillä, sarjoilla ja painoilla. */
+  async function startFrom(workout: Workout) {
+    await apply(
+      logic.sessionFromWorkout({
+        id: crypto.randomUUID(),
+        now: new Date(),
+        workout,
         history: workouts.workouts,
         exercises: (id) => exercises.byId.get(id),
       }),
@@ -148,6 +161,7 @@ export const useSession = defineStore('session', () => {
     load,
     start,
     setValues,
+    startFrom,
     completeSet,
     uncompleteSet,
     addSet,

@@ -7,6 +7,7 @@ import PeriodCalendar from '@/components/stats/PeriodCalendar.vue'
 import Sparkline from '@/components/stats/Sparkline.vue'
 import YearGrid from '@/components/stats/YearGrid.vue'
 import WorkoutSheet from '@/components/WorkoutSheet.vue'
+import { useCopyWorkout } from '@/composables/useCopyWorkout'
 import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { SPORT_GROUP_LABELS } from '@/design/sportGroups'
@@ -32,6 +33,7 @@ import {
 import { useExercises } from '@/stores/exercises'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useWorkouts } from '@/stores/workouts'
+import type { Workout } from '@/types/workout'
 
 const store = useWorkouts()
 const exercises = useExercises()
@@ -109,6 +111,13 @@ const selectedWorkout = computed(() => store.workouts.find((w) => w.id === selec
 async function removeWorkout(id: string) {
   selectedWorkoutId.value = null
   await store.remove(id)
+}
+
+const copyWorkout = useCopyWorkout()
+async function copy(workout: Workout) {
+  selectedWorkoutId.value = null
+  selectedDay.value = null
+  await copyWorkout(workout)
 }
 
 // ---------------------------------------------------------------- tasapaino
@@ -353,6 +362,6 @@ const lifts = computed(() =>
       @close="selectedDay = null"
       @open="selectedWorkoutId = $event"
     />
-    <WorkoutSheet :workout="selectedWorkout" @close="selectedWorkoutId = null" @remove="removeWorkout" />
+    <WorkoutSheet :workout="selectedWorkout" @close="selectedWorkoutId = null" @remove="removeWorkout" @copy="copy" />
   </div>
 </template>
