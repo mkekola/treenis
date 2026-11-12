@@ -199,15 +199,27 @@ function finish() {
     >
       <div class="flex items-start justify-between gap-2">
         <h2 class="text-lg font-bold tracking-[-0.01em]">{{ nameOf(exercise.exerciseId) }}</h2>
-        <!-- Vaihto vain ennen ensimmäistä tehtyä sarjaa, jottei kirjattu katoa. -->
-        <button
-          v-if="canSwap(exercise)"
-          type="button"
-          class="min-h-8 flex-none rounded-full bg-surface/55 px-3 text-[13px] font-semibold text-[var(--sport-on)]"
-          @click="picker = { mode: 'swap', exercise: exerciseIndex }"
-        >
-          Vaihda liike
-        </button>
+        <!--
+          Vaihto ja poisto vain ennen ensimmäistä tehtyä sarjaa, jottei kirjattu katoa.
+          Poistettu liike palaa "Lisää liike" -napista, joten varmistusta ei tarvita.
+        -->
+        <div v-if="canSwap(exercise)" class="flex flex-none gap-1.5">
+          <button
+            type="button"
+            class="min-h-8 rounded-full bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] px-3 text-[13px] font-semibold text-[var(--sport-on)]"
+            @click="picker = { mode: 'swap', exercise: exerciseIndex }"
+          >
+            Vaihda liike
+          </button>
+          <button
+            type="button"
+            :aria-label="`Poista ${nameOf(exercise.exerciseId)} treenistä`"
+            class="min-h-8 rounded-full bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] px-3 text-[13px] font-semibold text-[var(--sport-on)]"
+            @click="session.removeExercise(active.currentBlock, exerciseIndex)"
+          >
+            Poista
+          </button>
+        </div>
       </div>
       <p class="mt-0.5 text-xs text-[var(--sport-on)]" data-numeric>
         Tavoite {{ exercise.target.sets }} × {{ exercise.target.reps }}

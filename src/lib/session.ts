@@ -253,6 +253,20 @@ export function swapExercise(
   return next
 }
 
+/**
+ * Poistaa liikkeen treenistä. Vain tekemätön liike: tehtyjä sarjoja ei koskaan
+ * poisteta. Tyhjäksi jäänyt lohko poistuu, ja käsillä oleva lohko pysyy listan sisällä.
+ */
+export function removeExercise(session: ActiveSession, block: number, exercise: number): ActiveSession {
+  const current = session.blocks[block]?.exercises[exercise]
+  if (!current || !canSwap(current)) return session
+  const next = clone(session)
+  next.blocks[block].exercises.splice(exercise, 1)
+  if (next.blocks[block].exercises.length === 0) next.blocks.splice(block, 1)
+  next.currentBlock = Math.max(0, Math.min(next.currentBlock, next.blocks.length - 1))
+  return next
+}
+
 /** Lisää liikkeen treenin loppuun omana lohkonaan ja siirtää sen käsillä olevaksi. */
 export function addBlock(
   session: ActiveSession,

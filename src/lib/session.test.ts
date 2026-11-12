@@ -11,6 +11,7 @@ import {
   isExerciseDone,
   newSessionExercise,
   progress,
+  removeExercise,
   removeLastSet,
   setFeel,
   setNotes,
@@ -257,3 +258,25 @@ describe('toWorkout', () => {
     expect(progress(finished())).toEqual({ done: 4, total: 17 })
   })
 })
+
+describe('liikkeen poisto', () => {
+  it('poistaa tekemättömän liikkeen ja sen tyhjän lohkon', () => {
+    const s = removeExercise(startA(), 2, 0)
+    expect(s.blocks).toHaveLength(5)
+    expect(s.blocks.map((b) => b.exercises[0].exerciseId)).not.toContain('calf-raise')
+  })
+
+  it('ei poista liikettä, josta on tehty sarja', () => {
+    const started = completeSet(setValues(startA(), at(0, 0), { weightKg: 60 }), at(0, 0), NOW)
+    expect(started.blocks[0].exercises[0].sets[0].done).toBe(true)
+    expect(removeExercise(started, 0, 0)).toBe(started)
+  })
+
+  it('käsillä oleva lohko pysyy listan sisällä, kun viimeinen poistetaan', () => {
+    let s = startA()
+    s = { ...s, currentBlock: 5 }
+    s = removeExercise(s, 5, 0)
+    expect(s.currentBlock).toBe(4)
+  })
+})
+
