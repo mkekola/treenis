@@ -120,7 +120,15 @@ function suggestionText(exercise: SessionExercise): string | null {
   ])
   if (!suggestion) return null
 
-  if (suggestion.kind === 'keep') return `Ensi kerralla sama paino, ${kg(suggestion.kg)} kg`
+  if (suggestion.kind === 'keep') {
+    const keep = `Ensi kerralla sama paino, ${kg(suggestion.kg)} kg.`
+    // Raskas tuntuma ei yksin laske painoa: yksi huono päivä ei kerro, että paino on liian iso.
+    if (exercise.feel !== 'hard' && exercise.feel !== 'max') return keep
+    const missed = exercise.sets.some((set) => (set.reps ?? 0) < exercise.target.reps)
+    return missed
+      ? `${keep} Jos tuntuu taas raskaalta eivätkä toistot täyty, paino laskee.`
+      : `${keep} Toistot täyttyivät, joten paino pysyy.`
+  }
   const delta = suggestion.toKg - suggestion.fromKg
   return `Ensi kerralle ehdotus ${kg(suggestion.toKg)} kg (${delta > 0 ? '+' : '−'}${kg(Math.abs(delta))})`
 }
