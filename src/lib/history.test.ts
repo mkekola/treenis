@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { recentExerciseIds, sessionsFor } from '@/lib/history'
+import { frequentExerciseIds, sessionsFor } from '@/lib/history'
 import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
 
 const history = [
@@ -30,12 +30,25 @@ describe('sessionsFor', () => {
   })
 })
 
-describe('recentExerciseIds', () => {
-  it('listaa viimeksi tehdyt uusimmasta alkaen, kukin kerran', () => {
-    expect(recentExerciseIds(history)).toEqual(['dumbbell-bench-press', 'lat-pulldown', 'plank'])
+describe('frequentExerciseIds', () => {
+  const sessions = [
+    strengthWorkout('f1', '2026-11-01', [entry('back-squat', doneSets(50, [10])), entry('lat-pulldown', doneSets(40, [10]))]),
+    strengthWorkout('f2', '2026-11-05', [entry('back-squat', doneSets(50, [10]))]),
+    strengthWorkout('f3', '2026-11-08', [entry('plank', [{ durationSec: 30, done: true }])]),
+    strengthWorkout('f4', '2026-06-01', [entry('cable-curl', doneSets(10, [10])), entry('cable-curl', doneSets(10, [10]))]),
+    strengthWorkout('f5', '2026-11-09', [entry('triceps-pushdown', [{ reps: 12, done: false }])]),
+  ]
+
+  it('järjestää kertojen mukaan, tasatilanteessa tuoreempi ensin', () => {
+    expect(frequentExerciseIds(sessions, '2026-08-12')).toEqual(['back-squat', 'plank', 'lat-pulldown'])
+  })
+
+  it('jättää aikarajaa vanhemmat ja tekemättömät pois', () => {
+    expect(frequentExerciseIds(sessions, '2026-08-12')).not.toContain('cable-curl')
+    expect(frequentExerciseIds(sessions, '2026-08-12')).not.toContain('triceps-pushdown')
   })
 
   it('noudattaa rajausta', () => {
-    expect(recentExerciseIds(history, 2)).toHaveLength(2)
+    expect(frequentExerciseIds(sessions, '2026-01-01', 2)).toHaveLength(2)
   })
 })

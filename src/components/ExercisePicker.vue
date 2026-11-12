@@ -2,7 +2,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVisibleViewport } from '@/composables/useVisibleViewport'
 import { MEASUREMENT_LABELS, MUSCLE_GROUP_LABELS } from '@/data/exerciseLibrary'
-import { recentExerciseIds } from '@/lib/history'
+import { frequentExerciseIds } from '@/lib/history'
+import { localDate } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useWorkouts } from '@/stores/workouts'
 import type { Exercise, Measurement, MuscleGroup } from '@/types/workout'
@@ -41,10 +42,15 @@ watch(
 
 const results = computed(() => exercises.search(query.value))
 
-/** Tyhjällä haulla tutut liikkeet ensin: salilla vaihdetaan yleensä liikkeeseen, jonka tuntee. */
+/** Kolme kuukautta: lista seuraa nykyistä ohjelmaa. */
+const FREQUENT_DAYS = 90
+
+/** Tyhjällä haulla eniten tehdyt liikkeet ensin: salilla vaihdetaan yleensä liikkeeseen, jonka tuntee. */
 const recents = computed<Exercise[]>(() => {
   if (query.value.trim()) return []
-  return recentExerciseIds(workouts.workouts, 6)
+  const since = new Date()
+  since.setDate(since.getDate() - FREQUENT_DAYS)
+  return frequentExerciseIds(workouts.workouts, localDate(since), 6)
     .map((id) => exercises.byId.get(id))
     .filter((exercise): exercise is Exercise => exercise !== undefined)
 })
@@ -170,7 +176,7 @@ function onBackdropClick(event: MouseEvent) {
       <div class="min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-6">
         <template v-if="recents.length">
           <h3 class="mt-2 mb-1.5 text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
-            Viimeksi tehdyt
+            Eniten tehdyt
           </h3>
           <ul class="flex flex-col gap-1.5">
             <li v-for="exercise in recents" :key="`recent-${exercise.id}`">
