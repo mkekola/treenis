@@ -31,15 +31,16 @@ const ordered = computed(() =>
   programs.active ? inRotation(templatesOf(programs.active, templates.templates)) : [],
 )
 
-/** Muut ohjelmat ja ohjelmattomat treenit, jotta minkä tahansa treenin voi aloittaa. */
-const others = computed(() => {
-  const groups = programs.programs
+/** Muut ohjelmat, jotta minkä tahansa ohjelman treenin voi aloittaa. */
+const others = computed(() =>
+  programs.programs
     .filter((p) => p.id !== programs.active?.id)
     .map((p) => ({ id: p.id, name: p.name, templates: templatesOf(p, templates.templates) }))
-  const loose = unassigned(programs.programs, templates.templates)
-  if (loose.length) groups.push({ id: 'ilman-ohjelmaa', name: 'Ilman ohjelmaa', templates: loose })
-  return groups.filter((g) => g.templates.length)
-})
+    .filter((g) => g.templates.length),
+)
+
+/** Ohjelmattomat pohjat näytetään omassa osiossaan tyhjästä aloittamisen kanssa. */
+const loose = computed(() => unassigned(programs.programs, templates.templates))
 
 /** Tyhjä treeni: liikkeet haetaan itse, ja valmiin treenin voi tallentaa pohjaksi. */
 async function beginBlank() {
@@ -128,14 +129,6 @@ async function preview(template: WorkoutTemplate) {
         </svg>
       </button>
 
-      <button
-        type="button"
-        class="mt-1 flex min-h-13 items-center justify-center gap-2 rounded-(--radius-button) border border-line text-base font-semibold"
-        @click="beginBlank"
-      >
-        + Aloita tyhjästä
-      </button>
-
       <!-- Muut ohjelmat: harvemmin tarvittuja, joten tiiviimmät rivit ilman ehdotusta. -->
       <section v-for="group in others" :key="group.id" class="mt-3 flex flex-col gap-1.5">
         <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
@@ -152,6 +145,30 @@ async function preview(template: WorkoutTemplate) {
           <span class="text-[13px] text-ink-muted" data-numeric>
             {{ exerciseCount(template) }} liikettä
           </span>
+        </button>
+      </section>
+
+      <!-- Oma osio, jottei tyhjä treeni näytä kuuluvan käytössä olevaan ohjelmaan. -->
+      <section class="mt-3 flex flex-col gap-1.5">
+        <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Ilman ohjelmaa</h2>
+        <button
+          v-for="template in loose"
+          :key="template.id"
+          type="button"
+          class="flex min-h-12 items-center justify-between gap-3 rounded-(--radius-card) bg-surface px-3.5 py-2.5 text-left"
+          @click="preview(template)"
+        >
+          <span class="font-semibold">{{ template.name }}</span>
+          <span class="text-[13px] text-ink-muted" data-numeric>
+            {{ exerciseCount(template) }} liikettä
+          </span>
+        </button>
+        <button
+          type="button"
+          class="flex min-h-13 items-center justify-center gap-2 rounded-(--radius-button) border border-line text-base font-semibold"
+          @click="beginBlank"
+        >
+          + Aloita tyhjästä
         </button>
       </section>
       <div class="pb-6" />
