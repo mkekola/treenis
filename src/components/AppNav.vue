@@ -16,7 +16,7 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
 <template>
   <nav
     aria-label="Päävalikko"
-    class="grid grid-cols-3 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
+    class="sticky bottom-0 z-10 grid grid-cols-3 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
   >
     <RouterLink
       v-for="item in items"
