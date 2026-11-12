@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import DaySheet from '@/components/stats/DaySheet.vue'
 import FootChart from '@/components/stats/FootChart.vue'
 import PeriodCalendar from '@/components/stats/PeriodCalendar.vue'
 import Sparkline from '@/components/stats/Sparkline.vue'
 import YearGrid from '@/components/stats/YearGrid.vue'
+import WorkoutSheet from '@/components/WorkoutSheet.vue'
 import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { SPORT_GROUP_LABELS } from '@/design/sportGroups'
@@ -77,6 +79,17 @@ const streakText = computed(() => {
   const now = `tällä viikolla ${Math.min(s.thisWeek, s.goal)}/${s.goal}`
   return s.weeks ? `putki ${weeks} · ${now}` : now
 })
+
+// Kalenteripäivä avaa päivän treenit; treenin tiedot avautuvat niiden päälle,
+// ja niiden sulkeminen palaa päivän listaan.
+const selectedDay = ref<string | null>(null)
+const selectedWorkoutId = ref<string | null>(null)
+const selectedWorkout = computed(() => store.workouts.find((w) => w.id === selectedWorkoutId.value) ?? null)
+
+async function removeWorkout(id: string) {
+  selectedWorkoutId.value = null
+  await store.remove(id)
+}
 
 // ---------------------------------------------------------------- tasapaino
 
@@ -194,7 +207,7 @@ const lifts = computed(() =>
           :by-day="byDay"
           :today="today"
         />
-        <PeriodCalendar v-else :period="period" :by-day="byDay" :today="today" />
+        <PeriodCalendar v-else :period="period" :by-day="byDay" :today="today" @select="selectedDay = $event" />
         <p class="mt-2.5 flex items-center justify-end gap-1 text-[11px] text-ink-muted">
           Treeniaika päivässä: vähän
           <span class="size-2.5 rounded-[2px] bg-track" aria-hidden="true" />
@@ -274,5 +287,12 @@ const lifts = computed(() =>
         </p>
       </div>
     </section>
+
+    <DaySheet
+      :date="selectedWorkoutId ? null : selectedDay"
+      @close="selectedDay = null"
+      @open="selectedWorkoutId = $event"
+    />
+    <WorkoutSheet :workout="selectedWorkout" @close="selectedWorkoutId = null" @remove="removeWorkout" />
   </div>
 </template>

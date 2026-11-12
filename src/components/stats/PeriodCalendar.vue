@@ -4,6 +4,7 @@ import { formatDurationShort } from '@/lib/format'
 import { addDays, heatLevel, type Period } from '@/lib/stats'
 
 const props = defineProps<{ period: Period; byDay: Map<string, number>; today: string }>()
+const emit = defineEmits<{ select: [date: string] }>()
 
 const WEEKDAYS = ['ma', 'ti', 'ke', 'to', 'pe', 'la', 'su']
 
@@ -28,23 +29,34 @@ const leadingBlanks = computed(() => (new Date(`${props.period.start}T00:00:00`)
 </script>
 
 <template>
-  <div class="grid grid-cols-7 gap-1" role="list" aria-label="Treenipäivät">
+  <div class="grid grid-cols-7 gap-1">
     <span v-for="weekday in WEEKDAYS" :key="weekday" aria-hidden="true" class="text-center text-[11px] text-ink-muted">
       {{ weekday }}
     </span>
     <span v-for="n in leadingBlanks" :key="`tyhja-${n}`" aria-hidden="true" />
-    <span
-      v-for="day in days"
-      :key="day.date"
-      role="listitem"
-      :aria-label="day.label"
-      :title="day.label"
-      :class="[day.level >= 3 ? 'text-[var(--c-on-heat)]' : '', day.future ? 'opacity-40' : '']"
-      :style="{ background: day.level ? `var(--c-heat-${day.level})` : 'var(--c-track)' }"
-      class="aspect-square rounded-[10px] px-1.5 py-1 text-xs"
-      data-numeric
-    >
-      {{ day.day }}
-    </span>
+    <!-- Treenipäivä on painike, joka avaa päivän treenit. Tyhjä päivä on pelkkä ruutu. -->
+    <template v-for="day in days" :key="day.date">
+      <button
+        v-if="day.level"
+        type="button"
+        :aria-label="`${day.label}, näytä treenit`"
+        :class="day.level >= 3 ? 'text-[var(--c-on-heat)]' : ''"
+        :style="{ background: `var(--c-heat-${day.level})` }"
+        class="flex aspect-square flex-col items-start rounded-[10px] px-1.5 py-1 text-xs"
+        data-numeric
+        @click="emit('select', day.date)"
+      >
+        {{ day.day }}
+      </button>
+      <span
+        v-else
+        :aria-label="day.label"
+        :class="day.future ? 'opacity-40' : ''"
+        class="aspect-square rounded-[10px] bg-track px-1.5 py-1 text-xs"
+        data-numeric
+      >
+        {{ day.day }}
+      </span>
+    </template>
   </div>
 </template>
