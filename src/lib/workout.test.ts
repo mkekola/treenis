@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { totalVolumeKg } from '@/lib/workout'
+import { avgHr, distanceM, totalVolumeKg } from '@/lib/workout'
 import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
+import type { Workout } from '@/types/workout'
 
 describe('totalVolumeKg', () => {
   const workout = strengthWorkout('w', '2026-11-12', [
@@ -17,5 +18,26 @@ describe('totalVolumeKg', () => {
 
   it('käyttää annettua yhden puolen hakua omille liikkeille', () => {
     expect(totalVolumeKg(workout, () => false)).toBe(800)
+  })
+})
+
+describe('käsin kirjattu matka ja syke', () => {
+  const run: Workout = {
+    id: 'm1',
+    sport: 'run',
+    date: '2026-11-12',
+    title: 'Iltalenkki',
+    logged: { startedAt: '2026-11-12T15:30:00Z', durationSec: 2520, distanceM: 8240, avgHr: 154 },
+  }
+
+  it('käytetään, kun mitattua ei ole', () => {
+    expect(distanceM(run)).toBe(8240)
+    expect(avgHr(run)).toBe(154)
+  })
+
+  it('mitattu voittaa kirjatun', () => {
+    const merged = { ...run, measured: { stravaActivityId: 1, startedAt: run.logged!.startedAt!, durationSec: 2500, distanceM: 8300, avgHr: 150 } }
+    expect(distanceM(merged)).toBe(8300)
+    expect(avgHr(merged)).toBe(150)
   })
 })

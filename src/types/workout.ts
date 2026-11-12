@@ -194,6 +194,10 @@ export interface LoggedData {
   /** Koettu rasitus 1–10 */
   rpe?: number
   notes?: string
+  /** Käsin kirjattu matka, esimerkiksi juoksu ilman Stravaa. Mitattu voittaa. */
+  distanceM?: number
+  /** Käsin kirjattu keskisyke. Mitattu voittaa. */
+  avgHr?: number
 }
 
 /** Strava-aktiviteetti joka saattaa olla sama treeni, mutta osuma ei ole varma. */

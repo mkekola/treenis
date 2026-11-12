@@ -6,6 +6,13 @@ export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'diary', component: DiaryView },
+    { path: '/kirjaa', name: 'log', component: () => import('@/views/SportPickerView.vue') },
+    {
+      path: '/kirjaa/:sport',
+      name: 'log-sport',
+      component: () => import('@/views/ManualWorkoutView.vue'),
+      meta: { hideNav: true },
+    },
     {
       path: '/treeni/uusi',
       name: 'new-workout',

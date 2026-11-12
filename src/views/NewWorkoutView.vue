@@ -56,8 +56,8 @@ async function preview(template: WorkoutTemplate) {
 <template>
   <div class="flex min-h-full flex-col gap-4 px-5 pt-5">
     <RouterLink
-      to="/"
-      aria-label="Takaisin päiväkirjaan"
+      to="/kirjaa"
+      aria-label="Takaisin lajivalintaan"
       class="flex size-11 items-center justify-center rounded-full border border-line bg-surface"
     >
       <svg class="size-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

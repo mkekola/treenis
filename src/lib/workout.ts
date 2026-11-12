@@ -11,11 +11,11 @@ export function durationSec(workout: Workout): number {
 }
 
 export function distanceM(workout: Workout): number | undefined {
-  return workout.measured?.distanceM
+  return workout.measured?.distanceM ?? workout.logged?.distanceM
 }
 
 export function avgHr(workout: Workout): number | undefined {
-  return workout.measured?.avgHr
+  return workout.measured?.avgHr ?? workout.logged?.avgHr
 }
 
 export function kindOf(workout: Workout): SportKind {

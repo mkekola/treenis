@@ -172,7 +172,7 @@ const byGroup = computed(() => {
     <!-- Kirjaus heti yhteenvedon alla: se on sovelluksen tärkein toiminto, eikä sitä haeta listan lopusta. -->
     <div class="px-5 pt-3">
       <RouterLink
-        to="/treeni/uusi"
+        to="/kirjaa"
         class="flex min-h-13 items-center justify-center gap-2 rounded-(--radius-button) bg-action text-base font-semibold tracking-[-0.01em] text-on-action"
       >
         <svg
