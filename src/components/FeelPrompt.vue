@@ -21,7 +21,7 @@ const rows: Feel[][] = [
 </script>
 
 <template>
-  <div class="mt-2.5 rounded-(--radius-card) bg-surface p-3.5">
+  <div class="mt-2.5 rounded-(--radius-card) bg-[var(--sport-raised)] p-3.5">
     <div class="flex items-baseline justify-between gap-2">
       <h3 :id="titleId" class="text-base font-bold tracking-[-0.01em]">Miltä tuntui?</h3>
       <button

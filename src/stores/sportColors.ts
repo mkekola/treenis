@@ -68,15 +68,28 @@ export const useSportColors = defineStore('sportColors', () => {
   return { assignments, swatchFor, swatchForGroup, usersOf, assign, reset }
 })
 
+/** Tummentaa värin sekoittamalla mustaa: amount 0 = ennallaan, 1 = musta. */
+function darken(hex: string, amount: number): string {
+  const channel = (i: number) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - amount))
+  return `#${[1, 3, 5].map((i) => channel(i).toString(16).padStart(2, '0')).join('')}`
+}
+
 /**
  * Ryhmän värit CSS-muuttujina. Komponentti ei tiedä mikä väri on kyseessä eikä
  * kumpi teema on päällä — se lukee vain --sport-surface ja --sport-on.
+ *
+ * Lajin värisen kortin sisällä olevat pinnat (--sport-raised, --sport-sunken)
+ * tulevat myös lajin väristä. Tummassa teemassa sovelluksen yleiset pinnat
+ * taittuvat luumuun, ja ne näyttäisivät vierailta esimerkiksi vihreän kortin
+ * sisällä. Vaaleassa teemassa valkoinen ja pohjaväri sopivat kaikkiin väreihin.
  */
 export function sportVars(swatch: Swatch, dark: boolean) {
   const pair = dark ? swatch.dark : swatch.light
   return {
     '--sport-surface': pair.surface,
     '--sport-on': pair.on,
+    '--sport-raised': dark ? darken(pair.surface, 0.35) : 'var(--c-surface)',
+    '--sport-sunken': dark ? darken(pair.surface, 0.6) : 'var(--c-bg)',
   }
 }
 

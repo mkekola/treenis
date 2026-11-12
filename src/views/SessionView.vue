@@ -219,7 +219,7 @@ function finish() {
           <span
             v-for="(set, setIndex) in exercise.sets"
             :key="setIndex"
-            class="min-w-0 flex-1 rounded-xl bg-surface py-2 text-center text-sm font-semibold"
+            class="min-w-0 flex-1 rounded-xl bg-[var(--sport-raised)] py-2 text-center text-sm font-semibold"
             data-numeric
           >
             {{ formatSet(set, exercise.measurement) }}
@@ -240,7 +240,7 @@ function finish() {
 
         <button
           type="button"
-          class="mt-2 min-h-10 w-full rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+          class="mt-2 min-h-10 w-full rounded-xl bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] text-sm font-semibold text-[var(--sport-on)]"
           @click="toggleExpanded(exercise.exerciseId)"
         >
           Muokkaa sarjoja
@@ -267,14 +267,14 @@ function finish() {
         <div class="mt-2 flex gap-2">
           <button
             type="button"
-            class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+            class="min-h-10 flex-1 rounded-xl bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] text-sm font-semibold text-[var(--sport-on)]"
             @click="session.addSet(active.currentBlock, exerciseIndex)"
           >
             + Lisää sarja
           </button>
           <button
             type="button"
-            class="min-h-10 flex-1 rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)] disabled:opacity-40"
+            class="min-h-10 flex-1 rounded-xl bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] text-sm font-semibold text-[var(--sport-on)] disabled:opacity-40"
             :disabled="!canRemoveSet(active, active.currentBlock, exerciseIndex)"
             @click="session.removeLastSet(active.currentBlock, exerciseIndex)"
           >
@@ -285,7 +285,7 @@ function finish() {
         <button
           v-if="isExerciseDone(exercise)"
           type="button"
-          class="mt-2 min-h-10 w-full rounded-xl bg-surface/55 text-sm font-semibold text-[var(--sport-on)]"
+          class="mt-2 min-h-10 w-full rounded-xl bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] text-sm font-semibold text-[var(--sport-on)]"
           @click="toggleExpanded(exercise.exerciseId)"
         >
           Valmis

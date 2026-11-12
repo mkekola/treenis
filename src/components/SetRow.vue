@@ -107,7 +107,7 @@ const rowId = useId()
   <!-- Tehty -->
   <div
     v-if="state === 'done'"
-    class="flex items-center gap-2.5 rounded-(--radius-field) bg-surface py-2 pr-2 pl-3"
+    class="flex items-center gap-2.5 rounded-(--radius-field) bg-[var(--sport-raised)] py-2 pr-2 pl-3"
   >
     <span
       aria-hidden="true"
@@ -131,7 +131,7 @@ const rowId = useId()
   <!-- Vuorossa, ensimmäinen kerta: paino puuttuu -->
   <div
     v-else-if="prompting"
-    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
+    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-[var(--sport-raised)] p-2 pl-2.5"
   >
     <div class="flex items-center gap-2.5">
       <span
@@ -153,7 +153,7 @@ const rowId = useId()
             type="text"
             inputmode="decimal"
             placeholder="Kirjaa"
-            class="mt-0.5 h-12 w-full min-w-0 rounded-xl border-2 border-dashed border-[var(--sport-on)] bg-bg px-3 text-[22px] font-bold tracking-[-0.01em]"
+            class="mt-0.5 h-12 w-full min-w-0 rounded-xl border-2 border-dashed border-[var(--sport-on)] bg-[var(--sport-sunken)] px-3 text-[22px] font-bold tracking-[-0.01em]"
             data-numeric
             @input="onWeightInput"
           />
@@ -182,7 +182,7 @@ const rowId = useId()
   <!-- Vuorossa -->
   <div
     v-else-if="state === 'current'"
-    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-surface p-2 pl-2.5"
+    class="rounded-(--radius-field) border-2 border-[var(--sport-on)] bg-[var(--sport-raised)] p-2 pl-2.5"
   >
     <div class="flex items-center gap-2.5">
       <span
@@ -222,7 +222,7 @@ const rowId = useId()
             v-model="weightText"
             type="text"
             inputmode="decimal"
-            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-bg px-2 text-lg font-bold text-ink"
+            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-[var(--sport-sunken)] px-2 text-lg font-bold text-ink"
             data-numeric
             autofocus
           />
@@ -233,7 +233,7 @@ const rowId = useId()
             v-model="repsText"
             type="text"
             inputmode="numeric"
-            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-bg px-2 text-lg font-bold text-ink"
+            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-[var(--sport-sunken)] px-2 text-lg font-bold text-ink"
             data-numeric
           />
         </label>
@@ -243,7 +243,7 @@ const rowId = useId()
             v-model="secondsText"
             type="text"
             inputmode="numeric"
-            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-bg px-2 text-lg font-bold text-ink"
+            class="mt-0.5 h-11 w-full min-w-0 rounded-xl border border-line bg-[var(--sport-sunken)] px-2 text-lg font-bold text-ink"
             data-numeric
           />
         </label>
@@ -267,7 +267,7 @@ const rowId = useId()
   </div>
 
   <!-- Tulossa -->
-  <div v-else class="flex items-center gap-2.5 rounded-(--radius-field) bg-surface/55 py-2 pr-2 pl-3">
+  <div v-else class="flex items-center gap-2.5 rounded-(--radius-field) bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] py-2 pr-2 pl-3">
     <span
       aria-hidden="true"
       class="flex size-6 flex-none items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--sport-on)_14%,transparent)] text-xs font-bold text-[var(--sport-on)]"
