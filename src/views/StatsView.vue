@@ -46,10 +46,27 @@ const VIEWS: { value: StatsView; label: string }[] = [
   { value: 'year', label: 'Vuosi' },
 ]
 
-const period = ref(periodOf('year', today.value))
+// Valittu aikaväli muistetaan tällä laitteella. Jakso palaa aina nykyhetkeen.
+const VIEW_KEY = 'treenis.statsView'
+
+function savedView(): StatsView {
+  try {
+    const saved = localStorage.getItem(VIEW_KEY)
+    return saved === 'week' || saved === 'month' || saved === 'year' ? saved : 'year'
+  } catch {
+    return 'year'
+  }
+}
+
+const period = ref(periodOf(savedView(), today.value))
 
 function choose(view: StatsView) {
   period.value = periodOf(view, today.value)
+  try {
+    localStorage.setItem(VIEW_KEY, view)
+  } catch {
+    // Ilman tallennustilaa valinta vain unohtuu, mikä ei haittaa.
+  }
 }
 
 const firstDate = computed(() => store.workouts.reduce((min, w) => (w.date < min ? w.date : min), today.value))
