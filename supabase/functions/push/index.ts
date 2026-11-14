@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
         const sent = await sendTo(await userIdOf(req), {
           title: 'Treenis',
           body: 'Ilmoitukset toimivat! 💪',
-          url: '/asetukset/ulkoasu',
+          url: '/asetukset/ilmoitukset',
           tag: 'test',
         })
         return json({ sent })

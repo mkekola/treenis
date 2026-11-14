@@ -120,7 +120,7 @@ async function newCode() {
 
     <p v-if="!auth.name" class="rounded-(--radius-card) bg-surface p-3.5 text-[15px]">
       Lisää ensin nimesi, jotta kaverit tunnistavat sinut.
-      <RouterLink to="/asetukset/ulkoasu" class="font-semibold underline">Asetuksiin</RouterLink>
+      <RouterLink to="/asetukset/tili" class="font-semibold underline">Asetuksiin</RouterLink>
     </p>
 
     <div v-if="loadError" role="alert" class="rounded-(--radius-card) bg-surface p-3.5">
@@ -285,7 +285,7 @@ async function newCode() {
         </div>
       </section>
 
-      <RouterLink to="/asetukset/ulkoasu" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">
+      <RouterLink to="/asetukset/kaverit" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">
         Mitä kaverit näkevät
       </RouterLink>
     </template>

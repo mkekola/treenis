@@ -67,9 +67,16 @@ export const router = createRouter({
       },
     },
     {
-      path: '/asetukset/ulkoasu',
-      name: 'appearance',
-      component: () => import('@/views/AppearanceView.vue'),
+      path: '/asetukset',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
+      meta: { hideNav: true },
+    },
+    {
+      // Alasivut: ulkoasu, lajien-varit, kaverit, ilmoitukset, strava, tiedot, tili, ikonit.
+      path: '/asetukset/:osio',
+      name: 'settings-page',
+      component: () => import('@/views/SettingsPageView.vue'),
       meta: { hideNav: true },
     },
     {

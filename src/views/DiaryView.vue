@@ -103,7 +103,7 @@ const byGroup = computed(() => {
       <div class="flex items-center gap-2">
         <SyncBadge />
         <RouterLink
-          to="/asetukset/ulkoasu"
+          to="/asetukset"
           aria-label="Asetukset"
           :style="sportVars(SWATCHES_BY_ID[AVATAR_SWATCH], isDark)"
           class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[15px] font-bold text-[var(--sport-on)]"

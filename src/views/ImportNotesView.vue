@@ -87,8 +87,8 @@ Soutu 40kg 12-12-10`
 <template>
   <div class="flex min-h-full flex-col gap-4 px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
     <RouterLink
-      to="/asetukset/ulkoasu"
-      aria-label="Takaisin asetuksiin"
+      to="/asetukset/tiedot"
+      aria-label="Takaisin omiin tietoihin"
       class="flex size-11 items-center justify-center rounded-full border border-line bg-surface"
     >
       <svg class="size-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

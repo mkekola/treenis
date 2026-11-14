@@ -56,7 +56,7 @@ onMounted(async () => {
         v-if="auth.userId"
         type="button"
         class="min-h-13 rounded-(--radius-button) bg-action text-base font-semibold text-on-action"
-        @click="router.replace(status === 'done' ? '/' : '/asetukset/ulkoasu')"
+        @click="router.replace(status === 'done' ? '/' : '/asetukset/strava')"
       >
         {{ status === 'done' ? 'Päiväkirjaan' : 'Takaisin asetuksiin' }}
       </button>

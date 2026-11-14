@@ -1,28 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import AccountSection from '@/components/AccountSection.vue'
-import DataExportSection from '@/components/DataExportSection.vue'
-import NotificationsSection from '@/components/NotificationsSection.vue'
-import ShareSettingsSection from '@/components/ShareSettingsSection.vue'
-import StravaSection from '@/components/StravaSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
-import { useTheme, type ThemeMode } from '@/composables/useTheme'
+import { useTheme } from '@/composables/useTheme'
 import { RECORD_SWATCH_ID, SWATCHES } from '@/design/swatches'
 import { SPORT_GROUP_LABELS, sportsInGroup, type SportGroupKey } from '@/design/sportGroups'
 import { sportVars, useSportColors } from '@/stores/sportColors'
-import { ICON_CREATOR, ICON_CREDITS } from '@/design/iconCredits'
 import { SPORT_LABELS } from '@/types/workout'
 
 const colors = useSportColors()
-const { mode, isDark } = useTheme()
+const { isDark } = useTheme()
 
-const themeOptions: { value: ThemeMode; label: string }[] = [
-  { value: 'system', label: 'Järjestelmä' },
-  { value: 'light', label: 'Vaalea' },
-  { value: 'dark', label: 'Tumma' },
-]
-
-const openGroup = ref<SportGroupKey | null>('strength')
+const openGroup = ref<SportGroupKey | null>(null)
 
 const groups = computed(() =>
   (Object.keys(SPORT_GROUP_LABELS) as SportGroupKey[]).map((group) => ({
@@ -69,51 +57,7 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-4 px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-    <RouterLink
-      to="/"
-      aria-label="Takaisin päiväkirjaan"
-      class="flex size-11 items-center justify-center rounded-full border border-line bg-surface"
-    >
-      <svg class="size-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="19" y1="12" x2="5" y2="12" />
-        <polyline points="11,6 5,12 11,18" />
-      </svg>
-    </RouterLink>
-    <h1 class="-mt-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Asetukset</h1>
-
-    <!-- Teema -->
-    <section class="rounded-(--radius-feature) bg-surface p-3.5">
-      <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Teema</h2>
-      <div
-        role="group"
-        aria-label="Teema"
-        class="mt-2.5 grid grid-cols-3 gap-1 rounded-full bg-track p-1"
-      >
-        <button
-          v-for="option in themeOptions"
-          :key="option.value"
-          type="button"
-          class="min-h-9 rounded-full text-sm font-semibold"
-          :class="
-            mode === option.value ? 'bg-surface text-ink' : 'bg-transparent text-ink-muted'
-          "
-          :aria-pressed="mode === option.value"
-          @click="mode = option.value"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-      <p class="mt-2 text-xs text-ink-muted">
-        Järjestelmä seuraa puhelimen asetusta ja vaihtuu sen mukana. Lajivärit vaihtavat paria
-        automaattisesti teeman mukana.
-      </p>
-    </section>
-
-    <!-- Lajiryhmien värit -->
-    <h2 class="mt-1 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
-      Lajiryhmien värit
-    </h2>
+  <div class="flex flex-col gap-4">
     <p class="-mt-1 text-[13px] text-ink-muted">
       Väri kertoo lajiryhmän, ikoni kertoo lajin. Jokainen väri sisältää valmiin tekstivärin
       molempiin teemoihin, joten luettavuus pysyy kunnossa valitsit minkä tahansa.
@@ -211,34 +155,5 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
       Ennätysten väri on ruusu, eikä sitä voi antaa lajiryhmälle. Se pysyy samana, jotta ennätys
       erottuu aina.
     </p>
-
-    <StravaSection class="mt-1" />
-
-    <ShareSettingsSection />
-
-    <NotificationsSection />
-
-    <AccountSection />
-
-    <DataExportSection />
-
-    <RouterLink to="/tietosuoja" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">Tietosuoja</RouterLink>
-
-    <!-- Noun Projectin ilmainen lisenssi vaatii tekijämaininnan. -->
-    <section class="mb-6 rounded-(--radius-feature) bg-surface p-3.5">
-      <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Ikonit</h2>
-      <p class="mt-2 text-[13px]">
-        Lajien ikonit ovat {{ ICON_CREATOR }}'n piirtämiä, Noun Projectista.
-      </p>
-      <ul class="mt-2 flex flex-wrap gap-x-1.5 gap-y-1 text-xs text-ink-muted">
-        <li v-for="(credit, index) in ICON_CREDITS" :key="credit.sport">
-          <a :href="credit.url" target="_blank" rel="noopener" class="underline">{{
-            credit.iconName
-          }}</a
-          ><span v-if="index < ICON_CREDITS.length - 1">,</span>
-        </li>
-      </ul>
-      <p class="mt-2 text-xs text-ink-muted">by {{ ICON_CREATOR }} from Noun Project</p>
-    </section>
   </div>
 </template>
