@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { myReaction, nextReaction, reactionLabel, summarizeReactions, type FeedRow } from './feed'
+import { myReaction, nextReaction, reactionLabel, reactionNames, summarizeReactions, type FeedRow } from './feed'
 
 const me = 'me'
 const reactions: FeedRow['reactions'] = [
@@ -22,6 +22,7 @@ describe('reaktiot', () => {
     const [clap, fire] = summarizeReactions(reactions, me)
     expect(reactionLabel(clap)).toBe('Taputus: Sinä')
     expect(reactionLabel(fire)).toBe('Tulessa: Anna, Mikko ja 1 muu')
+    expect(reactionNames(fire)).toBe('Anna, Mikko ja 1 muu')
   })
 
   it('oma reaktio on "Sinä", vaikka nimeä ei olisi asetettu', () => {

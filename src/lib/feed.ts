@@ -75,10 +75,14 @@ export function nextReaction(current: ReactionKey | null, tapped: ReactionKey): 
   return current === tapped ? null : tapped
 }
 
-/** Ruudunlukijalle ja vihjeeksi: "Tulessa: Anna, Mikko ja 1 muu". */
-export function reactionLabel(summary: ReactionSummary): string {
+/** Reagoijat: "Anna, Mikko ja 1 muu". */
+export function reactionNames(summary: ReactionSummary): string {
   const people = [...summary.names]
   if (summary.others) people.push(summary.others === 1 ? '1 muu' : `${summary.others} muuta`)
-  const list = people.length > 1 ? `${people.slice(0, -1).join(', ')} ja ${people.at(-1)}` : people[0]
-  return `${summary.label}: ${list}`
+  return people.length > 1 ? `${people.slice(0, -1).join(', ')} ja ${people.at(-1)}` : (people[0] ?? '')
+}
+
+/** Ruudunlukijalle: "Tulessa: Anna, Mikko ja 1 muu". */
+export function reactionLabel(summary: ReactionSummary): string {
+  return `${summary.label}: ${reactionNames(summary)}`
 }

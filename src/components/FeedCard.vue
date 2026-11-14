@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import SportIcon from './SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
-import { REACTIONS, myReaction, reactionLabel, summarizeReactions, type FeedRow, type ReactionKey } from '@/lib/feed'
+import { REACTIONS, myReaction, reactionNames, summarizeReactions, type FeedRow, type ReactionKey } from '@/lib/feed'
 import { formatDistance, formatDurationShort, formatShortDate } from '@/lib/format'
 import { localDate } from '@/lib/session'
 import { useAuth } from '@/stores/auth'
@@ -142,7 +142,7 @@ function pick(key: ReactionKey) {
       role="status"
       class="mt-2 rounded-(--radius-chip) bg-bg px-2.5 py-1.5 text-[13px]"
     >
-      <span aria-hidden="true" class="mr-1">{{ shown.emoji }}</span>{{ reactionLabel(shown) }}
+      <span aria-hidden="true" class="mr-1">{{ shown.emoji }}</span><span class="sr-only">{{ shown.label }}: </span>{{ reactionNames(shown) }}
     </p>
 
     <div
