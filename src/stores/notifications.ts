@@ -85,5 +85,12 @@ export const useNotifications = defineStore('notifications', () => {
     }
   }
 
-  return { supported, enabled, settings, load, enable, disable, save }
+  /** Lähettää testi-ilmoituksen kaikille omille laitteille. Palauttaa laitteiden määrän. */
+  async function sendTest(): Promise<number> {
+    const { data, error } = await supabase.functions.invoke('push', { body: { action: 'test' } })
+    if (error) throw error
+    return (data as { sent: number }).sent
+  }
+
+  return { supported, enabled, settings, load, enable, disable, save, sendTest }
 })

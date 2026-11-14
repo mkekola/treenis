@@ -47,6 +47,19 @@ async function disable() {
   }
 }
 
+async function sendTest() {
+  busy.value = true
+  message.value = ''
+  try {
+    const sent = await notifications.sendTest()
+    message.value = sent ? 'Testi-ilmoitus lähetetty.' : 'Laitetta ei löytynyt. Ota ilmoitukset uudelleen käyttöön.'
+  } catch {
+    message.value = 'Testi-ilmoitus ei lähtenyt. Tarkista verkkoyhteys.'
+  } finally {
+    busy.value = false
+  }
+}
+
 async function toggle(key: keyof NotificationSettings) {
   if (!notifications.settings) return
   message.value = ''
@@ -106,6 +119,14 @@ async function toggle(key: keyof NotificationSettings) {
           </label>
         </li>
       </ul>
+      <button
+        type="button"
+        :disabled="busy"
+        class="mt-2 min-h-11 w-full rounded-(--radius-button) border border-line font-semibold disabled:opacity-60"
+        @click="sendTest"
+      >
+        Lähetä testi-ilmoitus
+      </button>
       <button
         type="button"
         :disabled="busy"
