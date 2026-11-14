@@ -7,6 +7,7 @@ const items = [
   { to: '/', label: 'Päiväkirja' },
   { to: '/ohjelmat', label: 'Ohjelmat' },
   { to: '/tilastot', label: 'Tilastot' },
+  { to: '/kaverit', label: 'Kaverit' },
 ] as const
 
 /** Ohjelman ja treenin muokkaus (/ohjelmat/…) kuuluvat Ohjelmat-välilehteen. */
@@ -16,7 +17,7 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
 <template>
   <nav
     aria-label="Päävalikko"
-    class="sticky bottom-0 z-10 grid grid-cols-3 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
+    class="sticky bottom-0 z-10 grid grid-cols-4 gap-1 border-t border-line bg-bg px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))]"
   >
     <RouterLink
       v-for="item in items"
@@ -56,6 +57,22 @@ const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.s
         <line x1="9" y1="10" x2="15" y2="10" />
         <line x1="9" y1="14" x2="15" y2="14" />
         <line x1="9" y1="18" x2="12" y2="18" />
+      </svg>
+      <svg
+        v-else-if="item.to === '/kaverit'"
+        class="size-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="9" cy="8" r="3.5" />
+        <path d="M3 20a6 6 0 0 1 12 0" />
+        <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8" />
+        <path d="M18 14.4a6 6 0 0 1 3 5.6" />
       </svg>
       <svg
         v-else

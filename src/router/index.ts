@@ -44,6 +44,18 @@ export const router = createRouter({
       component: () => import('@/views/TemplateEditView.vue'),
     },
     { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
+    { path: '/kaverit', name: 'friends', component: () => import('@/views/FriendsView.vue') },
+    {
+      // Jaettu kaverilinkki. Kirjautunut siirtyy suoraan lisäämään kaverin,
+      // muille (esim. Safari iPhonessa) näytetään koodi kopioitavaksi.
+      path: '/kaveri/:code',
+      name: 'friend-link',
+      component: () => import('@/views/FriendLinkView.vue'),
+      meta: { hideNav: true, public: true },
+      beforeEnter: (to) => {
+        if (useAuth().userId !== null) return { name: 'friends', query: { koodi: String(to.params.code) } }
+      },
+    },
     {
       path: '/asetukset/ulkoasu',
       name: 'appearance',
