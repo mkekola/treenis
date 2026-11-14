@@ -22,6 +22,9 @@ const vars = computed(() => sportVars(colors.swatchFor(props.row.sport), isDark.
 const summary = computed(() => summarizeReactions(props.row.reactions, auth.userId ?? ''))
 const mine = computed(() => myReaction(props.row.reactions, auth.userId ?? ''))
 const picking = ref(false)
+/** Reaktio, jonka antajat on avattu näkyviin. Katoaa, jos reaktio poistuu. */
+const showing = ref<ReactionKey | null>(null)
+const shown = computed(() => summary.value.find((item) => item.key === showing.value) ?? null)
 
 const day = computed(() => {
   const today = new Date()
@@ -107,29 +110,20 @@ function pick(key: ReactionKey) {
     </ul>
 
     <div v-if="summary.length || !row.is_me" class="mt-3 flex flex-wrap items-center gap-1.5">
-      <template v-for="item in summary" :key="item.key">
-        <!-- Kaverin treenissä reaktiota napauttamalla voi lisätä tai poistaa oman. -->
-        <button
-          v-if="!row.is_me"
-          type="button"
-          :aria-label="reactionLabel(item)"
-          :aria-pressed="item.mine"
-          :title="reactionLabel(item)"
-          class="inline-flex min-h-9 items-center gap-1 rounded-full border bg-bg px-2.5 text-[13px] font-semibold"
-          :class="item.mine ? 'border-ink' : 'border-line'"
-          @click="emit('react', item.key)"
-        >
-          <span aria-hidden="true">{{ item.emoji }}</span><span data-numeric>{{ item.count }}</span>
-        </button>
-        <span
-          v-else
-          :aria-label="reactionLabel(item)"
-          :title="reactionLabel(item)"
-          class="inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-bg px-2.5 text-[13px] font-semibold"
-        >
-          <span aria-hidden="true">{{ item.emoji }}</span><span data-numeric>{{ item.count }}</span>
-        </span>
-      </template>
+      <!-- Reaktion napautus näyttää, kuka reagoi. Oma reaktio annetaan Reagoi-valikosta. -->
+      <button
+        v-for="item in summary"
+        :key="item.key"
+        type="button"
+        :aria-label="`${item.label}, ${item.count}. Näytä kuka reagoi`"
+        :aria-expanded="showing === item.key"
+        :aria-controls="`reagoijat-${row.workout_id}`"
+        class="inline-flex min-h-9 items-center gap-1 rounded-full border bg-bg px-2.5 text-[13px] font-semibold"
+        :class="item.mine ? 'border-ink' : 'border-line'"
+        @click="showing = showing === item.key ? null : item.key"
+      >
+        <span aria-hidden="true">{{ item.emoji }}</span><span data-numeric>{{ item.count }}</span>
+      </button>
 
       <button
         v-if="!row.is_me"
@@ -141,6 +135,15 @@ function pick(key: ReactionKey) {
         Reagoi
       </button>
     </div>
+
+    <p
+      v-if="shown"
+      :id="`reagoijat-${row.workout_id}`"
+      role="status"
+      class="mt-2 rounded-(--radius-chip) bg-bg px-2.5 py-1.5 text-[13px]"
+    >
+      <span aria-hidden="true" class="mr-1">{{ shown.emoji }}</span>{{ reactionLabel(shown) }}
+    </p>
 
     <div
       v-if="picking"
