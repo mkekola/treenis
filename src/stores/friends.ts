@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { friendLists, type FriendLists, type FriendshipRow } from '@/lib/friends'
+import { notify } from '@/lib/notify'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/stores/auth'
 
@@ -63,13 +64,18 @@ export const useFriends = defineStore('friends', () => {
   async function request(code: string): Promise<RequestResult> {
     const { data, error } = await supabase.rpc('request_friend', { friend_code: code })
     if (error) throw error
+    const result = data as RequestResult
+    if (result === 'requested') notify('friend_request')
+    // Toinen oli jo pyytänyt: koodin syöttäminen hyväksyi pyynnön.
+    if (result === 'accepted') notify('friend_accepted')
     await load()
-    return data as RequestResult
+    return result
   }
 
   async function respond(friendshipId: string, accept: boolean) {
     const { error } = await supabase.rpc('respond_friend_request', { request_id: friendshipId, accept })
     if (error) throw error
+    if (accept) notify('friend_accepted', friendshipId)
     await load()
   }
 

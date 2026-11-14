@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { nextReaction, myReaction, type FeedRow, type ReactionKey } from '@/lib/feed'
 import { localDate } from '@/lib/session'
+import { notify } from '@/lib/notify'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/stores/auth'
 
@@ -40,6 +41,7 @@ export const useFeed = defineStore('feed', () => {
       row.reactions = before
       throw error
     }
+    if (next) notify('reaction', workoutId)
   }
 
   return { rows, loaded, load, react }

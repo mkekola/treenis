@@ -2,9 +2,11 @@
 // ei koskaan selaimessa.
 //
 // Toiminnot (POST, body.action):
-//   test   kirjautunut käyttäjä lähettää itselleen testi-ilmoituksen kaikille laitteilleen
+//   test    kirjautunut käyttäjä lähettää itselleen testi-ilmoituksen kaikille laitteilleen
+//   notify  sovellus kertoo tehneensä toiminnon (body.type, body.id). Ilmoitus lähtee
+//           vain, jos tietokanta vahvistaa, että pyytäjä todella teki sen juuri nyt.
 //
-// Tapahtumat (kaveripyyntö, reaktio, haaste) ja ajastetut muistutukset tulevat myöhemmin.
+// Ajastetut muistutukset tulevat myöhemmin.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -84,6 +86,117 @@ async function sendTo(userId: string, message: Message): Promise<number> {
   return sent
 }
 
+// ------------------------------------------------------------------ tapahtumat
+
+type Preference = 'friend_requests' | 'reactions' | 'challenges' | 'streak'
+
+/** Asetusriviä ei ole ennen käyttöönottoa, jolloin kaikki on päällä (Marian päätös). */
+async function wants(userId: string, preference: Preference): Promise<boolean> {
+  const { data } = await admin.from('notification_settings').select(preference).eq('user_id', userId).maybeSingle()
+  return data ? (data as Record<Preference, boolean>)[preference] : true
+}
+
+async function nameOf(userId: string): Promise<string> {
+  const { data } = await admin.from('profiles').select('display_name').eq('id', userId).maybeSingle()
+  return data?.display_name || 'Kaveri'
+}
+
+const REACTIONS: Record<string, string> = {
+  party: '🎉',
+  clap: '👏',
+  heart: '❤️',
+  hundred: '💯',
+  trophy: '🏆',
+  fire: '🔥',
+  hot: '🥵',
+}
+
+const CHALLENGES: Record<string, string> = { strength: 'Salihaaste', workouts: 'Treenihaaste', weeks: 'Viikkoputkihaaste' }
+
+/** Vain tuoreet tapahtumat: vanhaa toimintoa ei voi käyttää ilmoitusten lähettämiseen. */
+const FRESH_MS = 5 * 60 * 1000
+const fresh = (iso: string | null | undefined) => !!iso && Date.now() - Date.parse(iso) < FRESH_MS
+
+async function notify(actor: string, type: string, id: string | undefined): Promise<number> {
+  const actorName = await nameOf(actor)
+  switch (type) {
+    // Lähetetty kaveripyyntö: uusin oma odottava pyyntö.
+    case 'friend_request': {
+      const { data } = await admin
+        .from('friendships')
+        .select('addressee, created_at')
+        .eq('requester', actor)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!data || !fresh(data.created_at) || !(await wants(data.addressee, 'friend_requests'))) return 0
+      return sendTo(data.addressee, {
+        title: 'Kaveripyyntö',
+        body: `${actorName} haluaa kaveriksi Treeniksessä.`,
+        url: '/kaverit',
+        tag: `friend-${actor}`,
+      })
+    }
+    // Hyväksytty pyyntö: hyväksyjä on aina pyynnön vastaanottaja.
+    case 'friend_accepted': {
+      const query = admin.from('friendships').select('requester, accepted_at').eq('addressee', actor).eq('status', 'accepted')
+      const { data } = await (id ? query.eq('id', id) : query.order('accepted_at', { ascending: false }).limit(1)).maybeSingle()
+      if (!data || !fresh(data.accepted_at) || !(await wants(data.requester, 'friend_requests'))) return 0
+      return sendTo(data.requester, {
+        title: 'Uusi kaveri 🎉',
+        body: `${actorName} hyväksyi kaveripyyntösi.`,
+        url: '/kaverit',
+        tag: `friend-${actor}`,
+      })
+    }
+    case 'reaction': {
+      const { data: reaction } = await admin
+        .from('reactions')
+        .select('reaction, created_at')
+        .eq('workout_id', id)
+        .eq('user_id', actor)
+        .maybeSingle()
+      if (!reaction || !fresh(reaction.created_at)) return 0
+      const { data: workout } = await admin.from('workouts').select('user_id, title').eq('id', id).maybeSingle()
+      if (!workout || workout.user_id === actor || !(await wants(workout.user_id, 'reactions'))) return 0
+      return sendTo(workout.user_id, {
+        title: `${actorName} ${REACTIONS[reaction.reaction] ?? ''}`.trim(),
+        body: `Reagoi treeniisi: ${workout.title}`,
+        url: '/kaverit',
+        tag: `reaction-${id}-${actor}`,
+      })
+    }
+    // Haastekutsu kaikille kutsutuille, jotka eivät ole vielä vastanneet.
+    case 'challenge_invite': {
+      const { data: challenge } = await admin
+        .from('challenges')
+        .select('creator, metric, created_at')
+        .eq('id', id)
+        .maybeSingle()
+      if (!challenge || challenge.creator !== actor || !fresh(challenge.created_at)) return 0
+      const { data: invited } = await admin
+        .from('challenge_members')
+        .select('user_id')
+        .eq('challenge_id', id)
+        .eq('status', 'invited')
+      let sent = 0
+      for (const member of invited ?? []) {
+        if (!(await wants(member.user_id, 'challenges'))) continue
+        sent += await sendTo(member.user_id, {
+          title: 'Haaste! 🏆',
+          body: `${actorName} haastoi sinut: ${CHALLENGES[challenge.metric] ?? 'haaste'}`,
+          url: '/kaverit',
+          tag: `challenge-${id}`,
+        })
+      }
+      return sent
+    }
+    default:
+      throw new HttpError(400, 'Tuntematon tapahtuma.')
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Tuntematon pyyntö.' }, 405)
@@ -100,6 +213,8 @@ Deno.serve(async (req) => {
         })
         return json({ sent })
       }
+      case 'notify':
+        return json({ sent: await notify(await userIdOf(req), String(body.type), body.id) })
       default:
         return json({ error: 'Tuntematon toiminto.' }, 400)
     }

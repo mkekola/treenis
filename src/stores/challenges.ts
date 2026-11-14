@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChallengeMetric, ChallengeRow } from '@/lib/challenges'
+import { notify } from '@/lib/notify'
 import { supabase } from '@/lib/supabase'
 
 /** Haasteet. Kuten kaverit, haasteet tarvitsevat verkon: tulokset lasketaan palvelimella. */
@@ -16,13 +17,14 @@ export const useChallenges = defineStore('challenges', () => {
   }
 
   async function create(metric: ChallengeMetric, startsOn: string, endsOn: string, invitees: string[]) {
-    const { error } = await supabase.rpc('create_challenge', {
+    const { data, error } = await supabase.rpc('create_challenge', {
       metric,
       starts_on: startsOn,
       ends_on: endsOn,
       invitees,
     })
     if (error) throw error
+    notify('challenge_invite', data as string)
     await load()
   }
 
