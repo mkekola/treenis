@@ -165,6 +165,8 @@ function changeEmail() {
     <p v-if="error" role="alert" class="text-[15px] font-semibold">{{ error }}</p>
     <p v-else-if="notice" role="status" class="text-[15px] text-ink-muted">{{ notice }}</p>
 
+    <RouterLink to="/tietosuoja" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">Tietosuoja</RouterLink>
+
     <DevSkipLogin v-if="DevSkipLogin" />
   </div>
 </template>

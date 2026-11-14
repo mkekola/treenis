@@ -213,6 +213,8 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
 
     <AccountSection />
 
+    <RouterLink to="/tietosuoja" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">Tietosuoja</RouterLink>
+
     <!-- Noun Projectin ilmainen lisenssi vaatii tekijämaininnan. -->
     <section class="mb-6 rounded-(--radius-feature) bg-surface p-3.5">
       <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Ikonit</h2>

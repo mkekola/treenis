@@ -58,6 +58,13 @@ export const router = createRouter({
       meta: { hideNav: true, public: true },
     },
     {
+      // Julkinen: selosteen pitää olla luettavissa ennen kirjautumista.
+      path: '/tietosuoja',
+      name: 'privacy',
+      component: () => import('@/views/PrivacyView.vue'),
+      meta: { hideNav: true, public: true },
+    },
+    {
       path: '/kirjaudu',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
