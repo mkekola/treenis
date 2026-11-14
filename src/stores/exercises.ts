@@ -77,5 +77,5 @@ export const useExercises = defineStore('exercises', () => {
     custom.value = custom.value.filter((e) => e.id !== id)
   }
 
-  return { all, byId, search, findByName, load, addCustom, applyRemote, removeLocal }
+  return { all, custom, byId, search, findByName, load, addCustom, applyRemote, removeLocal }
 })

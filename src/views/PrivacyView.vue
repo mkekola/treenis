@@ -91,8 +91,9 @@ function goBack() {
       <section>
         <h2>Säilytys ja oikeutesi</h2>
         <p>
-          Tiedot säilyvät niin kauan kuin tilisi on olemassa. Voit pyytää sähköpostilla tietojesi
-          kopiota, niiden korjaamista tai tilisi ja kaikkien tietojesi poistamista. Jos koet, että
+          Tiedot säilyvät niin kauan kuin tilisi on olemassa. Voit ladata omat tietosi tiedostona
+          asetuksista (Omat tietosi). Sähköpostilla voit pyytää tietojesi korjaamista tai tilisi ja
+          kaikkien tietojesi poistamista. Jos koet, että
           tietojasi käsitellään väärin, voit tehdä valituksen
           <a href="https://tietosuoja.fi" target="_blank" rel="noopener" class="underline">tietosuojavaltuutetulle</a>.
         </p>

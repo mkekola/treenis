@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AccountSection from '@/components/AccountSection.vue'
+import DataExportSection from '@/components/DataExportSection.vue'
 import ShareSettingsSection from '@/components/ShareSettingsSection.vue'
 import StravaSection from '@/components/StravaSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
@@ -215,6 +216,8 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
     <ShareSettingsSection />
 
     <AccountSection />
+
+    <DataExportSection />
 
     <RouterLink to="/tietosuoja" class="inline-flex min-h-11 items-center self-start text-sm text-ink-muted underline">Tietosuoja</RouterLink>
 
