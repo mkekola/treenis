@@ -74,7 +74,6 @@ function goBack() {
           <li><strong class="font-semibold">Supabase:</strong> tietokanta ja kirjautuminen, palvelimet Ruotsissa (EU).</li>
           <li><strong class="font-semibold">Resend:</strong> lähettää kirjautumiskoodit ja käsittelee sitä varten sähköpostiosoitteesi.</li>
           <li><strong class="font-semibold">Netlify:</strong> sivuston palvelin. Se tallentaa tavalliset palvelinlokit, kuten IP-osoitteen.</li>
-          <li><strong class="font-semibold">Google Fonts:</strong> sovelluksen fontit ladataan Googlelta, jolloin laitteesi IP-osoite välittyy Googlelle.</li>
           <li><strong class="font-semibold">Oma laitteesi:</strong> treenit tallentuvat myös puhelimeen, jotta Treenis toimii ilman verkkoa, ja kirjautuminen muistetaan. Seurantaevästeitä ei käytetä.</li>
         </ul>
       </section>

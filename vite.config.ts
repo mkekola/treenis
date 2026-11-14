@@ -22,6 +22,8 @@ export default defineConfig(({ command, mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        // Fontit mukaan, jotta ne toimivat salilla myös ilman verkkoa.
+        workbox: { globPatterns: ['**/*.{js,css,html,woff2}'] },
         manifest: {
           name: 'Treenis',
           short_name: 'Treenis',
