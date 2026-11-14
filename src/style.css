@@ -138,6 +138,8 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* Kaksoisnapautus ei zoomaa, ja napautus reagoi heti. Nipistyszoomaus säilyy saavutettavuuden vuoksi. */
+    touch-action: manipulation;
   }
 
   body {
