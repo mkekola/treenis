@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import FeedCard from '@/components/FeedCard.vue'
+import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import type { ReactionKey } from '@/lib/feed'
 import { useFeed } from '@/stores/feed'
 import { useFriends } from '@/stores/friends'
@@ -13,6 +14,7 @@ const feed = useFeed()
 const loadError = ref('')
 const busy = ref(false)
 const lists = computed(() => friends.lists)
+const hasStravaData = computed(() => feed.rows.some((row) => row.from_strava))
 
 async function load() {
   loadError.value = ''
@@ -119,8 +121,10 @@ async function react(workoutId: string, key: ReactionKey) {
             @react="react(row.workout_id, $event)"
           />
           <p v-if="!feed.rows.length" class="rounded-(--radius-card) bg-surface p-3.5 text-[15px] text-ink-muted">
-            Ei vielä treenejä kahden viikon ajalta. Kavereille näkyvät Treenikseen kirjatut treenit.
+            Ei vielä treenejä kahden viikon ajalta.
           </p>
+          <!-- Stravan brändiohjeet: merkki siellä, missä Strava-dataa näytetään. -->
+          <PoweredByStrava v-if="hasStravaData" class="mt-1.5 self-center" />
         </div>
       </section>
 

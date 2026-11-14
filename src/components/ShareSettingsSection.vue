@@ -17,6 +17,11 @@ const OPTIONS: { key: keyof ShareSettings; label: string; hint: string }[] = [
   { key: 'workouts', label: 'Treenit', hint: 'Laji ja treenin nimi, esim. "Sali · Treeni 1"' },
   { key: 'records', label: 'Ennätykset', hint: 'Liike ja uusi paino' },
   { key: 'exercises', label: 'Liikkeet ja sarjat', hint: 'Liikkeet, sarjamäärät ja raskain paino' },
+  {
+    key: 'strava',
+    label: 'Stravasta tuodut treenit',
+    hint: 'Laji, päivä, kesto ja matka. Ei sykettä, karttoja eikä Stravassa kirjoitettua nimeä.',
+  },
 ]
 
 async function toggle(key: keyof ShareSettings) {
@@ -60,7 +65,8 @@ async function toggle(key: keyof ShareSettings) {
       </li>
     </ul>
     <p class="mt-2 text-[13px] text-ink-muted">
-      Muistiinpanot eivät näy kenellekään. Stravasta tuodut treenit näkyvät vain sinulle.
+      Muistiinpanot eivät näy kenellekään. Stravasta tuodut treenit näkyvät kavereille vain, jos
+      sallit sen tästä.
     </p>
     <p v-if="message" role="status" class="mt-1 text-[13px] font-semibold">{{ message }}</p>
   </section>

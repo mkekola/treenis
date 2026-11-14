@@ -62,9 +62,9 @@ function goBack() {
       <section>
         <h2>Mitä kaverit näkevät</h2>
         <p>
-          Kaverit näkevät vain sen, minkä sallit jakamisasetuksissa, ja vain Treenikseen kirjatut
-          treenit. Stravasta tuodut tiedot näkyvät aina vain sinulle. Muistiinpanot eivät näy
-          kenellekään muulle.
+          Kaverit näkevät vain sen, minkä sallit jakamisasetuksissa. Stravasta tuodut treenit näkyvät
+          kavereille vain, jos erikseen sallit sen, ja silloinkin vain laji, päivä, kesto ja matka:
+          ei sykettä, karttoja eikä sijaintia. Muistiinpanot eivät näy kenellekään muulle.
         </p>
       </section>
 
@@ -81,7 +81,7 @@ function goBack() {
       <section>
         <h2>Strava</h2>
         <p>
-          Stravasta tuodut tiedot näkyvät vain sinulle, eikä niitä käytetä tekoälyyn. Kun katkaiset
+          Stravasta tuodut tiedot näkyvät oletuksena vain sinulle, eikä niitä käytetä tekoälyyn. Kun katkaiset
           yhteyden asetuksista, Strava-yhteys ja tuodut aktiviteetit poistetaan. Päiväkirjaan jo
           tuodut treenit jäävät, kunnes poistat ne itse.
         </p>

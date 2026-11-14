@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import SportIcon from './SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { REACTIONS, myReaction, reactionLabel, summarizeReactions, type FeedRow, type ReactionKey } from '@/lib/feed'
-import { formatShortDate } from '@/lib/format'
+import { formatDistance, formatDurationShort, formatShortDate } from '@/lib/format'
 import { localDate } from '@/lib/session'
 import { useAuth } from '@/stores/auth'
 import { useExercises } from '@/stores/exercises'
@@ -36,6 +36,16 @@ function nameOf(exerciseId: string, serverName: string | null) {
   return exercises.byId.get(exerciseId)?.name ?? serverName ?? 'Liike'
 }
 
+/** Kesto ja matka: pelkässä Strava-treenissä ne ovat otsikko, muissa otsikon alla. */
+const metrics = computed(() =>
+  [
+    props.row.duration_sec ? formatDurationShort(props.row.duration_sec) : null,
+    props.row.distance_m ? formatDistance(props.row.sport, props.row.distance_m) : null,
+  ]
+    .filter(Boolean)
+    .join(' · '),
+)
+
 const kg = (value: number) => value.toLocaleString('fi-FI', { maximumFractionDigits: 2 })
 
 function pick(key: ReactionKey) {
@@ -59,10 +69,20 @@ function pick(key: ReactionKey) {
         <SportIcon :sport="row.sport" />
       </span>
       <p class="min-w-0">
-        <span class="block text-[11px] font-bold tracking-[0.08em] text-[var(--sport-on)] uppercase">
+        <!-- Strava-treenissä otsikko on lajin nimi, joten yläriville jää vain lähde. -->
+        <span
+          v-if="row.from_strava"
+          class="inline-block rounded-full border border-current px-1.5 py-px text-[9.5px] font-bold tracking-[0.06em] text-[var(--sport-on)] uppercase"
+        >
+          Strava
+        </span>
+        <span v-else class="block text-[11px] font-bold tracking-[0.08em] text-[var(--sport-on)] uppercase">
           {{ SPORT_LABELS[row.sport] }}
         </span>
-        <span class="block truncate text-base font-semibold tracking-[-0.01em]">{{ row.title }}</span>
+        <span class="block truncate text-base font-semibold tracking-[-0.01em]">
+          {{ row.title ?? SPORT_LABELS[row.sport] }}
+        </span>
+        <span v-if="metrics" class="block text-[13px] text-ink-muted" data-numeric>{{ metrics }}</span>
       </p>
     </div>
 

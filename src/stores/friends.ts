@@ -9,6 +9,8 @@ export interface ShareSettings {
   workouts: boolean
   records: boolean
   exercises: boolean
+  /** Stravasta tuodut treenit. Oletuksena pois: vaatii käyttäjän nimenomaisen luvan. */
+  strava: boolean
 }
 
 /** Tietokantafunktion request_friend vastaukset. */
@@ -86,11 +88,16 @@ export const useFriends = defineStore('friends', () => {
     if (!me) return
     const { data, error } = await supabase
       .from('profiles')
-      .select('share_workouts, share_records, share_exercises')
+      .select('share_workouts, share_records, share_exercises, share_strava')
       .eq('id', me)
       .single()
     if (error) throw error
-    share.value = { workouts: data.share_workouts, records: data.share_records, exercises: data.share_exercises }
+    share.value = {
+      workouts: data.share_workouts,
+      records: data.share_records,
+      exercises: data.share_exercises,
+      strava: data.share_strava,
+    }
   }
 
   /** Näytetään heti ja palautetaan, jos tallennus epäonnistuu. */
