@@ -86,7 +86,9 @@ function submit() {
       <DateChips v-model="date" label-id="treenin-paiva" />
     </div>
 
-    <div class="grid grid-cols-2 gap-2.5">
+    <!-- Kesto saa luonnollisen leveytensä, kellonaika joustaa. iPhonen kellonaikakentällä on
+         oma minimileveys, joten se pitää sallia kutistuvaksi (min-w-0, appearance-none). -->
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2.5">
       <label class="flex min-w-0 flex-col gap-1">
         <span :class="label">Alkoi klo</span>
         <input
@@ -95,7 +97,7 @@ function submit() {
           type="time"
           :placeholder="startSuggestion"
           :disabled="measuredLocked"
-          :class="field"
+          :class="[field, 'w-full min-w-0 appearance-none']"
           data-numeric
         />
       </label>
