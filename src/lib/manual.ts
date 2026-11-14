@@ -60,8 +60,13 @@ export function suggestedStart(date: string, durationSec: number, now: Date): st
   return timeOf(new Date(now.getTime() - durationSec * 1000).toISOString())
 }
 
+/**
+ * Tallennus vaatii keston eikä tulevaa päivää. Salitreenissä kesto on vapaaehtoinen:
+ * lomaketta käytetään salille vain muokkaukseen, eikä muistiinpanoista tuoduilla
+ * treeneillä ole kestoa.
+ */
 export function isComplete(input: ManualInput, today: string): boolean {
-  return input.durationSec > 0 && input.date <= today
+  return (input.sport === 'strength' || input.durationSec > 0) && input.date <= today
 }
 
 /** Uusi käsin kirjattu treeni. */
@@ -118,7 +123,7 @@ export function applyEdit(workout: Workout, input: ManualInput): Workout {
   const logged = { ...workout.logged }
   if (!measured) {
     logged.startedAt = startedAtOf(input.date, input.startTime)
-    logged.durationSec = input.durationSec
+    logged.durationSec = input.durationSec || undefined
     if (distance) {
       logged.distanceM = input.distanceM
       logged.avgHr = input.avgHr

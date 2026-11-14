@@ -102,7 +102,11 @@ function submit() {
         />
       </label>
       <div class="flex min-w-0 flex-col gap-1">
-        <span id="treenin-kesto" :class="label">Kesto</span>
+        <span id="treenin-kesto" :class="label"
+          >Kesto<span v-if="props.initial.sport === 'strength'" class="font-medium tracking-normal normal-case">
+            valinnainen</span
+          ></span
+        >
         <DurationInput v-model="durationSec" label-id="treenin-kesto" :disabled="measuredLocked" />
       </div>
     </div>

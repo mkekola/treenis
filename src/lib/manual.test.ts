@@ -40,6 +40,16 @@ describe('syötteiden tulkinta', () => {
     expect(isComplete({ ...input, durationSec: 0 }, '2026-11-13')).toBe(false)
     expect(isComplete({ ...input, date: '2026-11-14' }, '2026-11-13')).toBe(false)
   })
+
+  it('salitreenin kesto on vapaaehtoinen, eikä tyhjää kestoa tallenneta nollana', () => {
+    const input = { ...newInput('strength', NOW), durationSec: 0 }
+    expect(isComplete(input, '2026-11-13')).toBe(true)
+    const imported: Workout = { id: 'w1', sport: 'strength', date: '2026-10-04', title: 'Treeni B', logged: { blocks: [] } }
+    expect(applyEdit(imported, { ...input, title: 'Treeni 2', date: '2026-10-04' }).logged).toMatchObject({
+      blocks: [],
+      durationSec: undefined,
+    })
+  })
 })
 
 describe('käsin kirjattu treeni', () => {
