@@ -2,21 +2,22 @@
 
 /*
   Pohjatokenit. Nämä ovat kiinteitä: pinnat, teksti ja toiminnot.
-  Lajivärit eivät ole täällä — ne tulevat käyttäjän asetuksista ja asetetaan
-  kortin juureen muuttujina --sport-surface ja --sport-on.
+  Pohja on neutraali (valkoinen ja harmaa, tummassa lähes musta), jotta väri
+  kertoo aina merkityksen: lajin, ohjelman tai ennätyksen. Lajivärit eivät ole
+  täällä, vaan ne tulevat käyttäjän asetuksista ja asetetaan kortin juureen
+  muuttujina --sport-surface ja --sport-on.
 */
 :root {
-  --c-bg: #fbf5f4;
-  --c-surface: #ffffff;
-  --c-ink: #2b2327;
-  --c-ink-muted: #6b6066;
-  --c-line: #ede3e1;
-  /* Syvä luumu lähes mustan sijaan: pääpainike pysyy selvänä, mutta ei ole ruudun kovin kohta. */
-  --c-action: #4a3a48;
+  --c-bg: #ffffff;
+  --c-surface: #f4f4f5;
+  --c-ink: #18181b;
+  --c-ink-muted: #6b6b70;
+  --c-line: #e6e6e8;
+  --c-action: #18181b;
   --c-on-action: #ffffff;
-  --c-track: #f3e9e7;
-  /* Logon ja sovelluskuvakkeen luumu. Vain brändille, ei toiminnoille. */
-  --c-brand: #5e3b63;
+  --c-track: #e4e4e7;
+  /* Logo on neutraali kuten teksti: värit on varattu merkityksille. */
+  --c-brand: #18181b;
   /* Tilastojen kalenteriruudukko: yksi sävy vaaleasta tummaan, tarkistettu 2:1 kontrastiin pohjaa vasten. */
   --c-heat-1: #c59dc3;
   --c-heat-2: #a57ba4;
@@ -28,16 +29,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --c-bg: #18141c;
-    --c-surface: #221d29;
-    --c-ink: #ece5ea;
-    --c-ink-muted: #a89fa8;
-    --c-line: #332d3a;
-    /* Vaalea syreeni kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
-    --c-action: #e3d6e4;
-    --c-on-action: #18141c;
-    --c-track: #2b2236;
-    --c-brand: #f5e4f2;
+    --c-bg: #141414;
+    --c-surface: #212121;
+    --c-ink: #f2f2f2;
+    --c-ink-muted: #a3a3a3;
+    --c-line: #2e2e2e;
+    /* Vaaleanharmaa kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
+    --c-action: #e4e4e7;
+    --c-on-action: #141414;
+    --c-track: #2e2e2e;
+    --c-brand: #f2f2f2;
     --c-heat-1: #6b4d73;
     --c-heat-2: #8e6e95;
     --c-heat-3: #b898bb;
@@ -48,16 +49,16 @@
 }
 
 :root[data-theme='dark'] {
-  --c-bg: #18141c;
-  --c-surface: #221d29;
-  --c-ink: #ece5ea;
-  --c-ink-muted: #a89fa8;
-  --c-line: #332d3a;
-  /* Vaalea syreeni kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
-  --c-action: #e3d6e4;
-  --c-on-action: #18141c;
-  --c-track: #2b2236;
-  --c-brand: #f5e4f2;
+  --c-bg: #141414;
+  --c-surface: #212121;
+  --c-ink: #f2f2f2;
+  --c-ink-muted: #a3a3a3;
+  --c-line: #2e2e2e;
+  /* Vaaleanharmaa kirkkaan valkoisen sijaan: ei häikäise pimeällä salilla. */
+  --c-action: #e4e4e7;
+  --c-on-action: #141414;
+  --c-track: #2e2e2e;
+  --c-brand: #f2f2f2;
   --c-heat-1: #6b4d73;
   --c-heat-2: #8e6e95;
   --c-heat-3: #b898bb;
