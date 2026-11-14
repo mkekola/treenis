@@ -4,6 +4,13 @@ import { friendLists, type FriendLists, type FriendshipRow } from '@/lib/friends
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/stores/auth'
 
+/** Mitä kaverit näkevät. Nimet vastaavat set_share_settings-funktion parametreja. */
+export interface ShareSettings {
+  workouts: boolean
+  records: boolean
+  exercises: boolean
+}
+
 /** Tietokantafunktion request_friend vastaukset. */
 export type RequestResult = 'requested' | 'accepted' | 'already_friends' | 'already_requested' | 'not_found' | 'self'
 
@@ -70,5 +77,32 @@ export const useFriends = defineStore('friends', () => {
     await load()
   }
 
-  return { lists, myCode, loaded, load, regenerateCode, request, respond, remove }
+  // ------------------------------------------------------- jakamisasetukset
+
+  const share = ref<ShareSettings | null>(null)
+
+  async function loadShare() {
+    const me = auth.userId
+    if (!me) return
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('share_workouts, share_records, share_exercises')
+      .eq('id', me)
+      .single()
+    if (error) throw error
+    share.value = { workouts: data.share_workouts, records: data.share_records, exercises: data.share_exercises }
+  }
+
+  /** Näytetään heti ja palautetaan, jos tallennus epäonnistuu. */
+  async function saveShare(next: ShareSettings) {
+    const before = share.value
+    share.value = next
+    const { error } = await supabase.rpc('set_share_settings', next)
+    if (error) {
+      share.value = before
+      throw error
+    }
+  }
+
+  return { lists, myCode, loaded, load, regenerateCode, request, respond, remove, share, loadShare, saveShare }
 })

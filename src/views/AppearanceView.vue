@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AccountSection from '@/components/AccountSection.vue'
+import ShareSettingsSection from '@/components/ShareSettingsSection.vue'
 import StravaSection from '@/components/StravaSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme, type ThemeMode } from '@/composables/useTheme'
@@ -210,6 +211,8 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
     </p>
 
     <StravaSection class="mt-1" />
+
+    <ShareSettingsSection />
 
     <AccountSection />
 
