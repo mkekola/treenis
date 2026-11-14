@@ -23,6 +23,20 @@ export function normalize(text: string): string {
  *   1  hakusana sisältää haun, tai haku osuu lihasryhmään ("olkapää")
  * Samalla pisteellä järjestys on aakkosellinen. Tyhjä haku palauttaa kaiken.
  */
+export function scoreExercise(normalizedQuery: string, exercise: Exercise): number {
+  const q = normalizedQuery
+  const name = normalize(exercise.name)
+  const aliases = exercise.aliases.map(normalize)
+  const group = normalize(MUSCLE_GROUP_LABELS[exercise.muscleGroup])
+
+  if (name === q || aliases.includes(q)) return 5
+  if (name.startsWith(q)) return 4
+  if (name.includes(q)) return 3
+  if (aliases.some((alias) => alias.startsWith(q))) return 2
+  if (aliases.some((alias) => alias.includes(q)) || group.startsWith(q)) return 1
+  return 0
+}
+
 export function searchExercises(query: string, exercises: Exercise[]): Exercise[] {
   const q = normalize(query)
   const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, 'fi')
@@ -32,17 +46,7 @@ export function searchExercises(query: string, exercises: Exercise[]): Exercise[
   const scored: { exercise: Exercise; score: number }[] = []
 
   for (const exercise of exercises) {
-    const name = normalize(exercise.name)
-    const aliases = exercise.aliases.map(normalize)
-    const group = normalize(MUSCLE_GROUP_LABELS[exercise.muscleGroup])
-
-    let score = 0
-    if (name === q || aliases.includes(q)) score = 5
-    else if (name.startsWith(q)) score = 4
-    else if (name.includes(q)) score = 3
-    else if (aliases.some((alias) => alias.startsWith(q))) score = 2
-    else if (aliases.some((alias) => alias.includes(q)) || group.startsWith(q)) score = 1
-
+    const score = scoreExercise(q, exercise)
     if (score > 0) scored.push({ exercise, score })
   }
 

@@ -80,6 +80,12 @@ export const router = createRouter({
       meta: { hideNav: true, public: true },
     },
     {
+      path: '/tuo',
+      name: 'import-notes',
+      component: () => import('@/views/ImportNotesView.vue'),
+      meta: { hideNav: true },
+    },
+    {
       // Julkinen: selosteen pitää olla luettavissa ennen kirjautumista.
       path: '/tietosuoja',
       name: 'privacy',

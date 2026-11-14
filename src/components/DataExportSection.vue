@@ -82,6 +82,12 @@ function downloadCsv() {
       >
         Lataa treenit taulukkona (CSV)
       </button>
+      <RouterLink
+        to="/tuo"
+        class="flex min-h-11 items-center justify-center rounded-(--radius-button) border border-line font-semibold"
+      >
+        Tuo vanhoja treenejä muistiinpanoista
+      </RouterLink>
     </div>
     <p v-if="message" role="status" class="mt-2 text-[13px]">{{ message }}</p>
   </section>
