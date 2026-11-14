@@ -23,7 +23,8 @@ export default defineConfig(({ command, mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         // Fontit mukaan, jotta ne toimivat salilla myös ilman verkkoa.
-        workbox: { globPatterns: ['**/*.{js,css,html,woff2}'] },
+        // Ilmoitusten vastaanotto (public/push-sw.js) liitetään Workboxin service workeriin.
+        workbox: { globPatterns: ['**/*.{js,css,html,woff2}'], importScripts: ['push-sw.js'] },
         manifest: {
           name: 'Treenis',
           short_name: 'Treenis',

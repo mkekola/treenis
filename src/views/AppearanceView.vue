@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import AccountSection from '@/components/AccountSection.vue'
 import DataExportSection from '@/components/DataExportSection.vue'
+import NotificationsSection from '@/components/NotificationsSection.vue'
 import ShareSettingsSection from '@/components/ShareSettingsSection.vue'
 import StravaSection from '@/components/StravaSection.vue'
 import SportIcon from '@/components/SportIcon.vue'
@@ -214,6 +215,8 @@ function swatchLabel(swatchId: string, name: string, group: SportGroupKey) {
     <StravaSection class="mt-1" />
 
     <ShareSettingsSection />
+
+    <NotificationsSection />
 
     <AccountSection />
 
