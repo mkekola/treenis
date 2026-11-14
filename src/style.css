@@ -19,13 +19,14 @@
   /* Logo on neutraali kuten teksti: värit on varattu merkityksille. */
   --c-brand: #18181b;
   /*
-    Tilastojen kalenteriruudukko savun sävyin vaaleasta tummaan, tarkistettu
-    2:1 kontrastiin korttipohjaa vasten. Lämmin harmaa sopii neutraaliin pohjaan.
+    Tilastojen kalenteriruudukko indigon sävyin vaaleasta tummaan, tarkistettu
+    2:1 kontrastiin korttipohjaa vasten. Kylläisempi kuin pastelliset lajivärit,
+    joten treeniaika ei sekoitu lajin tunnisteeseen. Päivänumerot vähintään 4,5:1.
   */
-  --c-heat-1: #b3a8a4;
-  --c-heat-2: #8f8480;
-  --c-heat-3: #685e5a;
-  --c-heat-4: #413937;
+  --c-heat-1: #8c95e0;
+  --c-heat-2: #737ed6;
+  --c-heat-3: #4550a8;
+  --c-heat-4: #2c3478;
   --c-on-heat: #ffffff;
   color-scheme: light;
 }
@@ -42,10 +43,10 @@
     --c-on-action: #141414;
     --c-track: #2e2e2e;
     --c-brand: #f2f2f2;
-    --c-heat-1: #5e5450;
-    --c-heat-2: #827874;
-    --c-heat-3: #aba19d;
-    --c-heat-4: #ded7d4;
+    --c-heat-1: #3f4a9a;
+    --c-heat-2: #5560bd;
+    --c-heat-3: #7a85e0;
+    --c-heat-4: #b0b7f4;
     --c-on-heat: #141414;
     color-scheme: dark;
   }
@@ -62,10 +63,10 @@
   --c-on-action: #141414;
   --c-track: #2e2e2e;
   --c-brand: #f2f2f2;
-  --c-heat-1: #5e5450;
-  --c-heat-2: #827874;
-  --c-heat-3: #aba19d;
-  --c-heat-4: #ded7d4;
+  --c-heat-1: #3f4a9a;
+  --c-heat-2: #5560bd;
+  --c-heat-3: #7a85e0;
+  --c-heat-4: #b0b7f4;
   --c-on-heat: #141414;
   color-scheme: dark;
 }
