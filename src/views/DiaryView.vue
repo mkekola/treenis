@@ -17,9 +17,12 @@ import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
+import { SWATCHES_BY_ID } from '@/design/swatches'
 import type { Workout } from '@/types/workout'
 
 const colors = useSportColors()
+/** Pallo on neutraali savu, ei minkään lajin väri: se on tili ja asetukset, ei treeni. */
+const AVATAR_SWATCH = 'savu'
 const { isDark } = useTheme()
 
 const store = useWorkouts()
@@ -102,7 +105,7 @@ const byGroup = computed(() => {
         <RouterLink
           to="/asetukset/ulkoasu"
           aria-label="Asetukset"
-          :style="sportVars(colors.swatchForGroup('strength'), isDark)"
+          :style="sportVars(SWATCHES_BY_ID[AVATAR_SWATCH], isDark)"
           class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[15px] font-bold text-[var(--sport-on)]"
         >
           <span v-if="initials" aria-hidden="true">{{ initials }}</span>
