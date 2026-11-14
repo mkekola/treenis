@@ -21,8 +21,9 @@ const pending = computed(() => props.workout.pendingMatch)
 
 <template>
   <article :style="vars" class="rounded-(--radius-card) bg-surface">
-    <!-- Koko yläosa avaa tiedot: otsikon painikkeen ::after venyy alueen yli. -->
-    <div class="relative flex items-center gap-3 p-3.5">
+    <!-- Koko yläosa avaa tiedot. Hiiri ja kosketus osuvat mihin tahansa kohtaan, ja otsikon
+         painike vie näppäimistöllä samaan, koska sen painallus kulkee tänne. -->
+    <div class="flex cursor-pointer items-center gap-3 p-3.5" @click="emit('open', workout.id)">
       <span
         aria-hidden="true"
         class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]"
@@ -51,8 +52,7 @@ const pending = computed(() => props.workout.pendingMatch)
         <h3 class="mt-0.5 text-base font-semibold tracking-[-0.01em]">
           <button
             type="button"
-            class="block w-full truncate text-left after:absolute after:inset-0 after:rounded-(--radius-card) focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ink"
-            @click="emit('open', workout.id)"
+            class="block w-full truncate rounded-[4px] text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             {{ workout.title }}
           </button>
