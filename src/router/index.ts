@@ -46,6 +46,11 @@ export const router = createRouter({
     { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
     { path: '/kaverit', name: 'friends', component: () => import('@/views/FriendsView.vue') },
     {
+      path: '/kaverit/haaste',
+      name: 'new-challenge',
+      component: () => import('@/views/NewChallengeView.vue'),
+    },
+    {
       path: '/kaverit/hallitse',
       name: 'friends-manage',
       component: () => import('@/views/FriendsManageView.vue'),

@@ -64,7 +64,8 @@ function goBack() {
         <p>
           Kaverit näkevät vain sen, minkä sallit jakamisasetuksissa. Stravasta tuodut treenit näkyvät
           kavereille vain, jos erikseen sallit sen, ja silloinkin vain laji, päivä, kesto ja matka:
-          ei sykettä, karttoja eikä sijaintia. Muistiinpanot eivät näy kenellekään muulle.
+          ei sykettä, karttoja eikä sijaintia. Haasteissa osallistujat näkevät toistensa nimet ja
+          tulokset. Muistiinpanot eivät näy kenellekään muulle.
         </p>
       </section>
 
