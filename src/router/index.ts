@@ -108,3 +108,13 @@ router.beforeEach((to) => {
   if (!signedIn && !to.meta.public) return { name: 'login' }
   if (signedIn && to.name === 'login') return { name: 'diary' }
 })
+
+// Uuden version julkaisun jälkeen auki olevan sovelluksen myöhemmin ladattavat sivut
+// (esim. Tilastot) voivat puuttua, koska service worker vaihtoi tiedostot uusiin. Silloin
+// siirtyminen epäonnistuisi hiljaa, joten ladataan sovellus uudelleen suoraan kohteeseen.
+router.onError((error, to) => {
+  const message = String((error as Error)?.message ?? error)
+  if (/dynamically imported module|Importing a module script failed|module script/i.test(message)) {
+    window.location.assign(to.fullPath)
+  }
+})
