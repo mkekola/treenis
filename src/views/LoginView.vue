@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { defineAsyncComponent, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, defineAsyncComponent, nextTick, ref, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLogo from '@/components/AppLogo.vue'
+import { useNow } from '@/composables/useNow'
+import { formatDuration } from '@/lib/format'
+import { CODE_COOLDOWN_SEC, retryAfterSec } from '@/lib/otp'
 import { useAuth } from '@/stores/auth'
 
 const auth = useAuth()
@@ -21,7 +24,20 @@ const error = ref('')
 const notice = ref('')
 const codeInput = useTemplateRef<HTMLInputElement>('codeInput')
 
+// Uuden koodin nappi odottaa Supabasen minuutin rajan, jottei pyyntö kaadu virheeseen.
+const now = useNow()
+const cooldownUntil = ref(0)
+const cooldownSec = computed(() => Math.max(0, Math.ceil((cooldownUntil.value - now.value) / 1000)))
+
+function startCooldown(seconds: number) {
+  // now päivittyy vain kerran sekunnissa, joten tuoreutetaan se, ettei laskuri ala sekunnin liian suurena.
+  now.value = Date.now()
+  cooldownUntil.value = now.value + seconds * 1000
+}
+
 function message(err: unknown): string {
+  const wait = retryAfterSec(err)
+  if (wait) return `Uuden koodin voi pyytää ${wait} sekunnin päästä.`
   const { code: errorCode, name } = (err ?? {}) as { code?: string; name?: string }
   if (name === 'AuthRetryableFetchError' || !navigator.onLine) {
     return 'Ei verkkoyhteyttä. Kirjautuminen tarvitsee verkon kerran, sen jälkeen Treenis toimii ilmankin.'
@@ -40,11 +56,14 @@ async function sendCode() {
   notice.value = ''
   try {
     await auth.sendCode(email.value.trim())
+    startCooldown(CODE_COOLDOWN_SEC)
     step.value = 'code'
     code.value = ''
     await nextTick()
     codeInput.value?.focus()
   } catch (err) {
+    const wait = retryAfterSec(err)
+    if (wait) startCooldown(wait)
     error.value = message(err)
   } finally {
     busy.value = false
@@ -134,11 +153,11 @@ function changeEmail() {
         </button>
         <button
           type="button"
-          :disabled="busy"
-          class="min-h-11 text-sm font-semibold underline disabled:opacity-60"
+          :disabled="busy || cooldownSec > 0"
+          class="min-h-11 text-sm font-semibold underline tabular-nums disabled:no-underline disabled:opacity-60"
           @click="resend"
         >
-          Lähetä uusi koodi
+          {{ cooldownSec ? `Uusi koodi ${formatDuration(cooldownSec)}` : 'Lähetä uusi koodi' }}
         </button>
       </div>
     </form>
