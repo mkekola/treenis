@@ -5,8 +5,9 @@
 //   test    kirjautunut käyttäjä lähettää itselleen testi-ilmoituksen kaikille laitteilleen
 //   notify  sovellus kertoo tehneensä toiminnon (body.type, body.id). Ilmoitus lähtee
 //           vain, jos tietokanta vahvistaa, että pyytäjä todella teki sen juuri nyt.
-//
-// Ajastetut muistutukset tulevat myöhemmin.
+//   scheduled  tietokannan ajastus kerran tunnissa (pg_cron, otsake x-cron-secret).
+//           Suomen ajan mukaan: haasteesta 2 pv jäljellä klo 18, haasteen tulos klo 9,
+//           viikkoputki vaarassa lauantaina klo 12. dryRun palauttaa viestit lähettämättä.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -197,6 +198,176 @@ async function notify(actor: string, type: string, id: string | undefined): Prom
   }
 }
 
+// --------------------------------------------------------------- ajastetut
+
+/** Suomen aika riippumatta palvelimen aikavyöhykkeestä. at vain kuivaharjoitukseen. */
+function helsinki(at?: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Helsinki',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hourCycle: 'h23',
+      weekday: 'short',
+    })
+      .formatToParts(at ? new Date(at) : new Date())
+      .map((p) => [p.type, p.value]),
+  )
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour), weekday: parts.weekday }
+}
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+const joinNames = (names: string[]) =>
+  names.length > 1 ? `${names.slice(0, -1).join(', ')} ja ${names.at(-1)}` : (names[0] ?? '')
+
+interface Scored {
+  userId: string
+  name: string
+  score: number
+}
+
+/** Haasteen hyväksyneet osallistujat tuloksineen, paras ensin. */
+async function standings(challengeId: string, metric: string, from: string, to: string): Promise<Scored[]> {
+  const { data: members } = await admin
+    .from('challenge_members')
+    .select('user_id')
+    .eq('challenge_id', challengeId)
+    .eq('status', 'accepted')
+  const scored: Scored[] = []
+  for (const member of members ?? []) {
+    const { data: score } = await admin.rpc('challenge_score', {
+      member: member.user_id,
+      metric,
+      from_date: from,
+      to_date: to,
+    })
+    scored.push({ userId: member.user_id, name: await nameOf(member.user_id), score: score ?? 0 })
+  }
+  return scored.sort((a, b) => b.score - a.score)
+}
+
+interface Planned {
+  userId: string
+  preference: Preference
+  message: Message
+}
+
+/** Haasteet, jotka päättyvät huomenna: 2 päivää jäljellä (sama kuin sovelluksessa). */
+async function challengesEndingSoon(today: string): Promise<Planned[]> {
+  const { data: challenges } = await admin
+    .from('challenges')
+    .select('id, metric, starts_on')
+    .eq('ends_on', addDays(today, 1))
+  const planned: Planned[] = []
+  for (const c of challenges ?? []) {
+    const ranked = await standings(c.id, c.metric, c.starts_on, today)
+    const best = ranked[0]?.score ?? 0
+    const leaders = ranked.filter((m) => m.score === best)
+    for (const m of ranked) {
+      const others = ranked.filter((o) => o.userId !== m.userId)
+      let body: string
+      if (best === 0) body = 'Kukaan ei ole vielä treenannut. Ehdit ottaa johdon!'
+      else if (m.score === best && leaders.length > 1) body = `Tasapeli kärjessä (${best}). Ratkaise se!`
+      else if (m.score === best) body = `Johdat: ${m.score}–${others[0]?.score ?? 0}. Pidä pintasi!`
+      else body = `${joinNames(leaders.map((l) => l.name))} johtaa (${best}), sinulla ${m.score}. Vielä ehdit!`
+      planned.push({
+        userId: m.userId,
+        preference: 'challenges',
+        message: { title: `${CHALLENGES[c.metric] ?? 'Haaste'}: 2 päivää jäljellä`, body, url: '/kaverit', tag: `challenge-${c.id}` },
+      })
+    }
+  }
+  return planned
+}
+
+/** Eilen päättyneet haasteet: lopputulos. Tasapelissä voitto jaetaan, nollatuloksella ei voittajaa. */
+async function challengeResults(today: string): Promise<Planned[]> {
+  const yesterday = addDays(today, -1)
+  const { data: challenges } = await admin.from('challenges').select('id, metric, starts_on').eq('ends_on', yesterday)
+  const planned: Planned[] = []
+  for (const c of challenges ?? []) {
+    const ranked = await standings(c.id, c.metric, c.starts_on, yesterday)
+    const best = ranked[0]?.score ?? 0
+    const winners = best > 0 ? ranked.filter((m) => m.score === best) : []
+    for (const m of ranked) {
+      const won = winners.some((w) => w.userId === m.userId)
+      let body: string
+      if (!winners.length) body = 'Ei voittajaa tällä kertaa. Uusintaottelu?'
+      else if (won && winners.length > 1) body = `Jaettu voitto! 🏆 (${best})`
+      else if (won) body = `Sinä voitit! 🏆 (${best})`
+      else body = `${joinNames(winners.map((w) => w.name))} voitti (${best}). Sinulla ${m.score}.`
+      planned.push({
+        userId: m.userId,
+        preference: 'challenges',
+        message: { title: `${CHALLENGES[c.metric] ?? 'Haaste'} päättyi`, body, url: '/kaverit', tag: `challenge-${c.id}` },
+      })
+    }
+  }
+  return planned
+}
+
+/** Viikkoputki vaarassa: viime viikolla vähintään 2 treeniä, tällä viikolla vielä alle 2. */
+async function streakAtRisk(today: string): Promise<Planned[]> {
+  const weekday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7
+  const monday = addDays(today, -weekday)
+  const { data: subscriptions } = await admin.from('push_subscriptions').select('user_id')
+  const users = [...new Set((subscriptions ?? []).map((s) => s.user_id))]
+  const count = async (userId: string, from: string, to: string) => {
+    const { count } = await admin
+      .from('workouts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .gte('date', from)
+      .lte('date', to)
+    return count ?? 0
+  }
+  const planned: Planned[] = []
+  for (const userId of users) {
+    const thisWeek = await count(userId, monday, today)
+    if (thisWeek >= 2 || (await count(userId, addDays(monday, -7), addDays(monday, -1))) < 2) continue
+    planned.push({
+      userId,
+      preference: 'streak',
+      message: {
+        title: 'Viikkoputki vaarassa',
+        body: `Tällä viikolla ${thisWeek}/2 treeniä. Vielä ehdit! 💪`,
+        url: '/',
+        tag: 'streak',
+      },
+    })
+  }
+  return planned
+}
+
+async function scheduled(at: string | undefined, dryRun: boolean) {
+  const now = helsinki(at)
+  const planned = [
+    ...(now.hour === 18 ? await challengesEndingSoon(now.date) : []),
+    ...(now.hour === 9 ? await challengeResults(now.date) : []),
+    ...(now.weekday === 'Sat' && now.hour === 12 ? await streakAtRisk(now.date) : []),
+  ]
+  const wanted = []
+  for (const p of planned) if (await wants(p.userId, p.preference)) wanted.push(p)
+  if (dryRun) return { now, planned: wanted.map((p) => p.message) }
+  let sent = 0
+  for (const p of wanted) sent += await sendTo(p.userId, p.message)
+  return { now, sent }
+}
+
+/** Ajastuksen salaisuus on tietokannan Vaultissa: vain tietokannan herätys tuntee sen. */
+async function assertCron(req: Request) {
+  const { data } = await admin.rpc('push_cron_secret')
+  if (!data || req.headers.get('x-cron-secret') !== data) throw new HttpError(401, 'Ei oikeutta.')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Tuntematon pyyntö.' }, 405)
@@ -213,6 +384,9 @@ Deno.serve(async (req) => {
         })
         return json({ sent })
       }
+      case 'scheduled':
+        await assertCron(req)
+        return json(await scheduled(body.at, body.dryRun === true))
       case 'notify':
         return json({ sent: await notify(await userIdOf(req), String(body.type), body.id) })
       default:
