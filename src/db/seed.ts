@@ -3,14 +3,13 @@ import { initialTemplates } from '@/data/initialTemplates'
 import { DEFAULT_PROGRAM_ID, DEFAULT_PROGRAM_NAME } from '@/lib/program'
 
 /**
- * Ensimmäisen käynnistyksen data. Pohjat ovat Marian oikeat treenit, joten ne
- * tallennetaan aina omaan ohjelmaansa. Esimerkkitreenit ovat keksittyjä, joten
- * ne ladataan vain kehityksessä: oikeaan historiaan ei kuulu feikkitreenejä.
- *
- * Seed ei mene lähetysjonoon. Jos palvelimella on jo dataa, synkka korvaa
- * nämä sillä, koska palvelimen versioilla on aikaleima ja näillä ei.
+ * Kehitysversion esimerkkidata. Pohjat ovat Marian oikeat treenit ja esimerkkitreenit
+ * keksittyjä, joten kumpaakaan ei luoda tuotannossa: jokainen käyttäjä aloittaa
+ * tyhjästä ja tekee omat ohjelmansa, eikä oikeaan historiaan kuulu feikkitreenejä.
  */
 export async function seedIfEmpty() {
+  if (!import.meta.env.DEV) return
+
   if ((await db.templates.count()) === 0) {
     await db.templates.bulkPut(plain(initialTemplates))
   }
@@ -24,7 +23,7 @@ export async function seedIfEmpty() {
     })
   }
 
-  if (import.meta.env.DEV && (await db.workouts.count()) === 0) {
+  if ((await db.workouts.count()) === 0) {
     const { sampleWorkouts } = await import('@/data/sampleWorkouts')
     await db.workouts.bulkPut(plain(sampleWorkouts))
   }
