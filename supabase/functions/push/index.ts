@@ -112,7 +112,19 @@ const REACTIONS: Record<string, string> = {
   hot: '🥵',
 }
 
-const CHALLENGES: Record<string, string> = { strength: 'Salihaaste', workouts: 'Treenihaaste', weeks: 'Viikkoputkihaaste' }
+const CHALLENGES: Record<string, string> = {
+  strength: 'Salihaaste',
+  workouts: 'Treenihaaste',
+  weeks: 'Viikkoputkihaaste',
+  run_km: 'Juoksuhaaste',
+  foot_km: 'Kilometrihaaste',
+}
+
+/** Kilometrihaasteiden tulos tulee metreinä: "12,4 km". Muut sellaisenaan. */
+function scoreText(metric: string, n: number): string {
+  if (metric !== 'run_km' && metric !== 'foot_km') return String(n)
+  return `${(n / 1000).toLocaleString('fi-FI', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u202Fkm`
+}
 
 /** Vain tuoreet tapahtumat: vanhaa toimintoa ei voi käyttää ilmoitusten lähettämiseen. */
 const FRESH_MS = 5 * 60 * 1000
@@ -270,13 +282,14 @@ async function challengesEndingSoon(today: string): Promise<Planned[]> {
     const ranked = await standings(c.id, c.metric, c.starts_on, today)
     const best = ranked[0]?.score ?? 0
     const leaders = ranked.filter((m) => m.score === best)
+    const s = (n: number) => scoreText(c.metric, n)
     for (const m of ranked) {
       const others = ranked.filter((o) => o.userId !== m.userId)
       let body: string
       if (best === 0) body = 'Kukaan ei ole vielä treenannut. Ehdit ottaa johdon!'
-      else if (m.score === best && leaders.length > 1) body = `Tasapeli kärjessä (${best}). Ratkaise se!`
-      else if (m.score === best) body = `Johdat: ${m.score}–${others[0]?.score ?? 0}. Pidä pintasi!`
-      else body = `${joinNames(leaders.map((l) => l.name))} johtaa (${best}), sinulla ${m.score}. Vielä ehdit!`
+      else if (m.score === best && leaders.length > 1) body = `Tasapeli kärjessä (${s(best)}). Ratkaise se!`
+      else if (m.score === best) body = `Johdat: ${s(m.score)}–${s(others[0]?.score ?? 0)}. Pidä pintasi!`
+      else body = `${joinNames(leaders.map((l) => l.name))} johtaa (${s(best)}), sinulla ${s(m.score)}. Vielä ehdit!`
       planned.push({
         userId: m.userId,
         preference: 'challenges',
@@ -296,13 +309,14 @@ async function challengeResults(today: string): Promise<Planned[]> {
     const ranked = await standings(c.id, c.metric, c.starts_on, yesterday)
     const best = ranked[0]?.score ?? 0
     const winners = best > 0 ? ranked.filter((m) => m.score === best) : []
+    const s = (n: number) => scoreText(c.metric, n)
     for (const m of ranked) {
       const won = winners.some((w) => w.userId === m.userId)
       let body: string
       if (!winners.length) body = 'Ei voittajaa tällä kertaa. Uusintaottelu?'
-      else if (won && winners.length > 1) body = `Jaettu voitto! 🏆 (${best})`
-      else if (won) body = `Sinä voitit! 🏆 (${best})`
-      else body = `${joinNames(winners.map((w) => w.name))} voitti (${best}). Sinulla ${m.score}.`
+      else if (won && winners.length > 1) body = `Jaettu voitto! 🏆 (${s(best)})`
+      else if (won) body = `Sinä voitit! 🏆 (${s(best)})`
+      else body = `${joinNames(winners.map((w) => w.name))} voitti (${s(best)}). Sinulla ${s(m.score)}.`
       planned.push({
         userId: m.userId,
         preference: 'challenges',

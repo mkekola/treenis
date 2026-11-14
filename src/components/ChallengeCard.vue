@@ -4,10 +4,12 @@ import {
   METRICS,
   challengeState,
   daysLeft,
+  isDistance,
   joinNames,
   lengthInDays,
   periodLabel,
   scoreLabel,
+  scoreValue,
   standings,
   winners,
   type ChallengeRow,
@@ -22,6 +24,9 @@ const auth = useAuth()
 const today = localDate(new Date())
 
 const metric = computed(() => METRICS.find((m) => m.key === props.row.metric)!)
+const km = computed(() => isDistance(props.row.metric))
+const value = (score: number) => scoreValue(props.row.metric, score)
+const label = (score: number) => scoreLabel(props.row.metric, score)
 const state = computed(() => challengeState(props.row, today))
 const ranked = computed(() => standings(props.row.members))
 const won = computed(() => winners(props.row.members))
@@ -61,10 +66,10 @@ const myResult = computed(() => {
   const mine = ranked.value.find((m) => m.userId === me.value)
   if (!mine) return null
   const prev = props.row.previous_score
-  const result = scoreLabel(props.row.metric, mine.score)
+  const result = label(mine.score)
   if (prev === null) return result
-  if (mine.score > prev) return `${result}, enemmän kuin edellisellä vastaavalla jaksolla (${prev}).`
-  return `${result}. Edellisellä vastaavalla jaksolla ${prev}.`
+  if (mine.score > prev) return `${result}, enemmän kuin edellisellä vastaavalla jaksolla (${label(prev)}).`
+  return `${result}. Edellisellä vastaavalla jaksolla ${label(prev)}.`
 })
 
 /** Uusintaottelu samoilla kavereilla, mittarilla ja pituudella. */
@@ -121,18 +126,22 @@ const confirmingLeave = ref(false)
       <div v-if="duel && left && right" class="mt-3" data-numeric>
         <div class="flex items-end justify-between">
           <div>
-            <p class="font-display text-[40px] leading-none font-bold">{{ left.score }}</p>
+            <p class="font-display text-[40px] leading-none font-bold">
+              {{ value(left.score) }}<span v-if="km" class="ml-1 text-[17px]">km</span>
+            </p>
             <p class="mt-1 text-[13px] font-semibold text-ink-muted">{{ nameOf(left.userId, left.name) }}</p>
           </div>
           <div class="text-right">
-            <p class="font-display text-[40px] leading-none font-bold">{{ right.score }}</p>
+            <p class="font-display text-[40px] leading-none font-bold">
+              {{ value(right.score) }}<span v-if="km" class="ml-1 text-[17px]">km</span>
+            </p>
             <p class="mt-1 text-[13px] font-semibold text-ink-muted">{{ nameOf(right.userId, right.name) }}</p>
           </div>
         </div>
         <div
           class="mt-2.5 h-3 overflow-hidden rounded-[4px] bg-track"
           role="img"
-          :aria-label="`${nameOf(left.userId, left.name)} ${left.score}, ${nameOf(right.userId, right.name)} ${right.score}`"
+          :aria-label="`${nameOf(left.userId, left.name)} ${label(left.score)}, ${nameOf(right.userId, right.name)} ${label(right.score)}`"
         >
           <div class="h-full rounded-[4px] bg-[var(--c-data)]" :style="{ width: `${leftShare}%` }" />
         </div>
@@ -142,14 +151,15 @@ const confirmingLeave = ref(false)
         <li
           v-for="person in ranked"
           :key="person.userId"
-          class="grid grid-cols-[20px_minmax(0,1fr)_64px_28px] items-center gap-2 border-t border-line py-2 text-[15px] first:border-t-0"
+          class="grid items-center gap-2 border-t border-line py-2 text-[15px] first:border-t-0"
+          :class="km ? 'grid-cols-[20px_minmax(0,1fr)_64px_56px]' : 'grid-cols-[20px_minmax(0,1fr)_64px_28px]'"
         >
           <span class="font-semibold text-ink-muted">{{ person.rank }}</span>
           <span class="truncate" :class="person.userId === me ? 'font-bold' : ''">{{ nameOf(person.userId, person.name) }}</span>
           <span class="h-2.5 overflow-hidden rounded-[4px] bg-track" aria-hidden="true">
             <span class="block h-full rounded-[4px] bg-[var(--c-data)]" :style="{ width: `${(person.score / best) * 100}%` }" />
           </span>
-          <span class="text-right font-bold">{{ person.score }}</span>
+          <span class="text-right font-bold">{{ km ? label(person.score) : person.score }}</span>
         </li>
       </ol>
 

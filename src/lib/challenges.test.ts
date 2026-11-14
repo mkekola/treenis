@@ -8,6 +8,7 @@ import {
   periodLabel,
   presetPeriod,
   scoreLabel,
+  scoreValue,
   standings,
   winners,
   type ChallengeMember,
@@ -92,6 +93,13 @@ describe('tekstit ja jaksot', () => {
     expect(scoreLabel('strength', 1)).toBe('1 salitreeni')
     expect(scoreLabel('strength', 7)).toBe('7 salitreeniä')
     expect(scoreLabel('weeks', 3)).toBe('3 viikkoa')
+  })
+
+  it('kilometrihaasteen metrit näytetään kilometreinä yhdellä desimaalilla', () => {
+    expect(scoreValue('run_km', 12_440)).toBe('12,4')
+    expect(scoreValue('foot_km', 0)).toBe('0,0')
+    expect(scoreLabel('foot_km', 5_000)).toBe('5,0\u202Fkm')
+    expect(scoreValue('strength', 7)).toBe('7')
   })
 
   it('viikko on seitsemän päivää tästä päivästä', () => {

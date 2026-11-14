@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { METRICS, lengthInDays, periodLabel, presetPeriod, type ChallengeMetric } from '@/lib/challenges'
+import { METRICS, isDistance, lengthInDays, periodLabel, presetPeriod, type ChallengeMetric } from '@/lib/challenges'
 import { localDate } from '@/lib/session'
 import { useChallenges } from '@/stores/challenges'
 import { useFriends } from '@/stores/friends'
@@ -135,6 +135,9 @@ const DURATIONS = [
             <input v-model="metric" type="radio" name="mittari" :value="option.key" class="size-5 accent-[var(--c-action)]" />
           </label>
         </div>
+        <p v-if="isDistance(metric)" class="mt-2 text-[13px] text-ink-muted">
+          Stravan matkat lasketaan, jos jaat Strava-treenit kavereille (Asetukset → Kaverit näkevät).
+        </p>
       </fieldset>
 
       <fieldset>

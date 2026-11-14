@@ -1,12 +1,19 @@
 import { localDate } from '@/lib/session'
 
-export type ChallengeMetric = 'strength' | 'workouts' | 'weeks'
+export type ChallengeMetric = 'strength' | 'workouts' | 'weeks' | 'run_km' | 'foot_km'
 
 export const METRICS: { key: ChallengeMetric; label: string; hint: string; title: string }[] = [
   { key: 'strength', label: 'Salitreenit', hint: 'Montako salitreeniä tehdään', title: 'Salihaaste' },
   { key: 'workouts', label: 'Kaikki treenit', hint: 'Kaikki lajit, joita kaverit näkevät', title: 'Treenihaaste' },
   { key: 'weeks', label: 'Viikkoputki', hint: 'Viikot, joilla vähintään 2 treeniä', title: 'Viikkoputkihaaste' },
+  { key: 'run_km', label: 'Juoksukilometrit', hint: 'Juoksujen yhteismatka', title: 'Juoksuhaaste' },
+  { key: 'foot_km', label: 'Kilometrit jalan', hint: 'Juoksu, kävely ja vaellus', title: 'Kilometrihaaste' },
 ]
+
+/** Kilometrihaasteissa tulos tulee palvelimelta metreinä. */
+export function isDistance(metric: ChallengeMetric): boolean {
+  return metric === 'run_km' || metric === 'foot_km'
+}
 
 export interface ChallengeMember {
   userId: string
@@ -90,8 +97,15 @@ export function lengthInDays(startsOn: string, endsOn: string): number {
   return daysLeft(endsOn, startsOn)
 }
 
-/** "7 salitreeniä", "1 treeni", "3 viikkoa". */
+/** Tulos ilman yksikköä: "7", kilometrihaasteessa "12,4". */
+export function scoreValue(metric: ChallengeMetric, n: number): string {
+  if (!isDistance(metric)) return String(n)
+  return (n / 1000).toLocaleString('fi-FI', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
+/** "7 salitreeniä", "1 treeni", "3 viikkoa", "12,4 km". */
 export function scoreLabel(metric: ChallengeMetric, n: number): string {
+  if (isDistance(metric)) return `${scoreValue(metric, n)}\u202Fkm`
   if (metric === 'strength') return n === 1 ? '1 salitreeni' : `${n} salitreeniä`
   if (metric === 'workouts') return n === 1 ? '1 treeni' : `${n} treeniä`
   return n === 1 ? '1 viikko' : `${n} viikkoa`
