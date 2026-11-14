@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import ChallengeCard from '@/components/ChallengeCard.vue'
 import FeedCard from '@/components/FeedCard.vue'
 import PoweredByStrava from '@/components/PoweredByStrava.vue'
@@ -59,15 +59,28 @@ async function challengeAction(task: () => Promise<void>) {
   }
 }
 
-const reactError = ref('')
+const feedError = ref('')
 
 async function react(workoutId: string, key: ReactionKey) {
-  reactError.value = ''
+  feedError.value = ''
   try {
     await feed.react(workoutId, key)
   } catch {
-    reactError.value = 'Reaktio ei tallentunut. Tarkista verkkoyhteys.'
+    feedError.value = 'Reaktio ei tallentunut. Tarkista verkkoyhteys.'
   }
+}
+
+const undoButton = useTemplateRef<HTMLButtonElement>('undo')
+
+// Piilotettu kortti katoaa, joten kohdistus siirtyy Kumoa-napille eikä putoa sivun alkuun.
+async function hide(workoutId: string) {
+  feedError.value = ''
+  if (!(await feed.hide(workoutId))) {
+    feedError.value = 'Treeniä ei löytynyt tältä laitteelta.'
+    return
+  }
+  await nextTick()
+  undoButton.value?.focus()
 }
 </script>
 
@@ -155,13 +168,23 @@ async function react(workoutId: string, key: ReactionKey) {
         <h2 id="syote" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
           Kahden viikon treenit
         </h2>
-        <p v-if="reactError" role="alert" class="mt-2 text-[13px] font-semibold">{{ reactError }}</p>
+        <p v-if="feedError" role="alert" class="mt-2 text-[13px] font-semibold">{{ feedError }}</p>
+        <div
+          v-if="feed.lastHidden"
+          class="mt-2.5 flex items-center justify-between gap-3 rounded-(--radius-card) bg-surface py-1 pr-1 pl-3.5"
+        >
+          <p role="status" class="text-[15px]">Treeni piilotettu kavereilta.</p>
+          <button ref="undo" type="button" class="min-h-11 px-3 text-[15px] font-semibold underline" @click="feed.undoHide()">
+            Kumoa
+          </button>
+        </div>
         <div class="mt-2.5 flex flex-col gap-2">
           <FeedCard
             v-for="row in feed.rows"
             :key="row.workout_id"
             :row="row"
             @react="react(row.workout_id, $event)"
+            @hide="hide(row.workout_id)"
           />
           <p v-if="!feed.rows.length" class="rounded-(--radius-card) bg-surface p-3.5 text-[15px] text-ink-muted">
             Ei vielä treenejä kahden viikon ajalta.

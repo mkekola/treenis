@@ -45,6 +45,14 @@ export const useWorkouts = defineStore('workouts', () => {
     if (workout) await save({ ...workout, deletedAt: new Date().toISOString() })
   }
 
+  /** Palauttaa false, jos treeniä ei ole laitteella. */
+  async function setHidden(id: string, hidden: boolean): Promise<boolean> {
+    const workout = workouts.value.find((w) => w.id === id)
+    if (!workout) return false
+    await save({ ...workout, hiddenFromFriends: hidden || undefined })
+    return true
+  }
+
   /** Palvelimelta tullut versio. Ei mene jonoon, koska se on jo palvelimella. */
   async function applyRemote(workout: Workout) {
     await db.workouts.put(plain(workout))
@@ -73,5 +81,5 @@ export const useWorkouts = defineStore('workouts', () => {
     if (activity) await save(workoutFromActivity(activity))
   }
 
-  return { workouts, removed, load, save, remove, applyRemote, confirmMatch, rejectMatch }
+  return { workouts, removed, load, save, remove, setHidden, applyRemote, confirmMatch, rejectMatch }
 })

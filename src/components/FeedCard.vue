@@ -11,7 +11,7 @@ import { recordVars, sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_LABELS } from '@/types/workout'
 
 const props = defineProps<{ row: FeedRow }>()
-const emit = defineEmits<{ react: [key: ReactionKey] }>()
+const emit = defineEmits<{ react: [key: ReactionKey]; hide: [] }>()
 
 const auth = useAuth()
 const exercises = useExercises()
@@ -22,6 +22,8 @@ const vars = computed(() => sportVars(colors.swatchFor(props.row.sport), isDark.
 const summary = computed(() => summarizeReactions(props.row.reactions, auth.userId ?? ''))
 const mine = computed(() => myReaction(props.row.reactions, auth.userId ?? ''))
 const picking = ref(false)
+/** Oman kortin valinnat (piilotus kavereilta). */
+const options = ref(false)
 /** Reaktio, jonka antajat on avattu näkyviin. Katoaa, jos reaktio poistuu. */
 const showing = ref<ReactionKey | null>(null)
 const shown = computed(() => summary.value.find((item) => item.key === showing.value) ?? null)
@@ -59,9 +61,26 @@ function pick(key: ReactionKey) {
 
 <template>
   <article :style="vars" class="rounded-(--radius-card) bg-surface p-3.5">
-    <div class="flex items-baseline justify-between gap-2">
+    <div class="flex items-center justify-between gap-2">
       <h3 class="truncate text-[15px] font-semibold">{{ row.is_me ? 'Sinä' : row.name || 'Nimetön' }}</h3>
-      <span class="flex-none text-[12px] text-ink-muted" data-numeric>{{ day }}</span>
+      <span class="flex flex-none items-center text-[12px] text-ink-muted">
+        <span data-numeric>{{ day }}</span>
+        <button
+          v-if="row.is_me"
+          type="button"
+          aria-label="Treenin valinnat"
+          :aria-expanded="options"
+          :aria-controls="`valinnat-${row.workout_id}`"
+          class="-my-3 -mr-2.5 flex size-11 items-center justify-center rounded-full"
+          @click="options = !options"
+        >
+          <svg class="size-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+          </svg>
+        </button>
+      </span>
     </div>
 
     <div class="mt-2 flex items-center gap-2.5">
@@ -163,6 +182,19 @@ function pick(key: ReactionKey) {
       >
         <span aria-hidden="true">{{ reaction.emoji }}</span>
       </button>
+    </div>
+
+    <div v-if="options" :id="`valinnat-${row.workout_id}`" class="mt-2 rounded-(--radius-chip) bg-bg p-2.5">
+      <button
+        type="button"
+        class="min-h-11 w-full rounded-(--radius-button) border border-line text-[15px] font-semibold"
+        @click="emit('hide')"
+      >
+        Piilota kavereilta
+      </button>
+      <p class="mt-1.5 text-[13px] text-ink-muted">
+        Treeni lasketaan yhä haasteisiin. Saat sen takaisin näkyviin päiväkirjasta treenin tiedoista.
+      </p>
     </div>
   </article>
 </template>

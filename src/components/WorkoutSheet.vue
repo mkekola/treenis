@@ -148,6 +148,25 @@ function onBackdropClick(event: MouseEvent) {
 
         <p v-if="workout.logged?.notes" class="text-[15px] whitespace-pre-line">{{ workout.logged.notes }}</p>
 
+        <!-- Poikkeus jakamisasetuksiin yksittäiselle treenille. Haasteisiin treeni lasketaan aina. -->
+        <label v-if="!confirming" class="flex min-h-14 items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 py-2">
+          <span class="min-w-0 flex-1">
+            <span class="block text-[15px]">Näkyy kaverisyötteessä</span>
+            <span class="block text-[13px] text-ink-muted">Lasketaan haasteisiin joka tapauksessa.</span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            :checked="!workout.hiddenFromFriends"
+            class="peer sr-only"
+            @change="store.setHidden(workout.id, !($event.target as HTMLInputElement).checked)"
+          />
+          <span
+            aria-hidden="true"
+            class="relative h-[26px] w-11 flex-none rounded-full bg-track transition-colors peer-checked:bg-action peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink after:absolute after:top-[3px] after:left-[3px] after:size-5 after:rounded-full after:bg-bg after:transition-transform peer-checked:after:translate-x-[18px] peer-checked:after:bg-on-action motion-reduce:transition-none motion-reduce:after:transition-none"
+          />
+        </label>
+
         <div v-if="!confirming" class="mt-1 grid grid-cols-2 gap-2">
           <button
             type="button"

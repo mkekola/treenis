@@ -220,6 +220,8 @@ export interface Workout {
   logged?: LoggedData
   /** Odottaa vahvistusta: onko tämä sama treeni kuin mitattu aktiviteetti. */
   pendingMatch?: PendingMatch
+  /** Piilotettu kaverisyötteestä. Piilotus koskee vain näkyvyyttä: treeni lasketaan yhä haasteisiin. */
+  hiddenFromFriends?: boolean
   /** Asetetaan jokaisessa tallennuksessa. Synkassa uusin versio voittaa. */
   updatedAt?: string
   /** Poistettu treeni jää laitteelle merkinnäksi, kunnes poisto on välittynyt synkassa. */
