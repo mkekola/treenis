@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-/** Pieni kehityskäyrä ilman akseleita. Viimeinen piste korostettuna. Väri: --sport-on. */
+/** Pieni kehityskäyrä ilman akseleita. Viimeinen piste korostettuna. */
 const props = defineProps<{ values: number[]; label: string }>()
 
 const WIDTH = 96
@@ -26,11 +26,11 @@ const last = computed(() => points.value[points.value.length - 1])
     <polyline
       :points="points.map((p) => `${p.x},${p.y}`).join(' ')"
       fill="none"
-      stroke="var(--sport-on)"
+      stroke="var(--c-data)"
       stroke-width="2"
       stroke-linejoin="round"
       stroke-linecap="round"
     />
-    <circle :cx="last.x" :cy="last.y" r="4" fill="var(--sport-on)" stroke="var(--c-surface)" stroke-width="2" />
+    <circle :cx="last.x" :cy="last.y" r="4" fill="var(--c-data)" stroke="var(--c-surface)" stroke-width="2" />
   </svg>
 </template>

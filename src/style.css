@@ -28,6 +28,12 @@
   --c-heat-3: #4550a8;
   --c-heat-4: #2c3478;
   --c-on-heat: #ffffff;
+  /*
+    Tilastojen yhden sarjan kaaviot (km-pylväät, salikehitys). Sama indigo kuin
+    kalenterissa: tilastoissa indigo tarkoittaa dataa. Lajin väriä ei tarvita,
+    koska otsikko jo kertoo lajin. Viittaa heat-3:een, joten vaihtuu teeman mukana.
+  */
+  --c-data: var(--c-heat-3);
   color-scheme: light;
 }
 

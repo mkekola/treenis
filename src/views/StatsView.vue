@@ -135,7 +135,6 @@ const balance = computed(() =>
 
 const buckets = computed(() => footBuckets(workouts.value, period.value, today.value))
 const hasFoot = computed(() => buckets.value.some((b) => b.meters > 0))
-const landVars = computed(() => sportVars(colors.swatchForGroup('land'), isDark.value))
 const otherDistance = computed(() =>
   [
     { label: 'Pyöräily', ...sportTotals(workouts.value, 'bike'), unit: 'km' as const },
@@ -145,7 +144,6 @@ const otherDistance = computed(() =>
 
 // -------------------------------------------------------------- salikehitys
 
-const strengthVars = computed(() => sportVars(colors.swatchForGroup('strength'), isDark.value))
 const kg = (value: number) => value.toLocaleString('fi-FI', { maximumFractionDigits: 2 })
 const lifts = computed(() =>
   liftProgress(workouts.value, (id) => exercises.byId.get(id)).map((lift) => {
@@ -300,7 +298,7 @@ const lifts = computed(() =>
           Kilometrit jalan
           {{ period.view === 'year' ? 'kuukausittain' : period.view === 'month' ? 'viikoittain' : 'päivittäin' }}
         </p>
-        <FootChart v-if="hasFoot" :buckets="buckets" :style="landVars" />
+        <FootChart v-if="hasFoot" :buckets="buckets" />
         <ChartNumbers v-if="hasFoot">
           <table class="w-full text-left text-sm" data-numeric>
             <caption class="sr-only">Kilometrit jalan</caption>
@@ -336,7 +334,7 @@ const lifts = computed(() =>
     <!-- Salikehitys: jokaisen kerran raskain sarja. -->
     <section class="mt-5.5" aria-labelledby="salikehitys">
       <h2 id="salikehitys" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Salikehitys</h2>
-      <div :style="strengthVars" class="mt-2.5 rounded-(--radius-feature) bg-surface px-4 py-1.5">
+      <div class="mt-2.5 rounded-(--radius-feature) bg-surface px-4 py-1.5">
         <ul v-if="lifts.length">
           <li
             v-for="lift in lifts"

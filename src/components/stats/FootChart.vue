@@ -3,7 +3,7 @@ import { computed, useTemplateRef } from 'vue'
 import { useElementWidth } from '@/composables/useElementWidth'
 import type { Bucket } from '@/lib/stats'
 
-/** Pylväät: kilometrit jalan. Väri tulee kutsujalta (--sport-on), jotta se vastaa lajiryhmää. */
+/** Pylväät: kilometrit jalan. */
 const props = defineProps<{ buckets: Bucket[] }>()
 
 const HEIGHT = 150
@@ -65,7 +65,7 @@ const summary = computed(() =>
         <text x="0" :y="y(tick) + 3" class="fill-ink-muted text-[10px]">{{ fmt(tick) }}</text>
       </g>
       <g v-for="bar in bars" :key="bar.label + bar.x">
-        <path v-if="bar.path" :d="bar.path" fill="var(--sport-on)">
+        <path v-if="bar.path" :d="bar.path" fill="var(--c-data)">
           <title>{{ bar.title }}: {{ fmt(bar.value, 1) }} km</title>
         </path>
         <text
