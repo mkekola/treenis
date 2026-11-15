@@ -10,7 +10,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useWakeLock } from '@/composables/useWakeLock'
 import { beep, primeAudio } from '@/lib/beep'
 import { formatDuration, formatSet } from '@/lib/format'
-import { sessionsFor } from '@/lib/history'
+import { recentHistory, sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
@@ -113,7 +113,7 @@ function suggestionText(exercise: SessionExercise): string | null {
   const definition = exercises.byId.get(exercise.exerciseId)
   if (!definition) return null
 
-  const earlier = sessionsFor(exercise.exerciseId, workouts.workouts, 1)
+  const earlier = sessionsFor(exercise.exerciseId, recentHistory(workouts.workouts, new Date()), 1)
   const suggestion = suggestNext(definition, exercise.target, [
     { sets: exercise.sets, feel: exercise.feel },
     ...earlier,

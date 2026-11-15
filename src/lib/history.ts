@@ -1,5 +1,18 @@
 import type { ExerciseSession } from '@/lib/progression'
+import { localDate } from '@/lib/session'
 import type { Workout } from '@/types/workout'
+
+/** Kuinka kaukaa aiemmat tulokset kelpaavat: vuosien takainen paino ei kerro nykykunnosta. */
+export const RELEVANT_HISTORY_MONTHS = 6
+
+/**
+ * Treenit, joista edellinen paino, "viimeksi"-tieto ja painoehdotus haetaan: vain
+ * viimeiseltä kuudelta kuukaudelta. Vanhemmat jäävät päiväkirjaan ja tilastoihin.
+ */
+export function recentHistory(workouts: Workout[], now: Date): Workout[] {
+  const from = localDate(new Date(now.getFullYear(), now.getMonth() - RELEVANT_HISTORY_MONTHS, now.getDate()))
+  return workouts.filter((w) => w.date >= from)
+}
 
 function newestFirst(a: Workout, b: Workout): number {
   return (

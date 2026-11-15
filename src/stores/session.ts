@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db, plain } from '@/db'
 import { applyDeviations, keepDeviations, pruneKept, type Deviation } from '@/lib/deviation'
+import { recentHistory } from '@/lib/history'
 import * as logic from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useTemplates } from '@/stores/templates'
@@ -48,7 +49,7 @@ export const useSession = defineStore('session', () => {
         id: crypto.randomUUID(),
         now: new Date(),
         template,
-        history: workouts.workouts,
+        history: recentHistory(workouts.workouts, new Date()),
         exercises: (id) => exercises.byId.get(id),
       }),
     )
@@ -61,7 +62,7 @@ export const useSession = defineStore('session', () => {
         id: crypto.randomUUID(),
         now: new Date(),
         workout,
-        history: workouts.workouts,
+        history: recentHistory(workouts.workouts, new Date()),
         exercises: (id) => exercises.byId.get(id),
       }),
     )
@@ -75,7 +76,7 @@ export const useSession = defineStore('session', () => {
       exercise,
       sets,
       reps,
-      history: workouts.workouts,
+      history: recentHistory(workouts.workouts, new Date()),
       lookup: (id) => exercises.byId.get(id),
     })
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frequentExerciseIds, sessionsFor } from '@/lib/history'
+import { frequentExerciseIds, recentHistory, sessionsFor } from '@/lib/history'
 import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
 
 const history = [
@@ -50,5 +50,17 @@ describe('frequentExerciseIds', () => {
 
   it('noudattaa rajausta', () => {
     expect(frequentExerciseIds(sessions, '2026-01-01', 2)).toHaveLength(2)
+  })
+})
+
+describe('recentHistory', () => {
+  it('vain kuuden kuukauden sisällä tehdyt kelpaavat edelliseksi tulokseksi', () => {
+    const now = new Date(2026, 10, 16, 12)
+    const workouts = [
+      strengthWorkout('vanha', '2023-11-10', [entry('squat', doneSets(60, [10]))]),
+      strengthWorkout('raja', '2026-05-16', [entry('squat', doneSets(70, [10]))]),
+      strengthWorkout('uusi', '2026-11-10', [entry('squat', doneSets(80, [10]))]),
+    ]
+    expect(recentHistory(workouts, now).map((w) => w.id)).toEqual(['raja', 'uusi'])
   })
 })
