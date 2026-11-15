@@ -23,8 +23,6 @@ export interface FeedRow {
   name: string
   is_me: boolean
   sport: SportKey
-  /** null pelkälle Strava-treenille: Stravassa kirjoitettua nimeä ei näytetä kavereille. */
-  title: string | null
   date: string
   started_at: string | null
   /** Pelkkä Strava-treeni, joka näkyy kavereille käyttäjän luvalla. */

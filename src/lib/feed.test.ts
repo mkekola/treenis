@@ -57,7 +57,6 @@ const row = (overrides: Partial<FeedRow>): FeedRow => ({
   name: 'Beni',
   is_me: false,
   sport: 'run',
-  title: 'Juoksu',
   date: '2026-11-13',
   started_at: null,
   from_strava: false,
@@ -87,8 +86,8 @@ describe('syötteen rivit', () => {
       return { who, what, detail: detail.replaceAll('\u202F', ' ') }
     }
     expect(lines({})).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km' })
-    expect(lines({ is_me: true, sport: 'strength', title: 'Treeni 1', distance_m: null, duration_sec: 3900 }))
+    expect(lines({ is_me: true, sport: 'strength', distance_m: null, duration_sec: 3900 }))
       .toEqual({ who: 'Sinä', what: 'Sali', detail: '1 t 5 min' })
-    expect(lines({ title: null, from_strava: true })).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km · Strava' })
+    expect(lines({ from_strava: true })).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km · Strava' })
   })
 })
