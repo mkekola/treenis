@@ -151,8 +151,12 @@ describe('sovitus laitteen treeneihin', () => {
   it('Stravassa muokattu aktiviteetti päivittää mitatun puolen', () => {
     const merged = reconcile(activity(), [logged('w1', '2026-11-12T15:05:00Z')]).save
     expect(reconcile(activity({ avgHr: 131 }), merged).save).toMatchObject([{ id: 'w1', measured: { avgHr: 131 } }])
+    // Pelkässä Strava-treenissä mittaus päivittyy, mutta nimi tulee Stravasta vain luotaessa.
     const created = reconcile(activity(), []).save
-    expect(reconcile(activity({ name: 'Salitreeni' }), created).save).toMatchObject([{ id: own, title: 'Salitreeni' }])
+    expect(reconcile(activity({ avgHr: 131 }), created).save).toMatchObject([
+      { id: own, title: 'Iltapäivän salitreeni', measured: { avgHr: 131 } },
+    ])
+    expect(reconcile(activity({ name: 'Salitreeni' }), created).save).toEqual([])
   })
 
   it('kahden laitteen tupla yhdistyy kirjattuun ja poistuu', () => {
@@ -198,10 +202,15 @@ describe('palvelimelta haettu pelkkä Strava-treeni', () => {
     expect(reconcile(walk, [fromServer()])).toEqual({ save: [], remove: [] })
   })
 
-  it('muuttunut aktiviteetti päivittää treenin ja säilyttää piilotuksen', () => {
-    const renamed = { ...walk, name: 'Iltakävely' }
-    const { save } = reconcile(renamed, [fromServer()])
+  it('muuttunut mittaus päivittää treenin ja säilyttää piilotuksen ja nimen', () => {
+    const longer = { ...walk, distanceM: 5600 }
+    const { save } = reconcile(longer, [{ ...fromServer(), title: 'Kävely koiran kanssa' }])
     expect(save).toHaveLength(1)
-    expect(save[0]).toMatchObject({ id: stravaWorkoutId(202), title: 'Iltakävely', hiddenFromFriends: true })
+    expect(save[0]).toMatchObject({ id: stravaWorkoutId(202), title: 'Kävely koiran kanssa', hiddenFromFriends: true })
+    expect(save[0].measured?.distanceM).toBe(5600)
+  })
+
+  it('Stravassa vaihdettu nimi ei korvaa Treeniksen nimeä', () => {
+    expect(reconcile({ ...walk, name: 'Iltakävely' }, [fromServer()])).toEqual({ save: [], remove: [] })
   })
 })

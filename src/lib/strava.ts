@@ -202,7 +202,8 @@ function same(a: unknown, b: unknown): boolean {
  *
  * - Jo yhdistetty: mitattu puoli päivitetään, jos aktiviteettia on muokattu Stravassa.
  * - Avoin kysymys: odotetaan käyttäjän vastausta.
- * - Pelkkä Strava-treeni on jo olemassa: pidetään, paitsi jos toinen laite on sillä
+ * - Pelkkä Strava-treeni on jo olemassa: mitattu puoli päivitetään, nimi ei. Treeni pidetään,
+ *   paitsi jos toinen laite on sillä
  *   välin synkannut kirjatun treenin, johon aktiviteetti selvästi kuuluu. Silloin
  *   yhdistetään ja tupla poistetaan. Epävarmaa osumaa ei kysytä uudelleen, koska
  *   pelkkä Strava-treeni syntyy myös siitä, että käyttäjä vastasi "ei sama".
@@ -239,12 +240,10 @@ export function reconcile(
     return { save: [{ ...target, measured }], remove: own ? [ownId] : [] }
   }
   if (own) {
+    // Nimi tulee Stravasta vain luotaessa: sen jälkeen Treeniksen nimi pysyy, myös muokattuna.
     const fresh = workoutFromActivity(activity)
-    const changed = !same(
-      [own.sport, own.date, own.title, own.measured],
-      [fresh.sport, fresh.date, fresh.title, fresh.measured],
-    )
-    return changed ? { save: [{ ...own, ...fresh }], remove: [] } : NOTHING
+    const changed = !same([own.sport, own.date, own.measured], [fresh.sport, fresh.date, fresh.measured])
+    return changed ? { save: [{ ...own, ...fresh, title: own.title }], remove: [] } : NOTHING
   }
   if (resolution.kind === 'pending') {
     const target = workouts.find((w) => w.id === resolution.workoutId)!
