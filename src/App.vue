@@ -1,8 +1,24 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
 
 const route = useRoute()
+const router = useRouter()
+
+// Takaisin pyyhkäistessä iOS liu'uttaa jo oman kuvansa edellisestä sivusta. Jos sivu
+// sen jälkeen vielä häivytetään esiin, se välähtää. Selaimen takaisin- ja
+// eteenpäin-siirtymät (tyyppi 'pop') näytetään siksi heti, sovelluksen omat linkit
+// pehmeästi kuten ennen.
+const instant = ref(false)
+let popped = false
+router.options.history.listen((_to, _from, info) => {
+  popped = info.type === 'pop'
+})
+router.beforeEach(() => {
+  instant.value = popped
+  popped = false
+})
 </script>
 
 <template>
@@ -12,7 +28,7 @@ const route = useRoute()
     <main class="flex-1 pb-3">
       <!-- Uusi näkymä liukuu rauhallisesti esiin. Vanha poistuu heti, jotta siirtymä ei hidasta käyttöä. -->
       <RouterView v-slot="{ Component }">
-        <Transition name="page" mode="out-in" :duration="{ enter: 180, leave: 0 }">
+        <Transition :name="instant ? 'instant' : 'page'" mode="out-in" :duration="{ enter: instant ? 0 : 180, leave: 0 }">
           <component :is="Component" />
         </Transition>
       </RouterView>
