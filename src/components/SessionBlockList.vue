@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { useTemplateRef } from 'vue'
+import { useDragReorder } from '@/composables/useDragReorder'
 
 /**
  * Treenin liikkeet järjestyksessä. Rivin napautus vie liikkeeseen, kahvasta raahaamalla
@@ -13,68 +14,14 @@ export interface BlockRow {
   finished: boolean
 }
 
-const props = defineProps<{ rows: BlockRow[]; current: number }>()
+defineProps<{ rows: BlockRow[]; current: number }>()
 const emit = defineEmits<{ select: [index: number]; move: [from: number, to: number] }>()
 
 /** Rivien väli (gap-1.5), jotta raahattava rivi jättää täsmälleen oman kokoisensa raon. */
 const GAP_PX = 6
 
 const list = useTemplateRef<HTMLUListElement>('list')
-
-interface Drag {
-  from: number
-  to: number
-  startY: number
-  dy: number
-  /** Raahattavan rivin korkeus väleineen: muut rivit väistävät tämän verran. */
-  step: number
-  /** Rivien keskikohdat raahauksen alussa. */
-  middles: number[]
-}
-const drag = ref<Drag | null>(null)
-
-function startDrag(index: number, event: PointerEvent) {
-  if (!list.value) return
-  const rects = [...list.value.children].map((el) => el.getBoundingClientRect())
-  drag.value = {
-    from: index,
-    to: index,
-    startY: event.clientY,
-    dy: 0,
-    step: rects[index].height + GAP_PX,
-    middles: rects.map((r) => r.top + r.height / 2),
-  }
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-}
-
-function moveDrag(event: PointerEvent) {
-  const d = drag.value
-  if (!d) return
-  d.dy = event.clientY - d.startY
-  const middle = d.middles[d.from] + d.dy
-  d.to = d.middles.filter((m, i) => i !== d.from && m < middle).length
-}
-
-function endDrag() {
-  const d = drag.value
-  drag.value = null
-  if (d && d.to !== d.from) emit('move', d.from, d.to)
-}
-
-/** Raahattava rivi seuraa sormea, ja sen ja kohteen väliset rivit väistävät. */
-function shift(index: number): string | undefined {
-  const d = drag.value
-  if (!d) return undefined
-  if (index === d.from) return `translateY(${d.dy}px)`
-  if (d.from < d.to && index > d.from && index <= d.to) return `translateY(${-d.step}px)`
-  if (d.from > d.to && index >= d.to && index < d.from) return `translateY(${d.step}px)`
-  return undefined
-}
-
-function moveBy(index: number, delta: -1 | 1) {
-  const to = index + delta
-  if (to >= 0 && to < props.rows.length) emit('move', index, to)
-}
+const { drag, start, move, end, shift, moveBy } = useDragReorder(list, GAP_PX, (from, to) => emit('move', from, to))
 </script>
 
 <template>
@@ -101,12 +48,12 @@ function moveBy(index: number, delta: -1 | 1) {
           type="button"
           :aria-label="`Siirrä ${row.name}. Raahaa tai käytä nuolinäppäimiä.`"
           class="flex size-11 flex-none cursor-grab touch-none items-center justify-center text-ink-muted active:cursor-grabbing"
-          @pointerdown="startDrag(index, $event)"
-          @pointermove="moveDrag"
-          @pointerup="endDrag"
-          @pointercancel="endDrag"
-          @keydown.up.prevent="moveBy(index, -1)"
-          @keydown.down.prevent="moveBy(index, 1)"
+          @pointerdown="start(index, $event)"
+          @pointermove="move"
+          @pointerup="end"
+          @pointercancel="end"
+          @keydown.up.prevent="moveBy(index, -1, rows.length)"
+          @keydown.down.prevent="moveBy(index, 1, rows.length)"
         >
           <svg class="size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <circle cx="5.5" cy="3.5" r="1.5" />
