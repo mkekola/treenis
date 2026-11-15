@@ -14,6 +14,7 @@ import {
   setRest,
   setCount,
   setTarget,
+  swapExercise,
   targetOf,
 } from '@/lib/template'
 import { exercise } from '@/test/fixtures'
@@ -59,6 +60,25 @@ describe('tavoitteen muutos', () => {
   it('pitää sarjamäärän järkevissä rajoissa', () => {
     expect(targetOf(setTarget(templateA, at, 'weight_reps', { sets: 0 }).blocks[0].exercises[0]).sets).toBe(1)
     expect(targetOf(setTarget(templateA, at, 'weight_reps', { sets: 99 }).blocks[0].exercises[0]).sets).toBe(10)
+  })
+})
+
+describe('liikkeen vaihto', () => {
+  it('pitää sarjat ja toistot, kun mittaustapa on sama', () => {
+    const before = templateA.blocks[0].exercises[0]
+    const t = swapExercise(templateA, { block: 0, exercise: 0 }, exercise('leg-press'), 'weight_reps')
+    expect(t.blocks[0].exercises[0].exerciseId).toBe('leg-press')
+    expect(t.blocks[0].exercises[0].sets).toEqual(before.sets)
+    expect(templateA.blocks[0].exercises[0].exerciseId).toBe(before.exerciseId)
+  })
+
+  it('aikaliikkeeseen vaihtaessa sarjamäärä säilyy ja tavoite on uuden liikkeen oletus', () => {
+    const before = templateA.blocks[0].exercises[0]
+    const t = swapExercise(templateA, { block: 0, exercise: 0 }, exercise('plank'), 'weight_reps')
+    const sets = t.blocks[0].exercises[0].sets
+    expect(sets).toHaveLength(before.sets.length)
+    expect(sets[0].reps).toBeUndefined()
+    expect(sets[0].durationSec).toBeGreaterThan(0)
   })
 })
 

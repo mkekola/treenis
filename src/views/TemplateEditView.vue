@@ -14,6 +14,7 @@ import {
   rename,
   setRest,
   setTarget,
+  swapExercise,
   targetOf,
   type ExerciseRef,
 } from '@/lib/template'
@@ -158,9 +159,29 @@ function changeRest(delta: number) {
 // ---------------------------------------------------------- lisäys ja poisto
 
 const pickerOpen = ref(false)
+/** Vaihdettava liike. Valitsin on sama kuin lisäyksessä, valinta vain korvaa liikkeen. */
+const swapAt = ref<ExerciseRef | null>(null)
+
+function startSwap() {
+  swapAt.value = menuAt.value
+  closeMenu()
+  pickerOpen.value = true
+}
+
+function closePicker() {
+  pickerOpen.value = false
+  swapAt.value = null
+}
 
 function onPick(exercise: Exercise) {
   pickerOpen.value = false
+  const at = swapAt.value
+  swapAt.value = null
+  if (at && template.value) {
+    const current = template.value.blocks[at.block].exercises[at.exercise]
+    update(swapExercise(template.value, at, exercise, measurementOf(current.exerciseId)))
+    return
+  }
   if (template.value) update(addExercise(template.value, newBlockId(), exercise))
 }
 
@@ -367,6 +388,9 @@ async function deleteTemplate() {
             </button>
           </div>
 
+          <button type="button" class="min-h-12 rounded-(--radius-button) border border-line font-semibold" @click="startSwap">
+            Vaihda liike
+          </button>
           <button
             v-if="inSuperset"
             type="button"
@@ -430,9 +454,9 @@ async function deleteTemplate() {
 
     <ExercisePicker
       :open="pickerOpen"
-      title="Lisää liike"
+      :title="swapAt ? 'Vaihda liike' : 'Lisää liike'"
       @select="onPick"
-      @close="pickerOpen = false"
+      @close="closePicker"
     />
   </div>
 </template>

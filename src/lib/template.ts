@@ -84,6 +84,26 @@ export function removeExercise(template: WorkoutTemplate, at: ExerciseRef): Work
 }
 
 /**
+ * Vaihtaa liikkeen toiseen samalle paikalle. Sarjamäärä säilyy, ja saman mittaustavan
+ * liike pitää myös toistot (tai keston). Eri mittaustavalle tulee uuden liikkeen oletus,
+ * koska esimerkiksi 10 toistoa ei kelpaa lankun kestoksi.
+ */
+export function swapExercise(
+  template: WorkoutTemplate,
+  at: ExerciseRef,
+  exercise: Exercise,
+  currentMeasurement: Measurement,
+): WorkoutTemplate {
+  const next = clone(template)
+  const entry = next.blocks[at.block].exercises[at.exercise]
+  entry.exerciseId = exercise.id
+  if (exercise.measurement !== currentMeasurement) {
+    entry.sets = defaultSets(exercise.measurement, entry.sets.length, DEFAULT_REPS)
+  }
+  return next
+}
+
+/**
  * Siirtää liikettä ylös (-1) tai alas (+1). Supersarjan sisällä liike vaihtaa
  * paikkaa toisen liikkeen kanssa. Lohkon reunalla siirtyy koko lohko, jotta
  * supersarja ei hajoa vahingossa: erottaminen on oma toimintonsa.
