@@ -10,6 +10,8 @@ import { useWorkouts } from '@/stores/workouts'
 const LAST_PULL_KEY = 'treenis.stravaLastPull'
 /** Stravaa ei kysytä joka synkassa: webhook tuo uudet, tämä on varmistus. */
 const IMPORT_INTERVAL_MS = 5 * 60 * 1000
+/** Palvelimen (PostgREST) enimmäismäärä yhdessä vastauksessa. */
+const PAGE_SIZE = 1000
 
 function readLastPull(): string | null {
   try {
@@ -86,25 +88,39 @@ export const useStrava = defineStore('strava', () => {
     await loadStatus()
   }
 
-  /** Uudet ja muuttuneet aktiviteetit palvelimelta laitteelle. Poistetut sovitetaan heti. */
+  /**
+   * Uudet ja muuttuneet aktiviteetit palvelimelta laitteelle. Poistetut sovitetaan heti.
+   * Haku sivuittain, koska palvelin palauttaa kerralla enintään 1 000 riviä. Yhden tuonnin
+   * rivit jakavat saman ajan, joten järjestys on aika ja tunniste, eikä sivu katkea kesken.
+   */
   async function pull() {
     const since = readLastPull()
-    let query = supabase.from('strava_activities').select('*').order('updated_at')
-    if (since) query = query.gt('updated_at', since)
-    const { data, error } = await query
-    if (error) throw error
-    const rows = (data ?? []) as StravaActivityRow[]
+    let last: string | null = null
+    for (let from = 0; ; from += PAGE_SIZE) {
+      let query = supabase
+        .from('strava_activities')
+        .select('*')
+        .order('updated_at')
+        .order('id')
+        .range(from, from + PAGE_SIZE - 1)
+      if (since) query = query.gt('updated_at', since)
+      const { data, error } = await query
+      if (error) throw error
+      const rows = (data ?? []) as StravaActivityRow[]
 
-    for (const row of rows) {
-      const activity = stravaActivityFromRow(row)
-      if (row.deleted_at) {
-        await db.stravaActivities.delete(activity.id)
-        await apply(activity, true)
-      } else {
-        await db.stravaActivities.put(plain(activity))
+      for (const row of rows) {
+        const activity = stravaActivityFromRow(row)
+        if (row.deleted_at) {
+          await db.stravaActivities.delete(activity.id)
+          await apply(activity, true)
+        } else {
+          await db.stravaActivities.put(plain(activity))
+        }
       }
+      if (rows.length) last = rows[rows.length - 1].updated_at
+      if (rows.length < PAGE_SIZE) break
     }
-    if (rows.length) writeLastPull(rows[rows.length - 1].updated_at)
+    if (last) writeLastPull(last)
   }
 
   async function apply(activity: StravaActivity, deleted = false): Promise<boolean> {
