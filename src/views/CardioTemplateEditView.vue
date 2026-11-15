@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Sparkline from '@/components/stats/Sparkline.vue'
 import { useTheme } from '@/composables/useTheme'
 import {
   addSegment,
@@ -12,9 +13,13 @@ import {
   totalsText,
   updateSegment,
 } from '@/lib/cardio'
+import { effortOf, paceLabel, templateHistory } from '@/lib/endurance'
+import { formatDistance, formatDurationShort, formatShortDate } from '@/lib/format'
+import { avgHr, distanceM, durationSec } from '@/lib/workout'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
+import { useWorkouts } from '@/stores/workouts'
 import {
   CARDIO_ZONE_HINTS,
   CARDIO_ZONE_LABELS,
@@ -39,6 +44,7 @@ const route = useRoute()
 const router = useRouter()
 const templates = useTemplates()
 const programs = usePrograms()
+const workouts = useWorkouts()
 const colors = useSportColors()
 const { isDark } = useTheme()
 
@@ -201,6 +207,35 @@ function remove(index: number) {
   if (!template.value) return
   menuOpen.value = null
   update(removeSegment(template.value, index))
+}
+
+// ------------------------------------------------------------- historia
+
+/** Kerrat, jotka on tehty tästä pohjasta tai liitetty siihen, uusin ensin. */
+const history = computed(() => (template.value ? templateHistory(workouts.workouts, template.value.id) : []))
+
+/** Vauhdin kehitys vanhimmasta uusimpaan. Käyrä nousee, kun vauhti paranee. */
+const paces = computed(() =>
+  history.value
+    .map(effortOf)
+    .filter((p) => p !== null)
+    .map((p) => p.paceSecPerKm)
+    .reverse(),
+)
+
+const historyLine = (w: (typeof history.value)[number]) => {
+  const duration = durationSec(w)
+  const distance = distanceM(w)
+  const effort = effortOf(w)
+  const hr = avgHr(w)
+  return [
+    duration ? formatDurationShort(duration) : null,
+    distance ? formatDistance(w.sport, distance) : null,
+    hr ? `syke ${hr}` : null,
+    effort ? `${paceLabel(effort.paceSecPerKm)} /km` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 // ------------------------------------------------------------ toiminnot
@@ -446,6 +481,29 @@ const numberField = 'h-11 rounded-xl border border-line bg-bg text-center text-l
         Valmis
       </RouterLink>
       <p class="-mt-1 text-center text-[13px] text-ink-muted">Muutokset tallentuvat automaattisesti.</p>
+
+      <!-- Historia: sama treeni kerta kerralta, esim. PK-lenkin matka samassa ajassa. -->
+      <section v-if="history.length" aria-labelledby="historia" class="mt-3 rounded-(--radius-feature) bg-surface px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="historia" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+            Tehdyt · {{ history.length }}
+          </h2>
+          <Sparkline
+            v-if="paces.length >= 2"
+            :values="paces.map((pace) => -pace)"
+            :label="`Vauhti ${paceLabel(paces[0])} → ${paceLabel(paces[paces.length - 1])} minuuttia kilometrillä`"
+          />
+        </div>
+        <p v-if="paces.length >= 2" class="text-[13px] text-ink-muted" data-numeric>
+          Vauhti {{ paceLabel(paces[0]) }} → <strong class="text-ink">{{ paceLabel(paces[paces.length - 1]) }} /km</strong>
+        </p>
+        <ul class="mt-1.5">
+          <li v-for="w in history" :key="w.id" class="flex gap-3 border-t border-line py-2 text-[14px]" data-numeric>
+            <span class="w-20 flex-none font-semibold">{{ formatShortDate(w.date) }}</span>
+            <span class="min-w-0 text-ink-muted">{{ historyLine(w) || 'Ei kestoa eikä matkaa' }}</span>
+          </li>
+        </ul>
+      </section>
 
       <div class="mt-2 mb-6">
         <button
