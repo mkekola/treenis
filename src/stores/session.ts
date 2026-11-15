@@ -114,6 +114,7 @@ export const useSession = defineStore('session', () => {
   const editTiming = (edits: TimingEdits) => update((s) => logic.editTiming(s, edits))
   const skipRest = () => update((s) => logic.skipRest(s))
   const goToBlock = (index: number) => update((s) => logic.setCurrentBlock(s, index))
+  const moveBlock = (from: number, to: number) => update((s) => logic.moveBlock(s, from, to))
 
   async function discard() {
     active.value = null
@@ -177,6 +178,7 @@ export const useSession = defineStore('session', () => {
     editTiming,
     skipRest,
     goToBlock,
+    moveBlock,
     discard,
     finish,
     updateTemplate,

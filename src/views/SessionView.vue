@@ -3,6 +3,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ExercisePicker from '@/components/ExercisePicker.vue'
 import FeelPrompt from '@/components/FeelPrompt.vue'
+import SessionBlockList, { type BlockRow } from '@/components/SessionBlockList.vue'
 import SetRow from '@/components/SetRow.vue'
 import type { SetValues } from '@/components/SetRow.vue'
 import { useNow } from '@/composables/useNow'
@@ -139,6 +140,17 @@ const totalIn = (b: SessionBlock) => b.exercises.reduce((sum, e) => sum + e.sets
 
 const blockDone = computed(() => !!block.value && block.value.exercises.every(isExerciseDone))
 const isBlockDone = (b: SessionBlock) => b.exercises.every(isExerciseDone)
+
+/** Koko treenin järjestys listana, myös käsillä oleva liike, jotta raahatessa näkee paikan. */
+const blockRows = computed<BlockRow[]>(() =>
+  (active.value?.blocks ?? []).map((b) => ({
+    id: b.id,
+    name: b.exercises.map((e) => nameOf(e.exerciseId)).join(' + '),
+    done: doneIn(b),
+    total: totalIn(b),
+    finished: isBlockDone(b),
+  })),
+)
 
 /** Seuraava tekemätön liike: ensin käsillä olevan jälkeen, sitten alusta. -1, kun kaikki on tehty. */
 const nextOpen = computed(() => {
@@ -376,28 +388,15 @@ function finish() {
       </div>
     </section>
 
-    <!-- Muut liikkeet: näkyvissä kutistettuina, napauttamalla pääsee suoraan. -->
-    <ul class="mx-5 mt-3 flex flex-col gap-1.5">
-      <li v-for="(other, otherIndex) in active.blocks" :key="other.id">
-        <button
-          v-if="otherIndex !== active.currentBlock"
-          type="button"
-          class="flex w-full items-center gap-2.5 rounded-(--radius-field) border-2 bg-surface px-3.5 py-2 text-left"
-          :class="isBlockDone(other) ? 'border-transparent opacity-60' : 'border-[var(--sport-surface)]'"
-          @click="session.goToBlock(otherIndex)"
-        >
-          <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">
-            {{ other.exercises.map((e) => nameOf(e.exerciseId)).join(' + ') }}
-          </span>
-          <span class="text-[13px] text-ink-muted" data-numeric>
-            {{ doneIn(other) }} / {{ totalIn(other) }}
-          </span>
-          <svg v-if="doneIn(other) === totalIn(other)" class="size-4 text-ink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Tehty">
-            <polyline points="5,13 10,18 19,7" />
-          </svg>
-        </button>
-      </li>
-    </ul>
+    <!-- Treenin järjestys: napauttamalla pääsee liikkeeseen, kahvasta raahaamalla järjestys vaihtuu. -->
+    <SessionBlockList
+      v-if="blockRows.length > 1"
+      class="mx-5 mt-3"
+      :rows="blockRows"
+      :current="active.currentBlock"
+      @select="session.goToBlock"
+      @move="session.moveBlock"
+    />
 
     <div class="flex-1" />
 

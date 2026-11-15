@@ -327,6 +327,18 @@ export function setCurrentBlock(session: ActiveSession, index: number): ActiveSe
   return { ...clone(session), currentBlock: index }
 }
 
+/** Siirtää liikkeen (lohkon) uuteen kohtaan. Käsillä oleva liike pysyy samana, vaikka sen paikka muuttuu. */
+export function moveBlock(session: ActiveSession, from: number, to: number): ActiveSession {
+  const last = session.blocks.length - 1
+  if (from === to || from < 0 || to < 0 || from > last || to > last) return session
+  const next = clone(session)
+  const currentId = next.blocks[next.currentBlock]?.id
+  const [moved] = next.blocks.splice(from, 1)
+  next.blocks.splice(to, 0, moved)
+  next.currentBlock = Math.max(0, next.blocks.findIndex((b) => b.id === currentId))
+  return next
+}
+
 // -------------------------------------------------------------------- tuntuma
 
 export function isExerciseDone(exercise: SessionExercise): boolean {

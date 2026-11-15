@@ -10,6 +10,7 @@ import {
   completeSet,
   editTiming,
   isExerciseDone,
+  moveBlock,
   newSessionExercise,
   progress,
   removeExercise,
@@ -329,3 +330,16 @@ describe('ajankohdan korjaus', () => {
   })
 })
 
+describe('liikkeiden järjestys treenin aikana', () => {
+  it('siirtää liikkeen ja pitää käsillä olevan liikkeen samana', () => {
+    const session = { ...startA(), currentBlock: 1 }
+    const ids = session.blocks.map((b) => b.id)
+    const moved = moveBlock(session, 1, 3)
+    expect(moved.blocks.map((b) => b.id)).toEqual([ids[0], ids[2], ids[3], ids[1], ...ids.slice(4)])
+    expect(moved.blocks[moved.currentBlock].id).toBe(ids[1])
+    const before = moveBlock(session, 4, 0)
+    expect(before.blocks[0].id).toBe(ids[4])
+    expect(before.blocks[before.currentBlock].id).toBe(ids[1])
+    expect(moveBlock(session, 0, 99)).toBe(session)
+  })
+})
