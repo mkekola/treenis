@@ -80,7 +80,7 @@ describe('syötteen rivit', () => {
     expect(days.map((d) => [d.label, d.rows.length])).toEqual([['Tänään', 1], ['Eilen', 1], ['Perjantai 13.11.', 2]])
   })
 
-  it('nimi ja laji kerran, oma otsikko siirtää lajin toiselle riville', () => {
+  it('nimi ja laji, treenin omaa nimeä ei näytetä', () => {
     // Luvun ja yksikön välissä on kapea sitova välilyönti; vertailu tavallisella.
     const lines = (overrides: Partial<FeedRow>) => {
       const { who, what, detail } = feedLines(row(overrides))
@@ -88,7 +88,7 @@ describe('syötteen rivit', () => {
     }
     expect(lines({})).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km' })
     expect(lines({ is_me: true, sport: 'strength', title: 'Treeni 1', distance_m: null, duration_sec: 3900 }))
-      .toEqual({ who: 'Sinä', what: 'Treeni 1', detail: 'Sali · 1 t 5 min' })
+      .toEqual({ who: 'Sinä', what: 'Sali', detail: '1 t 5 min' })
     expect(lines({ title: null, from_strava: true })).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km · Strava' })
   })
 })

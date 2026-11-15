@@ -114,18 +114,15 @@ export function groupByDay(rows: FeedRow[], now: Date): FeedDay[] {
 }
 
 /**
- * Rivin tekstit: kuka ("Beni"), mitä ("Juoksu") ja tiedot ("35 min · 5,00 km"). Treenin oma
- * nimi näkyy vain, kun se eroaa lajista, jolloin laji siirtyy tietoihin: "Treeni 1", "Sali · 1 t 5 min".
+ * Rivin tekstit: kuka ("Beni"), mitä ("Juoksu") ja tiedot ("35 min · 5,00 km"). Treenin omaa
+ * nimeä ("Treeni 1") ei näytetä: syötteessä riittää laji (Marian päätös).
  */
 export function feedLines(row: FeedRow): { who: string; what: string; detail: string } {
-  const sport = SPORT_LABELS[row.sport]
-  const custom = row.title && row.title !== sport ? row.title : null
   const who = row.is_me ? 'Sinä' : row.name || 'Nimetön'
   const detail = [
-    custom ? sport : null,
     row.duration_sec ? formatDurationShort(row.duration_sec) : null,
     row.distance_m ? formatDistance(row.sport, row.distance_m) : null,
     row.from_strava ? 'Strava' : null,
   ]
-  return { who, what: custom ?? sport, detail: detail.filter(Boolean).join(' · ') }
+  return { who, what: SPORT_LABELS[row.sport], detail: detail.filter(Boolean).join(' · ') }
 }
