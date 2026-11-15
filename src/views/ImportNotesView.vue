@@ -88,7 +88,7 @@ Soutu 40kg 12-12-10`
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-4 px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-6 pb-6">
     <RouterLink
       to="/asetukset/tiedot"
       aria-label="Takaisin omiin tietoihin"

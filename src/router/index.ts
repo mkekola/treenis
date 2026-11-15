@@ -4,6 +4,8 @@ import DiaryView from '@/views/DiaryView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // Alapalkki (hideNav) piilotetaan vain käynnissä olevan treenin sivuilla ja ennen
+  // kirjautumista näkyvillä julkisilla sivuilla. Muualla se näkyy aina.
   routes: [
     { path: '/', name: 'diary', component: DiaryView, meta: { header: true } },
     { path: '/kirjaa', name: 'log', component: () => import('@/views/SportPickerView.vue') },
@@ -11,7 +13,6 @@ export const router = createRouter({
       path: '/kirjaa/:sport',
       name: 'log-sport',
       component: () => import('@/views/ManualWorkoutView.vue'),
-      meta: { hideNav: true },
     },
     {
       path: '/treeni/uusi',
@@ -70,14 +71,12 @@ export const router = createRouter({
       path: '/asetukset',
       name: 'settings',
       component: () => import('@/views/SettingsView.vue'),
-      meta: { hideNav: true },
     },
     {
       // Alasivut: ulkoasu, lajien-varit, kaverit, ilmoitukset, strava, tiedot, tili, ikonit.
       path: '/asetukset/:osio',
       name: 'settings-page',
       component: () => import('@/views/SettingsPageView.vue'),
-      meta: { hideNav: true },
     },
     {
       // Paluu Stravan lupasivulta. Julkinen, koska iPhonessa paluu voi osua Safariin.
@@ -90,7 +89,6 @@ export const router = createRouter({
       path: '/tuo',
       name: 'import-notes',
       component: () => import('@/views/ImportNotesView.vue'),
-      meta: { hideNav: true },
     },
     {
       // Julkinen: selosteen pitää olla luettavissa ennen kirjautumista.

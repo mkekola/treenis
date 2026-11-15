@@ -10,8 +10,14 @@ const items = [
   { to: '/kaverit', label: 'Kaverit' },
 ] as const
 
-/** Ohjelman ja treenin muokkaus (/ohjelmat/…) kuuluvat Ohjelmat-välilehteen. */
-const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
+/**
+ * Ohjelman ja treenin muokkaus (/ohjelmat/…) kuuluvat Ohjelmat-välilehteen, treenin
+ * kirjaus (/kirjaa/…, /treeni/uusi) Päiväkirjaan, josta se aloitetaan.
+ */
+const isActive = (to: string) =>
+  to === '/'
+    ? route.path === '/' || route.path.startsWith('/kirjaa') || route.path === '/treeni/uusi'
+    : route.path.startsWith(to)
 </script>
 
 <template>
