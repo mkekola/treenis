@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppNav from '@/components/AppNav.vue'
@@ -20,6 +20,21 @@ router.beforeEach(() => {
   instant.value = popped
   popped = false
 })
+const transition = computed(() => ({
+  name: instant.value ? 'instant' : 'page',
+  duration: { enter: instant.value ? 0 : 180, leave: 0 },
+}))
+
+// Yläpalkki vaihtuu samassa hetkessä kuin sivu: kun vanha sivu on poistunut ja uusi
+// tulee esiin. Jos palkki katoaisi heti reitin vaihtuessa, vanha sivu hyppäisi sen
+// verran ylös ennen poistumistaan. Päänäkymien välillä palkki pysyy paikallaan.
+const headerShown = ref(false)
+void router.isReady().then(() => {
+  headerShown.value = Boolean(route.meta.header)
+})
+function onPageEnter() {
+  headerShown.value = Boolean(route.meta.header)
+}
 </script>
 
 <template>
@@ -27,10 +42,12 @@ router.beforeEach(() => {
     class="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col pt-[env(safe-area-inset-top)]"
   >
     <main class="flex-1 pb-3">
-      <AppHeader v-if="route.meta.header" />
+      <Transition :name="transition.name" :duration="transition.duration">
+        <AppHeader v-if="headerShown" />
+      </Transition>
       <!-- Uusi näkymä liukuu rauhallisesti esiin. Vanha poistuu heti, jotta siirtymä ei hidasta käyttöä. -->
       <RouterView v-slot="{ Component }">
-        <Transition :name="instant ? 'instant' : 'page'" mode="out-in" :duration="{ enter: instant ? 0 : 180, leave: 0 }">
+        <Transition :name="transition.name" mode="out-in" :duration="transition.duration" @before-enter="onPageEnter">
           <component :is="Component" />
         </Transition>
       </RouterView>
