@@ -201,6 +201,8 @@ watch([() => block.value?.id, readyToMove], ([id, ready], [previousId, wasReady]
   if (id !== previousId || !ready || wasReady || nextOpen.value < 0) return
   const delay = block.value?.exercises.some((e) => e.measurement === 'weight_reps') ? ADVANCE_DELAY_MS : 0
   advanceTimer = setTimeout(() => {
+    // Muistiinpanon kirjoitus jää kesken, jos liike vaihtuu alta: silloin siirrytään itse napista.
+    if (document.activeElement instanceof HTMLTextAreaElement) return
     if (block.value?.id === id && nextOpen.value >= 0) void session.goToBlock(nextOpen.value)
   }, delay)
 })
