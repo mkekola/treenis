@@ -338,6 +338,16 @@ export function setExerciseNote(session: ActiveSession, block: number, exercise:
   return next
 }
 
+/** Lohkot annetussa järjestyksessä, esim. esikatselussa järjestetyt. Ensimmäinen on käsillä. */
+export function orderBlocks(session: ActiveSession, order: number[]): ActiveSession {
+  const valid = order.length === session.blocks.length && new Set(order).size === order.length
+  if (!valid || order.some((i) => !session.blocks[i])) return session
+  const next = clone(session)
+  next.blocks = order.map((i) => next.blocks[i])
+  next.currentBlock = 0
+  return next
+}
+
 /** Siirtää liikkeen (lohkon) uuteen kohtaan. Käsillä oleva liike pysyy samana, vaikka sen paikka muuttuu. */
 export function moveBlock(session: ActiveSession, from: number, to: number): ActiveSession {
   const last = session.blocks.length - 1

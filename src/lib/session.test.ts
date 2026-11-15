@@ -11,6 +11,7 @@ import {
   editTiming,
   isExerciseDone,
   moveBlock,
+  orderBlocks,
   setExerciseNote,
   newSessionExercise,
   progress,
@@ -358,5 +359,18 @@ describe('liikkeen muistiinpano', () => {
     const blocks = toWorkout(s, NOW).logged!.blocks!
     expect(blocks[0].exercises[0].note).toBe('Laite 2')
     expect('note' in blocks[1].exercises[0]).toBe(false)
+  })
+})
+
+describe('esikatselussa järjestetty treeni', () => {
+  it('lohkot annetussa järjestyksessä, ensimmäinen käsillä; virheellinen järjestys ei muuta mitään', () => {
+    const session = { ...startA(), currentBlock: 2 }
+    const ids = session.blocks.map((b) => b.id)
+    const order = [3, 0, 1, 2, 4, 5]
+    const ordered = orderBlocks(session, order)
+    expect(ordered.blocks.map((b) => b.id)).toEqual(order.map((i) => ids[i]))
+    expect(ordered.currentBlock).toBe(0)
+    expect(orderBlocks(session, [0, 0, 1, 2, 3, 4])).toBe(session)
+    expect(orderBlocks(session, [0, 1])).toBe(session)
   })
 })

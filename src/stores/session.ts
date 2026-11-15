@@ -117,6 +117,7 @@ export const useSession = defineStore('session', () => {
   const skipRest = () => update((s) => logic.skipRest(s))
   const goToBlock = (index: number) => update((s) => logic.setCurrentBlock(s, index))
   const moveBlock = (from: number, to: number) => update((s) => logic.moveBlock(s, from, to))
+  const orderBlocks = (order: number[]) => update((s) => logic.orderBlocks(s, order))
 
   async function discard() {
     active.value = null
@@ -182,6 +183,7 @@ export const useSession = defineStore('session', () => {
     skipRest,
     goToBlock,
     moveBlock,
+    orderBlocks,
     discard,
     finish,
     updateTemplate,

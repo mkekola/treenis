@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExercisePicker from '@/components/ExercisePicker.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
+import { useDragReorder } from '@/composables/useDragReorder'
 import { formatDurationShort } from '@/lib/format'
 import { recentHistory } from '@/lib/history'
-import { buildSession, newSessionExercise, swapExercise } from '@/lib/session'
+import { buildSession, newSessionExercise, orderBlocks, swapExercise } from '@/lib/session'
 import { DEFAULT_REPS, estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
@@ -36,6 +37,29 @@ const swaps = ref(new Map<string, string>())
 const keyOf = (block: number, exercise: number) => `${block}:${exercise}`
 
 /**
+ * Tämän kerran järjestys pohjan lohkojen indekseinä. Tyhjä = pohjan oma järjestys.
+ * Vaihdot viittaavat pohjan indekseihin, joten järjestys tehdään vasta niiden jälkeen.
+ */
+const order = ref<number[]>([])
+const blockOrder = computed(() => {
+  const count = template.value?.blocks.length ?? 0
+  return order.value.length === count ? order.value : [...Array(count).keys()]
+})
+const reordered = computed(() => blockOrder.value.some((original, position) => original !== position))
+
+function reorder(from: number, to: number) {
+  const next = [...blockOrder.value]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  order.value = next
+}
+
+/** Lohkojen väli (gap-4), jotta raahattava lohko jättää oman kokoisensa raon. */
+const BLOCK_GAP_PX = 16
+const blockList = useTemplateRef<HTMLElement>('blockList')
+const { drag, start, move, end, shift, moveBy } = useDragReorder(blockList, BLOCK_GAP_PX, reorder)
+
+/**
  * Esikatselu rakennetaan samalla logiikalla kuin oikea treeni, mutta sitä ei
  * tallenneta. Näin painot ja nousuehdotukset ovat samat, jotka treenissä näkyvät.
  */
@@ -57,7 +81,7 @@ const preview = computed(() => {
     })
     built = swapExercise(built, block, index, replacement)
   }
-  return built
+  return orderBlocks(built, blockOrder.value)
 })
 
 /** Pohjan alkuperäinen liike, jotta vaihdetun rivin voi palauttaa ja nimetä. */
@@ -111,15 +135,19 @@ function weightText(
 /** Liikkeiden juokseva numerointi lohkojen yli. */
 const numbered = computed(() => {
   let n = 0
-  return (preview.value?.blocks ?? []).map((block, blockIndex) => ({
-    ...block,
-    exercises: block.exercises.map((entry, exerciseIndex) => ({
-      entry,
-      number: ++n,
-      at: { block: blockIndex, exercise: exerciseIndex },
-      swapped: swaps.value.has(keyOf(blockIndex, exerciseIndex)),
-    })),
-  }))
+  return (preview.value?.blocks ?? []).map((block, position) => {
+    // Vaihdot ja palautus viittaavat pohjan alkuperäiseen lohkoon, eivät näytön paikkaan.
+    const original = blockOrder.value[position]
+    return {
+      ...block,
+      exercises: block.exercises.map((entry, exerciseIndex) => ({
+        entry,
+        number: ++n,
+        at: { block: original, exercise: exerciseIndex },
+        swapped: swaps.value.has(keyOf(original, exerciseIndex)),
+      })),
+    }
+  })
 })
 
 async function begin() {
@@ -129,6 +157,7 @@ async function begin() {
     const [block, exercise] = key.split(':').map(Number)
     await session.swapExercise(block, exercise, exerciseId)
   }
+  if (reordered.value) await session.orderBlocks(blockOrder.value)
   await router.push('/treeni')
 }
 </script>
@@ -175,74 +204,109 @@ async function begin() {
         Treenissä ei ole vielä liikkeitä.
       </p>
 
-      <!-- Lohko: yksittäinen liike tai supersarja, kuten muokkauksessa ja treenin aikana. -->
-      <section
-        v-for="block in numbered"
-        :key="block.id"
-        :aria-label="block.exercises.length > 1 ? 'Supersarja' : undefined"
-        :class="block.exercises.length > 1 ? 'border-l-4 border-line pl-2.5' : ''"
-        class="flex flex-col gap-2"
-      >
-        <p
-          v-if="block.exercises.length > 1"
-          class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase"
-        >
-          Supersarja · lepo {{ block.restSec }} s kierroksen jälkeen
-        </p>
+      <p v-if="reordered" class="-mb-1 flex flex-wrap items-center gap-x-2 text-[13px] text-ink-muted">
+        Järjestys muutettu tälle kerralle.
+        <button type="button" class="min-h-9 font-semibold underline" @click="order = []">Palauta järjestys</button>
+      </p>
+
+      <!-- Lohkot raahattavina: kahvasta järjestys tälle kerralle, pohja pysyy ennallaan. -->
+      <div ref="blockList" class="flex flex-col gap-4">
         <div
-          v-for="{ entry, number, at, swapped } in block.exercises"
-          :key="number"
-          class="flex items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1.5"
+          v-for="(block, position) in numbered"
+          :key="block.id"
+          :style="{ transform: shift(position) }"
+          class="relative flex items-stretch gap-1"
+          :class="drag?.from === position ? 'z-10' : 'transition-transform duration-150 ease-out motion-reduce:transition-none'"
         >
-          <span
-            class="flex size-7 flex-none items-center justify-center rounded-full bg-track text-[12px] font-bold"
-            aria-hidden="true"
-            data-numeric
+          <button
+            type="button"
+            :aria-label="`Siirrä ${block.exercises.map((e) => nameOf(e.entry.exerciseId)).join(' + ')}. Raahaa tai käytä nuolinäppäimiä.`"
+            class="-ml-2 flex w-9 flex-none cursor-grab touch-none items-center justify-center rounded-lg text-ink-muted active:cursor-grabbing"
+            :class="drag?.from === position ? 'outline-2 outline-ink' : ''"
+            @pointerdown="start(position, $event)"
+            @pointermove="move"
+            @pointerup="end"
+            @pointercancel="end"
+            @keydown.up.prevent="moveBy(position, -1, numbered.length)"
+            @keydown.down.prevent="moveBy(position, 1, numbered.length)"
           >
-            {{ number }}
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-[15px] font-semibold">{{ nameOf(entry.exerciseId) }}</span>
-            <span class="block text-[13px] text-ink-muted" data-numeric>{{ targetText(entry) }}</span>
-            <span v-if="swapped" class="block text-[12px] text-ink-muted">
-              Vain tällä kertaa, pohjassa {{ nameOf(originalOf(at.block, at.exercise) ?? '') }}
-            </span>
-            <span class="flex gap-3 text-[13px] font-semibold text-ink-muted">
-              <button
-                type="button"
-                :aria-label="`Vaihda ${nameOf(entry.exerciseId)} tälle kerralle`"
-                class="min-h-9 underline"
-                @click="swapping = at"
-              >
-                Vaihda
-              </button>
-              <button
-                v-if="swapped"
-                type="button"
-                :aria-label="`Palauta ${nameOf(originalOf(at.block, at.exercise) ?? '')}`"
-                class="min-h-9 underline"
-                @click="restore(at.block, at.exercise)"
-              >
-                Palauta
-              </button>
-            </span>
-          </span>
-          <span
-            v-if="weightText(entry)"
-            class="flex-none whitespace-nowrap"
-            :class="[
-              weightText(entry)?.first ? 'text-[13px] font-medium text-ink-muted' : 'text-[14px] font-bold',
-              weightText(entry)?.hint ? 'rounded-full bg-track px-2.5 py-0.5' : '',
-            ]"
-            data-numeric
+            <svg class="size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="5.5" cy="3.5" r="1.5" />
+              <circle cx="10.5" cy="3.5" r="1.5" />
+              <circle cx="5.5" cy="8" r="1.5" />
+              <circle cx="10.5" cy="8" r="1.5" />
+              <circle cx="5.5" cy="12.5" r="1.5" />
+              <circle cx="10.5" cy="12.5" r="1.5" />
+            </svg>
+          </button>
+          <!-- Lohko: yksittäinen liike tai supersarja, kuten muokkauksessa ja treenin aikana. -->
+          <section
+            :aria-label="block.exercises.length > 1 ? 'Supersarja' : undefined"
+            :class="block.exercises.length > 1 ? 'border-l-4 border-line pl-2.5' : ''"
+            class="flex min-w-0 flex-1 flex-col gap-2"
           >
-            <span v-if="weightText(entry)?.hint" class="sr-only">
-              {{ weightText(entry)?.hint === 'increase' ? 'Ehdotettu nosto:' : 'Ehdotettu lasku:' }}
-            </span>
-            {{ weightText(entry)?.text }}
-          </span>
+            <p
+              v-if="block.exercises.length > 1"
+              class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase"
+            >
+              Supersarja · lepo {{ block.restSec }} s kierroksen jälkeen
+            </p>
+            <div
+              v-for="{ entry, number, at, swapped } in block.exercises"
+              :key="number"
+              class="flex items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1.5"
+            >
+              <span
+                class="flex size-7 flex-none items-center justify-center rounded-full bg-track text-[12px] font-bold"
+                aria-hidden="true"
+                data-numeric
+              >
+                {{ number }}
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-[15px] font-semibold">{{ nameOf(entry.exerciseId) }}</span>
+                <span class="block text-[13px] text-ink-muted" data-numeric>{{ targetText(entry) }}</span>
+                <span v-if="swapped" class="block text-[12px] text-ink-muted">
+                  Vain tällä kertaa, pohjassa {{ nameOf(originalOf(at.block, at.exercise) ?? '') }}
+                </span>
+                <span class="flex gap-3 text-[13px] font-semibold text-ink-muted">
+                  <button
+                    type="button"
+                    :aria-label="`Vaihda ${nameOf(entry.exerciseId)} tälle kerralle`"
+                    class="min-h-9 underline"
+                    @click="swapping = at"
+                  >
+                    Vaihda
+                  </button>
+                  <button
+                    v-if="swapped"
+                    type="button"
+                    :aria-label="`Palauta ${nameOf(originalOf(at.block, at.exercise) ?? '')}`"
+                    class="min-h-9 underline"
+                    @click="restore(at.block, at.exercise)"
+                  >
+                    Palauta
+                  </button>
+                </span>
+              </span>
+              <span
+                v-if="weightText(entry)"
+                class="flex-none whitespace-nowrap"
+                :class="[
+                  weightText(entry)?.first ? 'text-[13px] font-medium text-ink-muted' : 'text-[14px] font-bold',
+                  weightText(entry)?.hint ? 'rounded-full bg-track px-2.5 py-0.5' : '',
+                ]"
+                data-numeric
+              >
+                <span v-if="weightText(entry)?.hint" class="sr-only">
+                  {{ weightText(entry)?.hint === 'increase' ? 'Ehdotettu nosto:' : 'Ehdotettu lasku:' }}
+                </span>
+                {{ weightText(entry)?.text }}
+              </span>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
 
       <RouterLink
         v-if="program"
