@@ -86,12 +86,26 @@ function startEdit() {
 }
 
 function applyEdit() {
-  emit('edit', {
-    weightKg: parse(weightText.value),
-    reps: parse(repsText.value),
-    durationSec: parse(secondsText.value),
-  })
+  emit('edit', edited.value)
   editing.value = false
+}
+
+/** Muokattavat arvot sellaisinaan, jotta ruksi tietää, kelpaavatko ne jo. */
+const edited = computed<SetValues>(() => ({
+  weightKg: parse(weightText.value),
+  reps: parse(repsText.value),
+  durationSec: parse(secondsText.value),
+}))
+
+/** Ruksin saa painaa, kun sarja on valmis, tai muokkauksen aikana, kun muokatut arvot ovat valmiit. */
+const canFinish = computed(() =>
+  editing.value ? canComplete({ ...props.set, ...edited.value }, props.measurement) : ready.value,
+)
+
+/** Ruksi muokkauksen aikana tallentaa muutokset ja merkitsee sarjan tehdyksi samalla painalluksella. */
+function onComplete() {
+  if (editing.value) applyEdit()
+  emit('complete')
 }
 
 /** Ensimmäisen kerran painokenttä tallentaa jo kirjoittaessa, jotta merkintä aktivoituu heti. */
@@ -255,9 +269,9 @@ const rowId = useId()
       <button
         type="button"
         class="flex size-12 flex-none items-center justify-center rounded-xl border-2 border-ink bg-transparent text-ink active:bg-action active:text-on-action disabled:opacity-40"
-        :disabled="!ready"
-        :aria-label="`Merkitse sarja ${index + 1} tehdyksi`"
-        @click="emit('complete')"
+        :disabled="!canFinish"
+        :aria-label="`Merkitse sarja ${index + 1} tehdyksi${editing ? ' ja tallenna muutokset' : ''}`"
+        @click="onComplete"
       >
         <svg class="size-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="5,13 10,18 19,7" />
