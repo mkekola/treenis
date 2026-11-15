@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import ChallengeCard from '@/components/ChallengeCard.vue'
-import FeedCard from '@/components/FeedCard.vue'
+import FeedItem from '@/components/FeedItem.vue'
 import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import { sortChallenges } from '@/lib/challenges'
-import type { ReactionKey } from '@/lib/feed'
+import { groupByDay, type ReactionKey } from '@/lib/feed'
 import { localDate } from '@/lib/session'
 import { useChallenges } from '@/stores/challenges'
 import { useFeed } from '@/stores/feed'
@@ -20,6 +20,8 @@ const loadError = ref('')
 const busy = ref(false)
 const lists = computed(() => friends.lists)
 const hasStravaData = computed(() => feed.rows.some((row) => row.from_strava))
+/** Päivät otsikoiksi: "Tänään", "Eilen", "Perjantai 13.11." toistuisi muuten joka rivillä. */
+const days = computed(() => groupByDay(feed.rows, new Date()))
 
 async function load() {
   loadError.value = ''
@@ -178,14 +180,19 @@ async function hide(workoutId: string) {
             Kumoa
           </button>
         </div>
-        <div class="mt-2.5 flex flex-col gap-2">
-          <FeedCard
-            v-for="row in feed.rows"
-            :key="row.workout_id"
-            :row="row"
-            @react="react(row.workout_id, $event)"
-            @hide="hide(row.workout_id)"
-          />
+        <div class="mt-2.5 flex flex-col gap-3.5">
+          <div v-for="day in days" :key="day.date" class="flex flex-col gap-1.5">
+            <h3 class="text-[13px] font-semibold text-ink-muted">{{ day.label }}</h3>
+            <ul class="rounded-(--radius-card) bg-surface px-3">
+              <FeedItem
+                v-for="row in day.rows"
+                :key="row.workout_id"
+                :row="row"
+                @react="react(row.workout_id, $event)"
+                @hide="hide(row.workout_id)"
+              />
+            </ul>
+          </div>
           <p v-if="!feed.rows.length" class="rounded-(--radius-card) bg-surface p-3.5 text-[15px] text-ink-muted">
             Ei vielä treenejä kahden viikon ajalta.
           </p>

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { myReaction, nextReaction, reactionLabel, reactionNames, summarizeReactions, type FeedRow } from './feed'
+import {
+  feedLines,
+  groupByDay,
+  myReaction,
+  nextReaction,
+  reactionLabel,
+  reactionNames,
+  summarizeReactions,
+  type FeedRow,
+} from './feed'
 
 const me = 'me'
 const reactions: FeedRow['reactions'] = [
@@ -39,5 +48,47 @@ describe('reaktiot', () => {
     expect(nextReaction(null, 'fire')).toBe('fire')
     expect(nextReaction('clap', 'fire')).toBe('fire')
     expect(nextReaction('fire', 'fire')).toBeNull()
+  })
+})
+
+const row = (overrides: Partial<FeedRow>): FeedRow => ({
+  workout_id: 'w',
+  user_id: 'beni',
+  name: 'Beni',
+  is_me: false,
+  sport: 'run',
+  title: 'Juoksu',
+  date: '2026-11-13',
+  started_at: null,
+  from_strava: false,
+  duration_sec: 35 * 60,
+  distance_m: 5000,
+  exercises: null,
+  records: null,
+  reactions: [],
+  ...overrides,
+})
+
+describe('syötteen rivit', () => {
+  it('ryhmittelee päivittäin: tänään, eilen ja viikonpäivä', () => {
+    const now = new Date(2026, 10, 15, 12)
+    const days = groupByDay(
+      [row({ workout_id: 'a', date: '2026-11-15' }), row({ workout_id: 'b', date: '2026-11-14' }),
+        row({ workout_id: 'c', date: '2026-11-13' }), row({ workout_id: 'd', date: '2026-11-13' })],
+      now,
+    )
+    expect(days.map((d) => [d.label, d.rows.length])).toEqual([['Tänään', 1], ['Eilen', 1], ['Perjantai 13.11.', 2]])
+  })
+
+  it('nimi ja laji kerran, oma otsikko siirtää lajin toiselle riville', () => {
+    // Luvun ja yksikön välissä on kapea sitova välilyönti; vertailu tavallisella.
+    const lines = (overrides: Partial<FeedRow>) => {
+      const { who, what, detail } = feedLines(row(overrides))
+      return { who, what, detail: detail.replaceAll('\u202F', ' ') }
+    }
+    expect(lines({})).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km' })
+    expect(lines({ is_me: true, sport: 'strength', title: 'Treeni 1', distance_m: null, duration_sec: 3900 }))
+      .toEqual({ who: 'Sinä', what: 'Treeni 1', detail: 'Sali · 1 t 5 min' })
+    expect(lines({ title: null, from_strava: true })).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km · Strava' })
   })
 })

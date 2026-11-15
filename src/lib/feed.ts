@@ -1,4 +1,7 @@
-import type { SportKey } from '@/types/workout'
+import { formatToday } from '@/lib/calendar'
+import { formatDistance, formatDurationShort } from '@/lib/format'
+import { localDate } from '@/lib/session'
+import { SPORT_LABELS, type SportKey } from '@/types/workout'
 
 /** Reaktiot tässä järjestyksessä valikossa. Avain tallennetaan, emoji ja nimi ovat sovelluksessa. */
 export const REACTIONS = [
@@ -85,4 +88,44 @@ export function reactionNames(summary: ReactionSummary): string {
 /** Ruudunlukijalle: "Tulessa: Anna, Mikko ja 1 muu". */
 export function reactionLabel(summary: ReactionSummary): string {
   return `${summary.label}: ${reactionNames(summary)}`
+}
+
+export interface FeedDay {
+  date: string
+  /** "Tänään", "Eilen" tai "Perjantai 13.11." */
+  label: string
+  rows: FeedRow[]
+}
+
+/** Syöte päivittäin. Rivit tulevat palvelimelta jo uusin ensin, joten järjestys säilyy. */
+export function groupByDay(rows: FeedRow[], now: Date): FeedDay[] {
+  const today = localDate(now)
+  const yesterday = localDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  const label = (date: string) =>
+    date === today ? 'Tänään' : date === yesterday ? 'Eilen' : formatToday(new Date(`${date}T00:00:00`))
+
+  const days: FeedDay[] = []
+  for (const row of rows) {
+    const last = days.at(-1)
+    if (last?.date === row.date) last.rows.push(row)
+    else days.push({ date: row.date, label: label(row.date), rows: [row] })
+  }
+  return days
+}
+
+/**
+ * Rivin tekstit: kuka ("Beni"), mitä ("Juoksu") ja tiedot ("35 min · 5,00 km"). Treenin oma
+ * nimi näkyy vain, kun se eroaa lajista, jolloin laji siirtyy tietoihin: "Treeni 1", "Sali · 1 t 5 min".
+ */
+export function feedLines(row: FeedRow): { who: string; what: string; detail: string } {
+  const sport = SPORT_LABELS[row.sport]
+  const custom = row.title && row.title !== sport ? row.title : null
+  const who = row.is_me ? 'Sinä' : row.name || 'Nimetön'
+  const detail = [
+    custom ? sport : null,
+    row.duration_sec ? formatDurationShort(row.duration_sec) : null,
+    row.distance_m ? formatDistance(row.sport, row.distance_m) : null,
+    row.from_strava ? 'Strava' : null,
+  ]
+  return { who, what: custom ?? sport, detail: detail.filter(Boolean).join(' · ') }
 }
