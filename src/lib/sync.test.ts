@@ -78,6 +78,19 @@ describe('pohjien ja omien liikkeiden rivit', () => {
     expect(toLocal(templateFromRow(row))).toEqual(saved)
   })
 
+  it('kestävyyspohjan laji ja osiot kulkevat, salipohja pysyy ennallaan', () => {
+    const cardio = {
+      id: 't-run',
+      name: 'Intervallit',
+      blocks: [],
+      sport: 'run' as const,
+      segments: [{ id: 's1', name: 'Vedot', reps: 6, work: { value: 400, unit: 'm' as const }, recovery: { value: 90, unit: 's' as const } }],
+      updatedAt: '2026-11-16T12:00:00.000Z',
+    }
+    expect(toLocal(templateFromRow(templateToRow(cardio)))).toEqual(cardio)
+    expect(templateToRow(initialTemplates[0])).toMatchObject({ sport: 'strength', segments: [] })
+  })
+
   it('oma liike kulkee rivin kautta muuttumattomana', () => {
     const exercise: Exercise = {
       id: 'custom-1',

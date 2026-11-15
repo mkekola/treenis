@@ -5,6 +5,7 @@ import RecoveryCard from '@/components/RecoveryCard.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatShortDate } from '@/lib/format'
+import { isCardio } from '@/lib/cardio'
 import { inRotation, templatesOf, unassigned } from '@/lib/program'
 import { localDate } from '@/lib/session'
 import { exerciseCount } from '@/lib/template'
@@ -23,12 +24,15 @@ const { isDark } = useTheme()
 
 const vars = computed(() => sportVars(colors.swatchFor('strength'), isDark.value))
 
+/** Kestävyyspohjia ei aloiteta salitreeninä, joten ne jäävät tämän sivun listoilta pois. */
+const strengthTemplates = computed(() => templates.templates.filter((t) => !isCardio(t)))
+
 /**
  * Käytössä olevan ohjelman treenit vuorojärjestyksessä: ensimmäisenä se,
  * jota ei ole tehty pisimpään. Kaksi treeniä vuorotellen kulkee itsestään.
  */
 const ordered = computed(() =>
-  programs.active ? inRotation(templatesOf(programs.active, templates.templates)) : [],
+  programs.active ? inRotation(templatesOf(programs.active, strengthTemplates.value)) : [],
 )
 
 /**
@@ -36,7 +40,7 @@ const ordered = computed(() =>
  * ottamalla ohjelma käyttöön. Ohjelmattomat pohjat näytetään tyhjästä
  * aloittamisen kanssa, koska muualla niitä ei näytetä.
  */
-const loose = computed(() => unassigned(programs.programs, templates.templates))
+const loose = computed(() => unassigned(programs.programs, strengthTemplates.value))
 
 /** Tyhjä treeni: liikkeet haetaan itse, ja valmiin treenin voi tallentaa pohjaksi. */
 async function beginBlank() {

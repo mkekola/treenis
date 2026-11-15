@@ -47,7 +47,7 @@ export const router = createRouter({
     {
       path: '/ohjelmat/:programId/:id',
       name: 'template-edit',
-      component: () => import('@/views/TemplateEditView.vue'),
+      component: () => import('@/views/TemplateView.vue'),
     },
     { path: '/tilastot', name: 'stats', component: StatsView, meta: { header: true } },
     { path: '/kaverit', name: 'friends', component: FriendsView, meta: { header: true } },

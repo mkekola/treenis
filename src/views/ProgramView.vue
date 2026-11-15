@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ProgramChips from '@/components/ProgramChips.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
+import { CARDIO_SPORTS, isCardio, planSummary } from '@/lib/cardio'
 import { programProgress, templatesOf } from '@/lib/program'
 import { exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
@@ -12,7 +13,14 @@ import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 import { DEFAULT_PROGRAM_COLOR, PROGRAM_COLORS, programVars } from '@/design/programPalette'
-import { PROGRAM_LEVEL_LABELS, type Program, type ProgramLevel, type WorkoutTemplate } from '@/types/workout'
+import {
+  PROGRAM_LEVEL_LABELS,
+  SPORT_LABELS,
+  type Program,
+  type ProgramLevel,
+  type SportKey,
+  type WorkoutTemplate,
+} from '@/types/workout'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,7 +31,9 @@ const workouts = useWorkouts()
 const colors = useSportColors()
 const { isDark } = useTheme()
 
-const vars = computed(() => sportVars(colors.swatchFor('strength'), isDark.value))
+/** Rivin pallo lajin värillä: salipohjat salin, kestävyyspohjat oman lajinsa. */
+const varsOf = (template: WorkoutTemplate) => sportVars(colors.swatchFor(template.sport ?? 'strength'), isDark.value)
+const sportVarsOf = (sport: SportKey) => sportVars(colors.swatchFor(sport), isDark.value)
 
 const program = computed(() => programs.byId(String(route.params.id)))
 const isActive = computed(() => program.value !== undefined && programs.active?.id === program.value.id)
@@ -101,9 +111,13 @@ function onLevel(event: Event) {
 
 // ------------------------------------------------------------ toiminnot
 
-async function addWorkout() {
+/** Lisäys kysyy ensin, onko treeni sali- vai kestävyystreeni. */
+const choosing = ref(false)
+
+async function addWorkout(sport: SportKey) {
   if (!program.value) return
-  const id = await programs.createTemplate(program.value.id)
+  choosing.value = false
+  const id = await programs.createTemplate(program.value.id, sport)
   if (id) {
     await router.push({
       name: 'template-edit',
@@ -123,7 +137,7 @@ async function deleteProgram() {
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col gap-4 px-5 pt-5" :style="vars">
+  <div class="flex min-h-full flex-col gap-4 px-5 pt-5">
     <RouterLink
       :to="{ name: 'programs' }"
       aria-label="Takaisin ohjelmiin"
@@ -215,22 +229,34 @@ async function deleteProgram() {
         v-for="template in list"
         :key="template.id"
         :to="{ name: 'template-edit', params: { programId: program.id, id: template.id } }"
+        :style="varsOf(template)"
         class="flex items-center gap-3 rounded-(--radius-card) bg-surface p-3.5"
       >
         <span
           aria-hidden="true"
           class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]"
         >
-          <SportIcon sport="strength" />
+          <SportIcon :sport="template.sport ?? 'strength'" />
         </span>
         <span class="min-w-0 flex-1">
           <span class="block text-[17px] font-semibold tracking-[-0.01em]">{{ template.name }}</span>
-          <span class="mt-0.5 block text-[13px] text-ink-muted" data-numeric>
-            {{ exerciseCount(template) }} liikettä
-          </span>
-          <span v-if="exerciseCount(template)" class="block truncate text-[13px] text-ink-muted">
-            {{ summary(template) }}
-          </span>
+          <template v-if="isCardio(template)">
+            <span class="mt-0.5 block text-[13px] text-ink-muted" data-numeric>
+              {{ SPORT_LABELS[template.sport!] }} · {{ template.segments?.length ?? 0 }}
+              {{ template.segments?.length === 1 ? 'osio' : 'osiota' }}
+            </span>
+            <span v-if="template.segments?.length" class="block truncate text-[13px] text-ink-muted" data-numeric>
+              {{ planSummary(template) }}
+            </span>
+          </template>
+          <template v-else>
+            <span class="mt-0.5 block text-[13px] text-ink-muted" data-numeric>
+              {{ exerciseCount(template) }} liikettä
+            </span>
+            <span v-if="exerciseCount(template)" class="block truncate text-[13px] text-ink-muted">
+              {{ summary(template) }}
+            </span>
+          </template>
         </span>
         <svg class="size-[18px] flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="9,6 15,12 9,18" />
@@ -238,16 +264,57 @@ async function deleteProgram() {
       </RouterLink>
 
       <p v-if="!list.length" class="text-[13px] text-ink-muted">
-        Ei vielä treenejä. Lisää ensimmäinen, esimerkiksi ylä- tai alakropan päivä.
+        Ei vielä treenejä. Lisää ensimmäinen, esimerkiksi ylä- tai alakropan päivä tai PK-lenkki.
       </p>
 
       <button
+        v-if="!choosing"
         type="button"
         class="mt-1 flex min-h-13 items-center justify-center rounded-(--radius-button) border border-dashed border-ink-muted text-base font-semibold"
-        @click="addWorkout"
+        @click="choosing = true"
       >
         + Lisää treeni
       </button>
+
+      <!-- Lisäys: salitreeni liikkeinä tai kestävyystreeni osioina valitulle lajille. -->
+      <section v-else aria-labelledby="uusi-treeni" class="mt-1 flex flex-col gap-3 rounded-(--radius-feature) bg-surface p-3.5">
+        <div class="flex items-center justify-between">
+          <h2 id="uusi-treeni" class="font-display text-[19px] font-bold">Uusi treeni</h2>
+          <button type="button" class="min-h-11 px-2 text-sm font-semibold text-ink-muted underline" @click="choosing = false">
+            Peruuta
+          </button>
+        </div>
+        <button
+          type="button"
+          :style="sportVarsOf('strength')"
+          class="flex min-h-14 items-center gap-3 rounded-(--radius-card) bg-bg px-3 text-left"
+          @click="addWorkout('strength')"
+        >
+          <span aria-hidden="true" class="flex size-10 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)] [&_svg]:size-6">
+            <SportIcon sport="strength" />
+          </span>
+          <span>
+            <span class="block font-semibold">Salitreeni</span>
+            <span class="block text-[13px] text-ink-muted">Liikkeet ja sarjat</span>
+          </span>
+        </button>
+        <p id="kestavyys" class="text-[13px] font-semibold text-ink-muted">Kestävyystreeni osioina</p>
+        <div role="group" aria-labelledby="kestavyys" class="grid grid-cols-2 gap-2">
+          <button
+            v-for="sport in CARDIO_SPORTS"
+            :key="sport"
+            type="button"
+            :style="sportVarsOf(sport)"
+            class="flex min-h-12 items-center gap-2.5 rounded-(--radius-card) bg-bg px-2.5 text-left font-semibold"
+            @click="addWorkout(sport)"
+          >
+            <span aria-hidden="true" class="flex size-8 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)] [&_svg]:size-5">
+              <SportIcon :sport="sport" />
+            </span>
+            {{ SPORT_LABELS[sport] }}
+          </button>
+        </div>
+      </section>
 
       <!-- Ohjelman tiedot: väri erottaa ohjelmat toisistaan, kesto ja taso näkyvät kortilla. -->
       <section class="mt-3 flex flex-col gap-3 rounded-(--radius-feature) bg-surface p-3.5" aria-labelledby="ohjelman-tiedot">

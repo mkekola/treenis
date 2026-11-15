@@ -1,11 +1,13 @@
 import type { StravaActivity } from '@/lib/strava'
 import type {
   Block,
+  CardioSegment,
   Exercise,
   Measurement,
   MuscleGroup,
   Program,
   ProgramLevel,
+  SportKey,
   Workout,
   WorkoutTemplate,
 } from '@/types/workout'
@@ -60,6 +62,9 @@ export interface TemplateRow {
   id: string
   name: string
   blocks: Block[]
+  /** 'strength' salipohjalle, muuten kestävyyspohjan laji. */
+  sport: SportKey
+  segments: CardioSegment[]
   last_used_at: string | null
   kept_deviations: string[]
   updated_at: string
@@ -71,6 +76,8 @@ export function templateToRow(t: WorkoutTemplate): TemplateRow {
     id: t.id,
     name: t.name,
     blocks: t.blocks,
+    sport: t.sport ?? 'strength',
+    segments: t.segments ?? [],
     last_used_at: t.lastUsedAt ?? null,
     kept_deviations: t.keptDeviations ?? [],
     updated_at: t.updatedAt ?? new Date().toISOString(),
@@ -83,6 +90,8 @@ export function templateFromRow(row: TemplateRow): WorkoutTemplate & Synced {
     id: row.id,
     name: row.name,
     blocks: row.blocks,
+    // Salipohjalla ei ole lajia eikä osioita, kuten ennen kestävyyspohjia.
+    ...(row.sport && row.sport !== 'strength' ? { sport: row.sport, segments: row.segments ?? [] } : {}),
     ...(row.last_used_at ? { lastUsedAt: row.last_used_at } : {}),
     ...(row.kept_deviations?.length ? { keptDeviations: row.kept_deviations } : {}),
     updatedAt: row.updated_at,

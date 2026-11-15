@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
+import { isCardio } from '@/lib/cardio'
 import { inRotation, templatesOf } from '@/lib/program'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
@@ -30,7 +31,8 @@ const vars = (sport: SportKey) => sportVars(colors.swatchFor(sport), isDark.valu
 /** Sali on ylimpänä ja kertoo seuraavan treenin, jotta salille lähtiessä riittää yksi napautus. */
 const next = computed(() => {
   const program = programs.active
-  const first = program ? inRotation(templatesOf(program, templates.templates))[0] : undefined
+  const strength = templates.templates.filter((t) => !isCardio(t))
+  const first = program ? inRotation(templatesOf(program, strength))[0] : undefined
   return first && program ? `Seuraavaksi ${first.name} · ${program.name}` : 'Valitse treeni tai aloita tyhjästä'
 })
 </script>

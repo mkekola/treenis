@@ -126,10 +126,46 @@ export interface Block {
  * Treenipohja rakennetaan Pohjat-sivulla tai tallennetaan valmiista treenistä.
  * Sarjojen arvot ovat tavoitteita, done on aina false.
  */
+/** Kestävyysosion määrä: aika (min tai s) tai matka (km tai m) siinä yksikössä, jolla se kirjoitettiin. */
+export type CardioUnit = 'min' | 's' | 'km' | 'm'
+
+export interface CardioAmount {
+  value: number
+  unit: CardioUnit
+}
+
+/** Teho juoksijoiden tutuilla nimillä: peruskestävyys, vauhtikestävyys, maksimikestävyys, maksimi. */
+export type CardioZone = 'pk' | 'vk' | 'mk' | 'max'
+
+export const CARDIO_ZONE_LABELS: Record<CardioZone, string> = { pk: 'PK', vk: 'VK', mk: 'MK', max: 'Maks' }
+
+/**
+ * Kestävyyspohjan osio, kuten salipohjan liike: esimerkiksi "Vedot 6 × 400 m, palautus 90 s".
+ * Teho, vauhti ja syke ovat vapaaehtoisia tavoitteita.
+ */
+export interface CardioSegment {
+  id: string
+  /** Esim. "Lämmittely" tai "Vedot". Saa olla tyhjä. */
+  name: string
+  reps: number
+  work: CardioAmount
+  /** Palautus toistojen välissä. Merkitsee vain, kun toistoja on useampi. */
+  recovery?: CardioAmount
+  zone?: CardioZone
+  /** Tavoitevauhti sekunteina kilometrille. */
+  paceSecPerKm?: number
+  /** Tavoitesyke (keskisyke) lyönteinä minuutissa. */
+  heartRate?: number
+}
+
 export interface WorkoutTemplate {
   id: string
   name: string
   blocks: Block[]
+  /** Kestävyyspohjan laji. Salipohjalla puuttuu. */
+  sport?: SportKey
+  /** Kestävyyspohjan osiot. Salipohjalla puuttuu. */
+  segments?: CardioSegment[]
   lastUsedAt?: string
   /**
    * Toistuvat poikkeamat, joihin käyttäjä vastasi "Pidä vanha". Niistä ei

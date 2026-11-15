@@ -2,10 +2,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db, plain } from '@/db'
 import { DEFAULT_PROGRAM_COLOR, nextFreeColor } from '@/design/programPalette'
+import { newCardioTemplate } from '@/lib/cardio'
 import { activate, activeProgram, addTemplate, removeTemplate } from '@/lib/program'
 import { newTemplate } from '@/lib/template'
 import { useTemplates } from '@/stores/templates'
-import type { Program, WorkoutTemplate } from '@/types/workout'
+import { SPORT_LABELS, type Program, type SportKey, type WorkoutTemplate } from '@/types/workout'
 
 export const usePrograms = defineStore('programs', () => {
   const templates = useTemplates()
@@ -75,10 +76,17 @@ export const usePrograms = defineStore('programs', () => {
     return `Treeni ${(byId(programId)?.templateIds.length ?? 0) + 1}`
   }
 
-  /** Uusi tyhjä treeni ohjelman loppuun. Palauttaa treenin tunnisteen muokkausta varten. */
-  async function createTemplate(programId: string): Promise<string | null> {
+  /**
+   * Uusi treeni ohjelman loppuun: salipohja tyhjänä tai kestävyyspohja yhdellä osiolla,
+   * jolloin nimeksi tulee laji. Palauttaa treenin tunnisteen muokkausta varten.
+   */
+  async function createTemplate(programId: string, sport: SportKey = 'strength'): Promise<string | null> {
     if (!byId(programId)) return null
-    const template = newTemplate(`template-${crypto.randomUUID()}`, nextTemplateName(programId))
+    const id = `template-${crypto.randomUUID()}`
+    const template =
+      sport === 'strength'
+        ? newTemplate(id, nextTemplateName(programId))
+        : newCardioTemplate(id, SPORT_LABELS[sport], sport, crypto.randomUUID())
     await addTemplateTo(programId, template)
     return template.id
   }
