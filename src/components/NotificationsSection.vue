@@ -86,7 +86,7 @@ async function toggle(key: keyof NotificationSettings) {
 
     <template v-else-if="!notifications.enabled">
       <p class="mt-2 text-[13px] text-ink-muted">
-        Kaveripyynnöt, reaktiot, haasteet ja viikkoputken muistutus. Voit valita tyypit käyttöönoton jälkeen.
+        Kaveripyynnöt, reaktiot, haasteet, viikkoputken muistutus ja levon päättyminen. Voit valita tyypit käyttöönoton jälkeen.
       </p>
       <button
         type="button"

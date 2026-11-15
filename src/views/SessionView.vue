@@ -9,10 +9,11 @@ import type { SetValues } from '@/components/SetRow.vue'
 import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { useWakeLock } from '@/composables/useWakeLock'
-import { beep, primeAudio } from '@/lib/beep'
+import { primeAudio } from '@/lib/beep'
 import { formatDuration, formatSet, formatShortDate } from '@/lib/format'
 import { recentHistory, sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
+import { signalRestEnd } from '@/lib/restSignal'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
@@ -59,9 +60,9 @@ const restShare = computed(() => {
   return total ? Math.min(100, Math.round((restLeft.value / total) * 100)) : 0
 })
 
-// Merkki vain kun lepo päättyy itsestään, ei kun se ohitetaan.
+// Merkki vain kun lepo päättyy itsestään, ei kun se ohitetaan. Merkin laji on asetuksissa.
 watch(restLeft, (left, before) => {
-  if (before > 0 && left === 0 && active.value?.restEndsAt) beep()
+  if (before > 0 && left === 0 && active.value?.restEndsAt) signalRestEnd()
 })
 
 // --- sarjat ---
