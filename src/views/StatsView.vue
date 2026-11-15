@@ -2,16 +2,19 @@
 import { computed, ref } from 'vue'
 import ChartNumbers from '@/components/stats/ChartNumbers.vue'
 import DaySheet from '@/components/stats/DaySheet.vue'
+import EffortChart from '@/components/stats/EffortChart.vue'
 import FootChart from '@/components/stats/FootChart.vue'
 import PeriodCalendar from '@/components/stats/PeriodCalendar.vue'
 import Sparkline from '@/components/stats/Sparkline.vue'
 import YearGrid from '@/components/stats/YearGrid.vue'
 import WorkoutSheet from '@/components/WorkoutSheet.vue'
 import { useCopyWorkout } from '@/composables/useCopyWorkout'
+import { useHrRange } from '@/composables/useHrRange'
 import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { SPORT_GROUP_LABELS } from '@/design/sportGroups'
-import { formatDurationShort } from '@/lib/format'
+import { effortsInRange, paceLabel, sixMonthsBefore } from '@/lib/endurance'
+import { formatDistance, formatDurationShort, formatShortDate } from '@/lib/format'
 import { localDate } from '@/lib/session'
 import {
   comparisonLabel,
@@ -79,6 +82,24 @@ const workouts = computed(() => inPeriod(store.workouts, period.value))
 const previous = computed(() => inPeriod(store.workouts, shiftPeriod(period.value, -1)))
 const seconds = computed(() => totalSeconds(workouts.value))
 const footKm = computed(() => footMeters(workouts.value) / 1000)
+
+// Peruskestävyys: juoksut omalla PK-sykkeellä viimeiseltä kuudelta kuukaudelta, valitsimesta
+// riippumatta, koska kunnon kehitys näkyy vasta kuukausien aikana.
+const hrRange = useHrRange()
+const efforts = computed(() => effortsInRange(store.workouts, 'run', hrRange.value, new Date(nowMs.value)))
+const effortFrom = computed(() => sixMonthsBefore(new Date(nowMs.value)))
+
+/** Sykerajan muutos: kokonaisluku 60–220, ja väärin päin annetut rajat käännetään. */
+function setHr(edge: 'min' | 'max', event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = Math.round(Number(input.value))
+  if (!Number.isFinite(value) || value < 60 || value > 220) {
+    input.value = String(hrRange.value[edge])
+    return
+  }
+  const next = { ...hrRange.value, [edge]: value }
+  hrRange.value = next.min <= next.max ? next : { min: next.max, max: next.min }
+}
 
 const kmFormat = (km: number) =>
   km.toLocaleString('fi-FI', { maximumFractionDigits: km > 0 && km < 10 ? 1 : 0 })
@@ -328,6 +349,72 @@ const lifts = computed(() =>
             </span>
           </li>
         </ul>
+      </div>
+    </section>
+
+    <!-- Peruskestävyys: sama syke, parempi vauhti = kunto kehittyy. -->
+    <section class="mt-5.5" aria-labelledby="peruskestavyys">
+      <h2 id="peruskestavyys" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Peruskestävyys</h2>
+      <div class="mt-2.5 rounded-(--radius-feature) bg-surface p-4">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p class="text-[13px] text-ink-muted">Juoksujen vauhti · 6 kk</p>
+          <fieldset class="flex items-center gap-1.5 text-[13px]">
+            <legend class="sr-only">Keskisyke, jolla juoksut otetaan mukaan</legend>
+            <span class="text-ink-muted" aria-hidden="true">Syke</span>
+            <input
+              :value="hrRange.min"
+              type="text"
+              inputmode="numeric"
+              aria-label="Keskisyke vähintään"
+              class="h-9 w-13 rounded-lg border border-line bg-bg text-center font-semibold"
+              data-numeric
+              @change="setHr('min', $event)"
+            />
+            <span aria-hidden="true">–</span>
+            <input
+              :value="hrRange.max"
+              type="text"
+              inputmode="numeric"
+              aria-label="Keskisyke enintään"
+              class="h-9 w-13 rounded-lg border border-line bg-bg text-center font-semibold"
+              data-numeric
+              @change="setHr('max', $event)"
+            />
+          </fieldset>
+        </div>
+        <template v-if="efforts.length >= 2">
+          <EffortChart :points="efforts" :from="effortFrom" :to="today" />
+          <ChartNumbers>
+            <table class="w-full text-left text-sm" data-numeric>
+              <caption class="sr-only">Juoksut keskisykkeellä {{ hrRange.min }}–{{ hrRange.max }}</caption>
+              <thead class="text-xs text-ink-muted">
+                <tr>
+                  <th scope="col" class="py-1.5 font-semibold">Päivä</th>
+                  <th scope="col" class="py-1.5 text-right font-semibold">Kesto</th>
+                  <th scope="col" class="py-1.5 text-right font-semibold">Matka</th>
+                  <th scope="col" class="py-1.5 text-right font-semibold">Syke</th>
+                  <th scope="col" class="py-1.5 text-right font-semibold">/km</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="point in [...efforts].reverse()" :key="point.workoutId" class="border-t border-line">
+                  <th scope="row" class="py-1.5 font-normal">{{ formatShortDate(point.date) }}</th>
+                  <td class="py-1.5 text-right">{{ formatDurationShort(point.durationSec) }}</td>
+                  <td class="py-1.5 text-right">{{ formatDistance('run', point.distanceM) }}</td>
+                  <td class="py-1.5 text-right">{{ point.avgHr }}</td>
+                  <td class="py-1.5 text-right">{{ paceLabel(point.paceSecPerKm) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </ChartNumbers>
+        </template>
+        <p v-else class="text-[13px] text-ink-muted">
+          <template v-if="efforts.length === 1">Yksi juoksu tällä sykkeellä. Kehitys näkyy toisesta juoksusta alkaen.</template>
+          <template v-else>
+            Ei juoksuja keskisykkeellä {{ hrRange.min }}–{{ hrRange.max }} kuuden kuukauden ajalta. Säädä haarukkaa, tai
+            kirjaa juoksuun keskisyke kellostasi.
+          </template>
+        </p>
       </div>
     </section>
 
