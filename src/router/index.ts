@@ -5,7 +5,7 @@ import DiaryView from '@/views/DiaryView.vue'
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', name: 'diary', component: DiaryView },
+    { path: '/', name: 'diary', component: DiaryView, meta: { header: true } },
     { path: '/kirjaa', name: 'log', component: () => import('@/views/SportPickerView.vue') },
     {
       path: '/kirjaa/:sport',
@@ -36,15 +36,15 @@ export const router = createRouter({
       component: () => import('@/views/SummaryView.vue'),
       meta: { hideNav: true },
     },
-    { path: '/ohjelmat', name: 'programs', component: () => import('@/views/ProgramsView.vue') },
+    { path: '/ohjelmat', name: 'programs', component: () => import('@/views/ProgramsView.vue'), meta: { header: true } },
     { path: '/ohjelmat/:id', name: 'program', component: () => import('@/views/ProgramView.vue') },
     {
       path: '/ohjelmat/:programId/:id',
       name: 'template-edit',
       component: () => import('@/views/TemplateEditView.vue'),
     },
-    { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue') },
-    { path: '/kaverit', name: 'friends', component: () => import('@/views/FriendsView.vue') },
+    { path: '/tilastot', name: 'stats', component: () => import('@/views/StatsView.vue'), meta: { header: true } },
+    { path: '/kaverit', name: 'friends', component: () => import('@/views/FriendsView.vue'), meta: { header: true } },
     {
       path: '/kaverit/haaste',
       name: 'new-challenge',

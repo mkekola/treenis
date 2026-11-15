@@ -85,7 +85,7 @@ async function hide(workoutId: string) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 px-5 pt-6 pb-6">
+  <div class="flex flex-col gap-4 px-5 pt-4.5 pb-6">
     <div class="flex items-center justify-between gap-3">
       <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Kaverit</h1>
       <div class="flex gap-2">

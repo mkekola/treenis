@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import AppLogo from '@/components/AppLogo.vue'
 import PoweredByStrava from '@/components/PoweredByStrava.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
-import SyncBadge from '@/components/SyncBadge.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import WorkoutSheet from '@/components/WorkoutSheet.vue'
 import { useCopyWorkout } from '@/composables/useCopyWorkout'
@@ -12,36 +10,22 @@ import { useNow } from '@/composables/useNow'
 import { byMonth, formatToday, thisWeek } from '@/lib/calendar'
 import { formatDurationShort } from '@/lib/format'
 import { durationSec, isFromStrava } from '@/lib/workout'
-import { useAuth } from '@/stores/auth'
 import { useSession } from '@/stores/session'
 import { useWorkouts } from '@/stores/workouts'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { SPORT_GROUP_LABELS, SPORT_GROUP_OF, type SportGroupKey } from '@/design/sportGroups'
-import { SWATCHES_BY_ID } from '@/design/swatches'
 import type { Workout } from '@/types/workout'
 
 const colors = useSportColors()
-/** Pallo on neutraali savu, ei minkään lajin väri: se on tili ja asetukset, ei treeni. */
-const AVATAR_SWATCH = 'savu'
 const { isDark } = useTheme()
 
 const store = useWorkouts()
 const session = useSession()
-const auth = useAuth()
 // Päivä vaihtuu, vaikka sovellus olisi auki keskiyön yli.
 const nowMs = useNow(60_000)
 const now = computed(() => new Date(nowMs.value))
 
 const today = computed(() => formatToday(now.value))
-const initials = computed(() =>
-  (auth.name ?? '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join(''),
-)
-
 /** Yhteenveto koskee vain tätä viikkoa (ma–su). Aikajana näyttää kaiken. */
 const workouts = computed(() => thisWeek(store.workouts, now.value))
 const months = computed(() => byMonth(store.workouts, now.value))
@@ -97,36 +81,6 @@ const byGroup = computed(() => {
 
 <template>
   <div class="flex min-h-full flex-col">
-    <!-- Logo vasemmalla, oikealla synkan tila ja pallo, josta asetukset aukeavat. -->
-    <header class="flex min-h-11 items-center justify-between gap-3 px-5 pt-6">
-      <AppLogo class="h-[26px] w-auto text-brand" />
-      <div class="flex items-center gap-2">
-        <SyncBadge />
-        <RouterLink
-          to="/asetukset"
-          aria-label="Asetukset"
-          :style="sportVars(SWATCHES_BY_ID[AVATAR_SWATCH], isDark)"
-          class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[15px] font-bold text-[var(--sport-on)]"
-        >
-          <span v-if="initials" aria-hidden="true">{{ initials }}</span>
-          <!-- Ilman nimeä pallossa on henkilö, ettei se ole tyhjä. -->
-          <svg
-            v-else
-            class="size-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="8.5" r="3.5" />
-            <path d="M5 20a7 7 0 0 1 14 0" />
-          </svg>
-        </RouterLink>
-      </div>
-    </header>
-
     <!-- Keskeytynyt treeni kysytään heti avattaessa, ei jatketa hiljaa. -->
     <div v-if="session.recovery" class="px-5 pt-4">
       <RecoveryCard />

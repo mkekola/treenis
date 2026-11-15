@@ -155,7 +155,7 @@ const lifts = computed(() =>
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col px-5 pt-6 pb-6">
+  <div class="flex min-h-full flex-col px-5 pt-4.5 pb-6">
     <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.02em]">Tilastot</h1>
 
     <!-- Aikaväli: kaikki alla oleva lasketaan tälle jaksolle. -->
