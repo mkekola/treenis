@@ -108,10 +108,15 @@ function onComplete() {
   emit('complete')
 }
 
-/** Ensimmäisen kerran painokenttä tallentaa jo kirjoittaessa, jotta merkintä aktivoituu heti. */
+/** Ensimmäisen kerran kentät tallentavat jo kirjoittaessa, jotta merkintä aktivoituu heti. */
 function onWeightInput(event: Event) {
   const value = parse((event.target as HTMLInputElement).value)
   if (value !== undefined) emit('edit', { weightKg: value })
+}
+
+function onRepsInput(event: Event) {
+  const value = parse((event.target as HTMLInputElement).value)
+  if (value !== undefined && Number.isInteger(value)) emit('edit', { reps: value })
 }
 
 const rowId = useId()
@@ -172,8 +177,23 @@ const rowId = useId()
             @input="onWeightInput"
           />
         </span>
-        <span class="pb-3 text-[21px] font-bold whitespace-nowrap" data-numeric>
-          × {{ set.reps ?? 0 }}
+        <span class="pb-3 text-[21px] font-bold" aria-hidden="true">×</span>
+        <span class="w-16 flex-none">
+          <label
+            :for="`${rowId}-toistot`"
+            class="block text-[11px] font-bold tracking-[0.06em] text-[var(--sport-on)] uppercase"
+          >
+            Toistot
+          </label>
+          <input
+            :id="`${rowId}-toistot`"
+            type="text"
+            inputmode="numeric"
+            :value="set.reps ?? ''"
+            class="mt-0.5 h-12 w-full min-w-0 rounded-xl border-2 border-[var(--sport-on)] bg-[var(--sport-sunken)] px-2 text-center text-[22px] font-bold"
+            data-numeric
+            @input="onRepsInput"
+          />
         </span>
       </span>
       <button
