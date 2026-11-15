@@ -202,7 +202,7 @@ function same(a: unknown, b: unknown): boolean {
  *
  * - Jo yhdistetty: mitattu puoli päivitetään, jos aktiviteettia on muokattu Stravassa.
  * - Avoin kysymys: odotetaan käyttäjän vastausta.
- * - Pelkkä Strava-treeni on jo olemassa: mitattu puoli päivitetään, nimi ei. Treeni pidetään,
+ * - Pelkkä Strava-treeni on jo olemassa: mitattu puoli päivitetään, laji, päivä ja nimi eivät. Pidetään,
  *   paitsi jos toinen laite on sillä
  *   välin synkannut kirjatun treenin, johon aktiviteetti selvästi kuuluu. Silloin
  *   yhdistetään ja tupla poistetaan. Epävarmaa osumaa ei kysytä uudelleen, koska
@@ -222,12 +222,14 @@ export function reconcile(
   if (options.removed?.some((w) => referencesActivity(w, activity.id))) return NOTHING
 
   const measured = measuredFrom(activity)
+  /** Yhdistyvä treeni perii pelkän Strava-treenin piilotuksen, jottei se palaa kavereille näkyviin. */
+  const keepHidden = (target: Workout): Workout =>
+    own?.hiddenFromFriends && !target.hiddenFromFriends ? { ...target, hiddenFromFriends: true } : target
+
   const linked = workouts.find((w) => w.id !== ownId && w.measured?.stravaActivityId === activity.id)
   if (linked) {
-    return {
-      save: same(linked.measured, measured) ? [] : [{ ...linked, measured }],
-      remove: own ? [ownId] : [],
-    }
+    const updated = keepHidden({ ...linked, measured })
+    return { save: same(linked, updated) ? [] : [updated], remove: own ? [ownId] : [] }
   }
   if (workouts.some((w) => w.pendingMatch?.stravaActivityId === activity.id)) return NOTHING
 
@@ -237,13 +239,12 @@ export function reconcile(
   )
   if (resolution.kind === 'merge') {
     const target = workouts.find((w) => w.id === resolution.workoutId)!
-    return { save: [{ ...target, measured }], remove: own ? [ownId] : [] }
+    return { save: [keepHidden({ ...target, measured })], remove: own ? [ownId] : [] }
   }
   if (own) {
-    // Nimi tulee Stravasta vain luotaessa: sen jälkeen Treeniksen nimi pysyy, myös muokattuna.
-    const fresh = workoutFromActivity(activity)
-    const changed = !same([own.sport, own.date, own.measured], [fresh.sport, fresh.date, fresh.measured])
-    return changed ? { save: [{ ...own, ...fresh, title: own.title }], remove: [] } : NOTHING
+    // Laji, päivä ja nimi tulevat Stravasta vain luotaessa: sen jälkeen Treeniksen muokkaukset
+    // pysyvät. Mitattu puoli päivittyy, jos aktiviteettia muokataan Stravassa.
+    return same(own.measured, measured) ? NOTHING : { save: [{ ...own, measured }], remove: [] }
   }
   if (resolution.kind === 'pending') {
     const target = workouts.find((w) => w.id === resolution.workoutId)!

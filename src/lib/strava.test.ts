@@ -214,3 +214,29 @@ describe('palvelimelta haettu pelkkä Strava-treeni', () => {
     expect(reconcile({ ...walk, name: 'Iltakävely' }, [fromServer()])).toEqual({ save: [], remove: [] })
   })
 })
+
+describe('muokkaukset ja piilotus synkassa', () => {
+  const walk = activity({ id: 303, sportType: 'Walk', name: 'Evening Walk', distanceM: 5200 })
+  const ownId = stravaWorkoutId(303)
+
+  it('Treeniksessä muutettu päivä pysyy', () => {
+    const moved = { ...workoutFromActivity(walk), date: '2026-11-11' }
+    expect(reconcile(walk, [moved])).toEqual({ save: [], remove: [] })
+  })
+
+  it('yhdistyvä treeni perii piilotetun Strava-treenin piilotuksen', () => {
+    const hiddenOwn = { ...workoutFromActivity(walk), hiddenFromFriends: true }
+    const loggedWalk = logged('w9', walk.startedAt, 3500, { sport: 'walk' })
+    const { save, remove } = reconcile(walk, [hiddenOwn, loggedWalk])
+    expect(remove).toEqual([ownId])
+    expect(save).toMatchObject([{ id: 'w9', hiddenFromFriends: true, measured: { stravaActivityId: 303 } }])
+  })
+
+  it('jo yhdistetty treeni perii piilotuksen, kun tupla poistetaan', () => {
+    const hiddenOwn = { ...workoutFromActivity(walk), hiddenFromFriends: true }
+    const linked = { ...logged('w9', walk.startedAt, 3500, { sport: 'walk' }), measured: measuredFrom(walk) }
+    const { save, remove } = reconcile(walk, [hiddenOwn, linked])
+    expect(remove).toEqual([ownId])
+    expect(save).toMatchObject([{ id: 'w9', hiddenFromFriends: true }])
+  })
+})
