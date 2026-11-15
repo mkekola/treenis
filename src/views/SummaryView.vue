@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { recurringDeviations, type Deviation } from '@/lib/deviation'
 import { durationParts, formatDurationShort, formatShortDate } from '@/lib/format'
@@ -40,10 +40,16 @@ const timed = computed(() => (active.value ? toWorkout(active.value, openedAt) :
 
 // Ajankohdan voi korjata, kun treeni kirjataan jälkikäteen: oletuksena ajastimen arvot.
 const editingWhen = ref(false)
-const date = ref(active.value ? localDate(new Date(active.value.startedAt)) : '')
-const startTime = ref(active.value ? timeOf(active.value.startedAt) : '')
-const durationSec = ref(timed.value?.logged?.durationSec ?? 0)
+const edits = active.value?.timingEdits ?? {}
+const date = ref(edits.date ?? (active.value ? localDate(new Date(active.value.startedAt)) : ''))
+const startTime = ref(edits.startTime ?? (active.value ? timeOf(active.value.startedAt) : ''))
+const durationSec = ref(edits.durationSec ?? timed.value?.logged?.durationSec ?? 0)
 const timerSec = timed.value?.logged?.durationSec ?? 0
+
+// Korjaukset laitteelle heti, kuten muistiinpano: ne säilyvät sovelluksen uudelleenlatauksen yli.
+watch(date, (value) => session.editTiming({ date: value }))
+watch(startTime, (value) => session.editTiming({ startTime: value }))
+watch(durationSec, (value) => session.editTiming({ durationSec: value }))
 
 const timing = computed(() => ({
   date: date.value,

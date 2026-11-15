@@ -1,11 +1,6 @@
 import { sessionsFor } from '@/lib/history'
 import { suggestNext, workingWeightKg } from '@/lib/progression'
-import type {
-  ActiveSession,
-  SessionBlock,
-  SessionExercise,
-  SetRef,
-} from '@/types/session'
+import type { ActiveSession, SessionBlock, SessionExercise, SetRef, TimingEdits } from '@/types/session'
 import type {
   Block,
   BlockExercise,
@@ -271,6 +266,11 @@ export function removeLastSet(session: ActiveSession, block: number, exercise: n
 
 export function setNotes(session: ActiveSession, notes: string): ActiveSession {
   return { ...clone(session), notes }
+}
+
+/** Muutettu kenttä lisätään aiempien korjausten päälle. Muuttamattomat jäävät ajastimen mukaisiksi. */
+export function editTiming(session: ActiveSession, edits: TimingEdits): ActiveSession {
+  return { ...clone(session), timingEdits: { ...session.timingEdits, ...edits } }
 }
 
 /** Liikkeen voi vaihtaa vain ennen kuin siitä on tehty yhtään sarjaa, jottei kirjattu katoa. */

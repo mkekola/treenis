@@ -52,6 +52,18 @@ export interface ActiveSession {
   notes?: string
   /** Levon päättymishetki. Aikaleima eikä laskuri, jotta lepo jatkuu sivun uudelleenlatauksen yli. */
   restEndsAt?: string
+  /**
+   * Yhteenvedossa korjattu ajankohta, vain muutetut kentät. Tallennetaan heti, jotta korjaus
+   * säilyy, vaikka sovellus latautuisi uudelleen ennen Tallenna-painallusta.
+   */
+  timingEdits?: TimingEdits
+}
+
+/** Lomakkeen muodossa: "2026-11-12", "17:30", sekunnit. */
+export interface TimingEdits {
+  date?: string
+  startTime?: string
+  durationSec?: number
 }
 
 export interface SetRef {

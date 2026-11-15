@@ -8,6 +8,7 @@ import {
   canRemoveSet,
   canSwap,
   completeSet,
+  editTiming,
   isExerciseDone,
   newSessionExercise,
   progress,
@@ -253,6 +254,12 @@ describe('toWorkout', () => {
   it('siistii muistiinpanon ja jättää tyhjän pois', () => {
     expect(toWorkout(setNotes(finished(), '  Lonkat jumissa.  '), NOW).logged?.notes).toBe('Lonkat jumissa.')
     expect(toWorkout(setNotes(finished(), '   '), NOW).logged?.notes).toBeUndefined()
+  })
+
+  it('ajankohdan korjaukset kertyvät, ja muuttamaton kenttä jää pois', () => {
+    const edited = editTiming(editTiming(finished(), { startTime: '17:30' }), { date: '2026-11-11' })
+    expect(edited.timingEdits).toEqual({ startTime: '17:30', date: '2026-11-11' })
+    expect(editTiming(edited, { startTime: '18:00' }).timingEdits?.startTime).toBe('18:00')
   })
 
   it('laskee edistymisen', () => {
