@@ -60,9 +60,13 @@ const restShare = computed(() => {
   return total ? Math.min(100, Math.round((restLeft.value / total) * 100)) : 0
 })
 
+/** Taustalta palatessa lepo on voinut päättyä kauan sitten: silloin merkki tuli jo push-ilmoituksena. */
+const SIGNAL_GRACE_MS = 3000
+
 // Merkki vain kun lepo päättyy itsestään, ei kun se ohitetaan. Merkin laji on asetuksissa.
 watch(restLeft, (left, before) => {
-  if (before > 0 && left === 0 && active.value?.restEndsAt) signalRestEnd()
+  const endsAt = active.value?.restEndsAt
+  if (before > 0 && left === 0 && endsAt && Date.now() - Date.parse(endsAt) < SIGNAL_GRACE_MS) signalRestEnd()
 })
 
 // --- sarjat ---
