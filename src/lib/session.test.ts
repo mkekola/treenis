@@ -11,6 +11,7 @@ import {
   editTiming,
   isExerciseDone,
   moveBlock,
+  setExerciseNote,
   newSessionExercise,
   progress,
   removeExercise,
@@ -341,5 +342,21 @@ describe('liikkeiden järjestys treenin aikana', () => {
     expect(before.blocks[0].id).toBe(ids[4])
     expect(before.blocks[before.currentBlock].id).toBe(ids[1])
     expect(moveBlock(session, 0, 99)).toBe(session)
+  })
+})
+
+describe('liikkeen muistiinpano', () => {
+  it('tallentuu valmiiseen treeniin siistittynä, tyhjä jää pois', () => {
+    // Paino ensin, jotta sarjat kelpaavat tehdyiksi myös liikkeissä, joilla ei ole historiaa.
+    let s = startA()
+    s = setValues(s, at(0, 0), { weightKg: 60 })
+    s = setValues(s, at(1, 0), { weightKg: 20 })
+    s = completeSet(s, at(0, 0), NOW)
+    s = completeSet(s, at(1, 0), NOW)
+    s = setExerciseNote(s, 0, 0, '  Laite 2  ')
+    s = setExerciseNote(s, 1, 0, '   ')
+    const blocks = toWorkout(s, NOW).logged!.blocks!
+    expect(blocks[0].exercises[0].note).toBe('Laite 2')
+    expect('note' in blocks[1].exercises[0]).toBe(false)
   })
 })

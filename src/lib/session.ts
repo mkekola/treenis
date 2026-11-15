@@ -1,4 +1,4 @@
-import { sessionsFor } from '@/lib/history'
+import { lastNoteFor, sessionsFor } from '@/lib/history'
 import { suggestNext, workingWeightKg } from '@/lib/progression'
 import type { ActiveSession, SessionBlock, SessionExercise, SetRef, TimingEdits } from '@/types/session'
 import type {
@@ -56,11 +56,14 @@ export function buildExercise(
       ? { kind: suggestion.kind, fromKg: suggestion.fromKg, toKg: suggestion.toKg }
       : undefined
 
+  const previousNote = lastNoteFor(source.exerciseId, history)
+
   return {
     exerciseId: source.exerciseId,
     measurement,
     target,
     previous: lastKg !== null ? { weightKg: lastKg, feel: last?.feel } : undefined,
+    ...(previousNote ? { previousNote } : {}),
     hint,
     sets: source.sets.map((set) => ({
       ...set,
@@ -327,6 +330,14 @@ export function setCurrentBlock(session: ActiveSession, index: number): ActiveSe
   return { ...clone(session), currentBlock: index }
 }
 
+/** Liikkeen muistiinpano tältä kerralta. Tallennetaan sellaisenaan, siistitään vasta valmiissa treenissä. */
+export function setExerciseNote(session: ActiveSession, block: number, exercise: number, note: string): ActiveSession {
+  if (!session.blocks[block]?.exercises[exercise]) return session
+  const next = clone(session)
+  next.blocks[block].exercises[exercise].note = note
+  return next
+}
+
 /** Siirtää liikkeen (lohkon) uuteen kohtaan. Käsillä oleva liike pysyy samana, vaikka sen paikka muuttuu. */
 export function moveBlock(session: ActiveSession, from: number, to: number): ActiveSession {
   const last = session.blocks.length - 1
@@ -404,6 +415,7 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
           exerciseId: exercise.exerciseId,
           sets: exercise.sets.filter((set) => set.done),
           feel: exercise.feel,
+          ...(exercise.note?.trim() ? { note: exercise.note.trim() } : {}),
         }))
         .filter((exercise) => exercise.sets.length > 0),
     }))

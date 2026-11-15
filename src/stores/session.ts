@@ -111,6 +111,8 @@ export const useSession = defineStore('session', () => {
   const setFeel = (block: number, exercise: number, feel: Feel | 'skip') =>
     update((s) => logic.setFeel(s, block, exercise, feel))
   const setNotes = (notes: string) => update((s) => logic.setNotes(s, notes))
+  const setExerciseNote = (block: number, exercise: number, note: string) =>
+    update((s) => logic.setExerciseNote(s, block, exercise, note))
   const editTiming = (edits: TimingEdits) => update((s) => logic.editTiming(s, edits))
   const skipRest = () => update((s) => logic.skipRest(s))
   const goToBlock = (index: number) => update((s) => logic.setCurrentBlock(s, index))
@@ -175,6 +177,7 @@ export const useSession = defineStore('session', () => {
     removeExercise,
     setFeel,
     setNotes,
+    setExerciseNote,
     editTiming,
     skipRest,
     goToBlock,

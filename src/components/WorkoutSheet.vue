@@ -111,6 +111,7 @@ const lifts = computed(() =>
         key: `${block.id}-${entry.exerciseId}`,
         name: definition?.name ?? entry.exerciseId,
         sets: entry.sets.filter((set) => set.done).map((set) => formatSet(set, measurement)),
+        note: entry.note,
       }
     }),
   ),
@@ -187,6 +188,7 @@ function onBackdropClick(event: MouseEvent) {
           <li v-for="lift in lifts" :key="lift.key" class="py-2.5">
             <p class="text-[15px] font-semibold">{{ lift.name }}</p>
             <p class="text-[13px] text-ink-muted" data-numeric>{{ lift.sets.join(' · ') }}</p>
+            <p v-if="lift.note" class="mt-0.5 text-[13px]">{{ lift.note }}</p>
           </li>
         </ul>
 

@@ -10,7 +10,7 @@ import { useNow } from '@/composables/useNow'
 import { useTheme } from '@/composables/useTheme'
 import { useWakeLock } from '@/composables/useWakeLock'
 import { beep, primeAudio } from '@/lib/beep'
-import { formatDuration, formatSet } from '@/lib/format'
+import { formatDuration, formatSet, formatShortDate } from '@/lib/format'
 import { recentHistory, sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
@@ -82,6 +82,16 @@ function complete(blockIndex: number, exerciseIndex: number, setIndex: number) {
 
 function edit(blockIndex: number, exerciseIndex: number, setIndex: number, values: SetValues) {
   void session.setValues({ block: blockIndex, exercise: exerciseIndex, set: setIndex }, values)
+}
+
+// --- muistiinpano ---
+
+/** Liikkeet, joiden muistiinpanokenttä on avattu. Kirjoitettu muistiinpano pitää kentän auki. */
+const noteOpen = ref(new Set<string>())
+const showNote = (exercise: SessionExercise) => noteOpen.value.has(exercise.exerciseId) || Boolean(exercise.note)
+
+function openNote(exerciseId: string) {
+  noteOpen.value = new Set([...noteOpen.value, exerciseId])
 }
 
 // --- tuntuma ---
@@ -273,6 +283,31 @@ function finish() {
         Tavoite {{ exercise.target.sets }} × {{ exercise.target.reps }}
         <template v-if="!exercise.previous"> · ensimmäinen kerta</template>
       </p>
+
+      <!-- Edellinen muistiinpano vihjeenä, esim. laiteasetus. Tämän kerran muistiinpano alkaa tyhjänä. -->
+      <p v-if="exercise.previousNote" class="mt-1.5 text-[13px] text-[var(--sport-on)]">
+        <span class="font-semibold">Viime kerralla {{ formatShortDate(exercise.previousNote.date) }}:</span>
+        {{ exercise.previousNote.text }}
+      </p>
+      <label v-if="showNote(exercise)" class="mt-2 block">
+        <span class="sr-only">Muistiinpano: {{ nameOf(exercise.exerciseId) }}</span>
+        <textarea
+          :value="exercise.note ?? ''"
+          rows="2"
+          maxlength="500"
+          placeholder="Esim. laite 2, istuin 4"
+          class="w-full resize-none rounded-xl border border-[color-mix(in_srgb,var(--sport-on)_30%,transparent)] bg-[var(--sport-sunken)] px-3 py-2 text-[15px] placeholder:text-[color-mix(in_srgb,var(--sport-on)_60%,transparent)]"
+          @input="session.setExerciseNote(active.currentBlock, exerciseIndex, ($event.target as HTMLTextAreaElement).value)"
+        />
+      </label>
+      <button
+        v-else
+        type="button"
+        class="mt-1 min-h-9 text-[13px] font-semibold text-[var(--sport-on)] underline"
+        @click="openNote(exercise.exerciseId)"
+      >
+        + Muistiinpano
+      </button>
 
       <template v-if="isCollapsed(exercise)">
         <div class="mt-2.5 flex gap-1.5">

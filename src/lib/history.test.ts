@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frequentExerciseIds, recentHistory, sessionsFor } from '@/lib/history'
+import { frequentExerciseIds, lastNoteFor, recentHistory, sessionsFor } from '@/lib/history'
 import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
 
 const history = [
@@ -62,5 +62,17 @@ describe('recentHistory', () => {
       strengthWorkout('uusi', '2026-11-10', [entry('squat', doneSets(80, [10]))]),
     ]
     expect(recentHistory(workouts, now).map((w) => w.id)).toEqual(['raja', 'uusi'])
+  })
+})
+
+describe('lastNoteFor', () => {
+  it('tuorein muistiinpano, vaikka viimeisimmällä kerralla sitä ei ole', () => {
+    const workouts = [
+      strengthWorkout('a', '2026-10-01', [{ ...entry('lat-pulldown', doneSets(40, [10])), note: 'Laite 1' }]),
+      strengthWorkout('b', '2026-11-01', [{ ...entry('lat-pulldown', doneSets(45, [10])), note: '  Laite 2, istuin 4 ' }]),
+      strengthWorkout('c', '2026-11-12', [entry('lat-pulldown', doneSets(45, [10]))]),
+    ]
+    expect(lastNoteFor('lat-pulldown', workouts)).toEqual({ text: 'Laite 2, istuin 4', date: '2026-11-01' })
+    expect(lastNoteFor('back-squat', workouts)).toBeUndefined()
   })
 })

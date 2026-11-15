@@ -108,6 +108,8 @@ export interface BlockExercise {
   sets: SetEntry[]
   /** Liikkeen tuntuma. Puuttuu jos kysymys ohitettiin. */
   feel?: Feel
+  /** Muistiinpano tältä kerralta, esim. "Laite 2, istuin 4". */
+  note?: string
 }
 
 /**

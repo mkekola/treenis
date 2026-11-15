@@ -11,6 +11,12 @@ export interface PreviousResult {
   feel?: Feel
 }
 
+/** Tuorein aiempi muistiinpano liikkeelle ja sen päivä. */
+export interface PreviousNote {
+  text: string
+  date: string
+}
+
 /**
  * Painoehdotus, joka on jo viety riville valmiiksi täytettynä painona.
  * Merkintä ("+2 kg") näytetään vain niin kauan kuin rivin paino on edelleen
@@ -30,6 +36,8 @@ export interface SessionExercise extends BlockExercise {
   hint?: WeightHint
   /** Käyttäjä ohitti tuntumakysymyksen, joten sitä ei kysytä uudelleen. */
   feelSkipped?: boolean
+  /** Edellinen muistiinpano vihjeeksi. Tämän kerran muistiinpano (note) alkaa tyhjänä. */
+  previousNote?: PreviousNote
 }
 
 export interface SessionBlock {

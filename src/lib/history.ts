@@ -1,5 +1,6 @@
 import type { ExerciseSession } from '@/lib/progression'
 import { localDate } from '@/lib/session'
+import type { PreviousNote } from '@/types/session'
 import type { Workout } from '@/types/workout'
 
 /** Kuinka kaukaa aiemmat tulokset kelpaavat: vuosien takainen paino ei kerro nykykunnosta. */
@@ -72,4 +73,18 @@ export function frequentExerciseIds(workouts: Workout[], since: string, limit = 
     .sort((a, b) => b[1].count - a[1].count || b[1].last.localeCompare(a[1].last))
     .slice(0, limit)
     .map(([id]) => id)
+}
+
+/**
+ * Liikkeen tuorein muistiinpano, vaikka viimeisimmällä kerralla sitä ei olisi kirjoitettu:
+ * esimerkiksi laiteasetus pysyy näkyvissä kerrasta toiseen.
+ */
+export function lastNoteFor(exerciseId: string, workouts: Workout[]): PreviousNote | undefined {
+  for (const workout of [...workouts].sort(newestFirst)) {
+    const found = (workout.logged?.blocks ?? [])
+      .flatMap((block) => block.exercises)
+      .find((exercise) => exercise.exerciseId === exerciseId && exercise.note?.trim())
+    if (found) return { text: found.note!.trim(), date: workout.date }
+  }
+  return undefined
 }
