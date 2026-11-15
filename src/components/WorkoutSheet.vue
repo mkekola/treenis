@@ -4,10 +4,13 @@ import WorkoutForm from '@/components/WorkoutForm.vue'
 import { useTheme } from '@/composables/useTheme'
 import { formatClock, formatSet, formatShortDate, workoutMetrics } from '@/lib/format'
 import { applyEdit, inputFromWorkout, type ManualInput } from '@/lib/manual'
+import { sportOf, templatesOf } from '@/lib/program'
 import { isFromStrava } from '@/lib/workout'
 import { useExercises } from '@/stores/exercises'
+import { usePrograms } from '@/stores/programs'
 import { useSession } from '@/stores/session'
 import { sportVars, useSportColors } from '@/stores/sportColors'
+import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 import { SPORT_LABELS, type Workout } from '@/types/workout'
 
@@ -17,6 +20,8 @@ const emit = defineEmits<{ close: []; remove: [id: string]; copy: [workout: Work
 const exercises = useExercises()
 const store = useWorkouts()
 const session = useSession()
+const templates = useTemplates()
+const programs = usePrograms()
 const colors = useSportColors()
 const { isDark } = useTheme()
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
@@ -45,6 +50,7 @@ watch(
   () => {
     confirming.value = false
     editing.value = false
+    linking.value = false
     saveError.value = ''
   },
 )
@@ -60,6 +66,36 @@ watch(
     if (!dialog.value?.open) dialog.value?.showModal()
   },
 )
+
+// ------------------------------------------------------- ohjelman treeni
+
+/** Pohja, josta treeni tehtiin tai johon se on liitetty jälkikäteen. */
+const linked = computed(() => templates.templates.find((t) => t.id === props.workout?.templateId))
+
+/** Käytössä olevan ohjelman saman lajin pohjat, esim. Strava-juoksulle ohjelman juoksut. */
+const linkable = computed(() =>
+  props.workout && programs.active
+    ? templatesOf(programs.active, templates.templates).filter((t) => sportOf(t) === props.workout!.sport)
+    : [],
+)
+const linking = ref(false)
+
+/**
+ * Liittää treenin ohjelman pohjaan tai irrottaa sen. Liitetty treeni lasketaan viikon
+ * tavoitteeseen, ja pohjan vuoro siirtyy, jos treeni on uudempi kuin pohjan edellinen kerta.
+ */
+async function link(templateId: string | null) {
+  const workout = props.workout
+  if (!workout) return
+  linking.value = false
+  const { templateId: _previous, ...unlinked } = workout
+  await store.save(templateId ? { ...workout, templateId } : unlinked)
+  const template = templates.templates.find((t) => t.id === templateId)
+  const doneAt = Date.parse(workout.logged?.startedAt ?? workout.measured?.startedAt ?? `${workout.date}T12:00:00`)
+  if (template && (!template.lastUsedAt || Date.parse(template.lastUsedAt) < doneAt)) {
+    await templates.save({ ...template, lastUsedAt: new Date(doneAt).toISOString() })
+  }
+}
 
 const startedAt = computed(() => props.workout?.logged?.startedAt ?? props.workout?.measured?.startedAt)
 const metrics = computed(() => (props.workout ? workoutMetrics(props.workout) : []))
@@ -174,6 +210,46 @@ function onBackdropClick(event: MouseEvent) {
             class="relative h-[26px] w-11 flex-none rounded-full bg-track transition-colors peer-checked:bg-action peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink after:absolute after:top-[3px] after:left-[3px] after:size-5 after:rounded-full after:bg-bg after:transition-transform peer-checked:after:translate-x-[18px] peer-checked:after:bg-on-action motion-reduce:transition-none motion-reduce:after:transition-none"
           />
         </label>
+
+        <!-- Ohjelman treeni: jälkikäteen liittäminen, esim. Strava-juoksu tai vahingossa muualta aloitettu. -->
+        <div v-if="!confirming && (linked || linkable.length)" class="rounded-(--radius-card) bg-surface px-3.5 py-2">
+          <div class="flex min-h-10 items-center gap-3">
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15px]">Ohjelman treeni</span>
+              <span class="block truncate text-[13px] text-ink-muted">{{ linked?.name ?? 'Ei liitetty ohjelmaan' }}</span>
+            </span>
+            <button
+              v-if="linkable.length"
+              type="button"
+              :aria-expanded="linking"
+              class="min-h-11 px-2 text-sm font-semibold underline"
+              @click="linking = !linking"
+            >
+              {{ linked ? 'Vaihda' : 'Liitä' }}
+            </button>
+          </div>
+          <div v-if="linking" role="group" aria-label="Valitse ohjelman treeni" class="mt-1.5 mb-1 flex flex-wrap gap-1.5">
+            <button
+              v-for="template in linkable"
+              :key="template.id"
+              type="button"
+              :aria-pressed="linked?.id === template.id"
+              class="min-h-10 rounded-full px-3.5 text-sm font-semibold"
+              :class="linked?.id === template.id ? 'bg-[var(--sport-surface)] text-[var(--sport-on)]' : 'bg-bg text-ink-muted'"
+              @click="link(template.id)"
+            >
+              {{ template.name }}
+            </button>
+            <button
+              v-if="linked"
+              type="button"
+              class="min-h-10 rounded-full bg-bg px-3.5 text-sm font-semibold text-ink-muted"
+              @click="link(null)"
+            >
+              Irrota
+            </button>
+          </div>
+        </div>
 
         <div v-if="!confirming" class="mt-1 grid grid-cols-2 gap-2">
           <button
