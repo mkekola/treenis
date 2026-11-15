@@ -20,8 +20,10 @@ const props = withDefaults(
     /** Salilla tuntuma kysytään liikkeittäin, joten koko treenin rasitusta ei kysytä. */
     showRpe?: boolean
     cancelLabel?: string
+    /** Kutsujan tallennusvirhe. Lomake pysyy täytettynä, joten uusi yritys on yksi painallus. */
+    error?: string
   }>(),
-  { measuredLocked: false, showRpe: true, cancelLabel: '' },
+  { measuredLocked: false, showRpe: true, cancelLabel: '', error: '' },
 )
 const emit = defineEmits<{ submit: [input: ManualInput]; cancel: [] }>()
 
@@ -197,6 +199,7 @@ function submit() {
         {{ submitLabel }}
       </button>
     </div>
+    <p v-if="error" role="alert" class="-mt-1.5 text-center text-[13px] font-semibold">{{ error }}</p>
     <p v-if="!complete" class="-mt-1.5 text-center text-xs text-ink-muted">Kirjaa kesto, niin treenin voi tallentaa.</p>
   </form>
 </template>

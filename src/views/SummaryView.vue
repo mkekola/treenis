@@ -125,8 +125,16 @@ function onTemplateSaved(templateName: string, programName: string) {
   savedTemplate.value = `${templateName} tallennettu ohjelmaan ${programName}.`
 }
 
+const finishError = ref('')
+
 async function finish() {
-  await session.finish(timing.value)
+  finishError.value = ''
+  try {
+    await session.finish(timing.value)
+  } catch {
+    finishError.value = 'Tallennus ei onnistunut. Yritä uudelleen.'
+    return
+  }
   await router.push('/')
 }
 
@@ -356,6 +364,7 @@ async function discard() {
       >
         Valmis
       </button>
+      <p v-if="finishError" role="alert" class="mt-2 text-center text-[13px] font-semibold">{{ finishError }}</p>
 
       <SaveTemplateSheet
         :open="savingTemplate"

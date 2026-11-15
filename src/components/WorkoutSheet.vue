@@ -22,6 +22,7 @@ const { isDark } = useTheme()
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const confirming = ref(false)
 const editing = ref(false)
+const saveError = ref('')
 
 const vars = computed(() => (props.workout ? sportVars(colors.swatchFor(props.workout.sport), isDark.value) : {}))
 
@@ -30,8 +31,13 @@ const copyBlocked = computed(() => props.workout?.sport === 'strength' && sessio
 
 async function saveEdit(input: ManualInput) {
   if (!props.workout) return
-  await store.save(applyEdit(props.workout, input))
-  editing.value = false
+  saveError.value = ''
+  try {
+    await store.save(applyEdit(props.workout, input))
+    editing.value = false
+  } catch {
+    saveError.value = 'Tallennus ei onnistunut. Yritä uudelleen.'
+  }
 }
 
 watch(
@@ -39,6 +45,7 @@ watch(
   () => {
     confirming.value = false
     editing.value = false
+    saveError.value = ''
   },
 )
 
@@ -129,8 +136,9 @@ function onBackdropClick(event: MouseEvent) {
         :show-rpe="workout.sport !== 'strength'"
         submit-label="Tallenna"
         cancel-label="Peruuta"
+        :error="saveError"
         @submit="saveEdit"
-        @cancel="editing = false"
+        @cancel="editing = false; saveError = ''"
       />
 
       <template v-else>

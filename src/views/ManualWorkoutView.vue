@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SportIcon from '@/components/SportIcon.vue'
 import WorkoutForm from '@/components/WorkoutForm.vue'
@@ -24,8 +24,16 @@ const initial = computed<ManualInput>(() => {
   return source ? copyInput(source, new Date()) : newInput(sport.value, new Date())
 })
 
+const saveError = ref('')
+
 async function save(input: ManualInput) {
-  await store.save(manualWorkout(crypto.randomUUID(), input))
+  saveError.value = ''
+  try {
+    await store.save(manualWorkout(crypto.randomUUID(), input))
+  } catch {
+    saveError.value = 'Tallennus ei onnistunut. Yritä uudelleen.'
+    return
+  }
   await router.replace('/')
 }
 </script>
@@ -49,7 +57,7 @@ async function save(input: ManualInput) {
       <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">{{ SPORT_LABELS[sport] }}</h1>
     </div>
 
-    <WorkoutForm :key="sport + String(route.query.kopio ?? '')" :initial="initial" submit-label="Tallenna treeni" @submit="save" />
+    <WorkoutForm :key="sport + String(route.query.kopio ?? '')" :initial="initial" submit-label="Tallenna treeni" :error="saveError" @submit="save" />
     <p class="text-center text-xs text-ink-muted">
       Jos sama treeni tulee myöhemmin Stravasta, Treenis kysyy, yhdistetäänkö ne.
     </p>
