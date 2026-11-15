@@ -26,6 +26,12 @@ await Promise.all([
 
 app.mount('#app')
 
+// Ilmoituksen napautus, kun Treenis on jo auki (public/push-sw.js): näkymä vaihtuu ilman uudelleenlatausta.
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  const path = event.data?.type === 'open' ? event.data.path : null
+  if (typeof path === 'string' && path.startsWith('/')) void router.push(path)
+})
+
 // Synkka käynnistyy vasta piirron jälkeen: sovellus ei odota verkkoa.
 useSync(pinia).start()
 

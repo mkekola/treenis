@@ -14,15 +14,25 @@ self.addEventListener('push', (event) => {
   )
 })
 
-// Napautus avaa ilmoituksen näkymän: jo auki oleva Treenis siirtyy sinne, muuten avataan uusi.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = new URL(event.notification.data?.url || '/', self.location.origin).href
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
-      const open = windows.find((client) => client.url.startsWith(self.location.origin))
-      if (open) return open.navigate(url).then((client) => (client ?? open).focus())
-      return self.clients.openWindow(url)
-    }),
-  )
+  event.waitUntil(openApp(event.notification.data?.url || '/'))
 })
+
+// Selain sallii ikkunan tuomisen eteen vain heti napautuksen jälkeen, joten focus tehdään ensin.
+// Auki oleva Treenis vaihtaa näkymän itse (src/main.ts): sivu ei lataudu uudelleen eikä
+// käynnissä oleva treeni katkea. Jos eteen tuominen ei onnistu, avataan uusi ikkuna.
+async function openApp(path) {
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+  const open = windows.find((client) => client.url.startsWith(self.location.origin))
+  if (open) {
+    try {
+      const focused = (await open.focus()) ?? open
+      focused.postMessage({ type: 'open', path })
+      return
+    } catch {
+      // Jatketaan uuteen ikkunaan.
+    }
+  }
+  await self.clients.openWindow(new URL(path, self.location.origin).href)
+}
