@@ -1,4 +1,4 @@
-import type { BlockExercise, Feel, Measurement } from '@/types/workout'
+import type { BlockExercise, Feel, Measurement, RotationOption } from '@/types/workout'
 
 export interface SessionTarget {
   sets: number
@@ -38,6 +38,8 @@ export interface SessionExercise extends BlockExercise {
   feelSkipped?: boolean
   /** Edellinen muistiinpano vihjeeksi. Tämän kerran muistiinpano (note) alkaa tyhjänä. */
   previousNote?: PreviousNote
+  /** Vaihtuvan liikkeen koko kierto, jotta tämän kerran liikkeen voi vielä vaihtaa. */
+  rotation?: RotationOption[]
 }
 
 export interface SessionBlock {

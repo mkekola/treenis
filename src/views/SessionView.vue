@@ -287,6 +287,29 @@ function finish() {
           </button>
         </div>
       </div>
+      <!-- Vaihtuva liike: tämän kerran liikkeen voi vaihtaa kierrosta, kunnes ensimmäinen sarja on tehty. -->
+      <div
+        v-if="exercise.rotation && canSwap(exercise)"
+        role="group"
+        aria-label="Vaihtuva liike tällä kertaa"
+        class="my-2 flex flex-wrap gap-1.5"
+      >
+        <button
+          v-for="option in exercise.rotation"
+          :key="option.exerciseId"
+          type="button"
+          :aria-pressed="option.exerciseId === exercise.exerciseId"
+          class="min-h-9 rounded-full px-3 text-[13px] font-semibold"
+          :class="
+            option.exerciseId === exercise.exerciseId
+              ? 'bg-[var(--sport-on)] text-[var(--sport-surface)]'
+              : 'bg-[color-mix(in_srgb,var(--sport-raised)_55%,transparent)] text-[var(--sport-on)]'
+          "
+          @click="option.exerciseId !== exercise.exerciseId && session.swapExercise(active.currentBlock, exerciseIndex, option.exerciseId)"
+        >
+          {{ nameOf(option.exerciseId) }}
+        </button>
+      </div>
       <p class="mt-0.5 text-xs text-[var(--sport-on)]" data-numeric>
         Tavoite {{ exercise.target.sets }} × {{ exercise.target.reps }}
         <template v-if="!exercise.previous"> · ensimmäinen kerta</template>

@@ -3,14 +3,17 @@ import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExercisePicker from '@/components/ExercisePicker.vue'
 import { useTheme } from '@/composables/useTheme'
+import { isRotating, optionsOf } from '@/lib/rotation'
 import {
   addExercise,
+  addToRotation,
   canJoin,
   canMove,
   detach,
   joinWithPrevious,
   move,
   removeExercise,
+  removeFromRotation,
   rename,
   setRest,
   setTarget,
@@ -93,7 +96,7 @@ function readNumber(event: Event): number | null {
 function onTarget(at: ExerciseRef, field: 'sets' | 'value', event: Event) {
   if (!template.value) return
   const value = readNumber(event)
-  const entry = template.value.blocks[at.block].exercises[at.exercise]
+  const entry = optionsOf(template.value.blocks[at.block].exercises[at.exercise])[at.option ?? 0]
   if (value === null) {
     const target = targetOf(entry)
     const fallback = field === 'sets' ? target.sets : (target.reps ?? target.durationSec ?? '')
@@ -124,6 +127,10 @@ const menuEntry = computed(() =>
   menuAt.value && menuBlock.value ? menuBlock.value.exercises[menuAt.value.exercise] : null,
 )
 const inSuperset = computed(() => (menuBlock.value?.exercises.length ?? 0) > 1)
+const menuTitle = computed(() => {
+  if (!menuEntry.value) return 'Liike'
+  return isRotating(menuEntry.value) ? 'Vaihtuva liike' : nameOf(menuEntry.value.exerciseId)
+})
 
 /** Edellisen lohkon liikkeet, jotta yhdistäminen kertoo mihin liike liittyy. */
 const previousNames = computed(() => {
@@ -159,31 +166,42 @@ function changeRest(delta: number) {
 // ---------------------------------------------------------- lisäys ja poisto
 
 const pickerOpen = ref(false)
-/** Vaihdettava liike. Valitsin on sama kuin lisäyksessä, valinta vain korvaa liikkeen. */
-const swapAt = ref<ExerciseRef | null>(null)
+/**
+ * Valitsin on sama kaikille: uusi liike, vaihto (korvaa liikkeen) tai vaihtuvan
+ * liikkeen kiertoon lisäys. Ilman kohdetta valinta lisää uuden liikkeen.
+ */
+const pickFor = ref<{ mode: 'swap' | 'rotate'; at: ExerciseRef } | null>(null)
 
-function startSwap() {
-  swapAt.value = menuAt.value
+function openPicker(mode: 'swap' | 'rotate', at: ExerciseRef) {
+  pickFor.value = { mode, at }
   closeMenu()
   pickerOpen.value = true
 }
 
 function closePicker() {
   pickerOpen.value = false
-  swapAt.value = null
+  pickFor.value = null
 }
 
 function onPick(exercise: Exercise) {
   pickerOpen.value = false
-  const at = swapAt.value
-  swapAt.value = null
-  if (at && template.value) {
-    const current = template.value.blocks[at.block].exercises[at.exercise]
-    update(swapExercise(template.value, at, exercise, measurementOf(current.exerciseId)))
+  const target = pickFor.value
+  pickFor.value = null
+  if (!template.value) return
+  if (!target) {
+    update(addExercise(template.value, newBlockId(), exercise))
     return
   }
-  if (template.value) update(addExercise(template.value, newBlockId(), exercise))
+  const current = template.value.blocks[target.at.block].exercises[target.at.exercise]
+  const change = target.mode === 'swap' ? swapExercise : addToRotation
+  update(change(template.value, target.at, exercise, measurementOf(current.exerciseId)))
 }
+
+const pickerTitle = computed(() => {
+  if (pickFor.value?.mode === 'swap') return 'Vaihda liike'
+  if (pickFor.value?.mode === 'rotate') return 'Lisää kiertoon'
+  return 'Lisää liike'
+})
 
 const confirmingDelete = ref(false)
 
@@ -243,6 +261,7 @@ async function deleteTemplate() {
           Supersarja
         </p>
 
+        <!-- Vaihtuva liike on sama kortti: kierron jokaisella liikkeellä omat tavoitteet. -->
         <div
           v-for="(entry, e) in block.exercises"
           :key="`${block.id}-${e}-${entry.exerciseId}`"
@@ -250,11 +269,11 @@ async function deleteTemplate() {
         >
           <div class="flex items-start gap-2">
             <h2 class="min-w-0 flex-1 pt-2 text-base leading-snug font-semibold">
-              {{ nameOf(entry.exerciseId) }}
+              {{ isRotating(entry) ? 'Vaihtuva liike' : nameOf(entry.exerciseId) }}
             </h2>
             <button
               type="button"
-              :aria-label="`Muokkaa: ${nameOf(entry.exerciseId)}`"
+              :aria-label="`Muokkaa: ${isRotating(entry) ? 'vaihtuva liike' : nameOf(entry.exerciseId)}`"
               class="-mt-1 -mr-1 flex size-11 flex-none items-center justify-center rounded-full"
               @click="menuAt = { block: b, exercise: e }"
             >
@@ -266,34 +285,78 @@ async function deleteTemplate() {
             </button>
           </div>
 
-          <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">
-            <input
-              :value="targetOf(entry).sets"
-              type="text"
-              inputmode="numeric"
-              :aria-label="`${nameOf(entry.exerciseId)}: sarjoja`"
-              class="h-11 w-14 rounded-xl border border-line bg-bg text-center text-lg font-bold"
-              data-numeric
-              @change="onTarget({ block: b, exercise: e }, 'sets', $event)"
-            />
-            <span class="text-ink-muted">sarjaa ×</span>
-            <input
-              :value="measurementOf(entry.exerciseId) === 'time' ? targetOf(entry).durationSec : targetOf(entry).reps"
-              type="text"
-              inputmode="numeric"
-              :aria-label="`${nameOf(entry.exerciseId)}: ${measurementOf(entry.exerciseId) === 'time' ? 'sekuntia' : 'toistoja'}`"
-              class="h-11 w-16 rounded-xl border border-line bg-bg text-center text-lg font-bold"
-              data-numeric
-              @change="onTarget({ block: b, exercise: e }, 'value', $event)"
-            />
-            <span class="text-ink-muted">
-              {{ measurementOf(entry.exerciseId) === 'time' ? 's' : 'toistoa' }}
-            </span>
-            <span
-              v-if="block.exercises.length === 1"
-              class="ml-auto text-[13px] text-ink-muted"
-              data-numeric
+          <component :is="isRotating(entry) ? 'ol' : 'div'" :aria-label="isRotating(entry) ? 'Kierto' : undefined">
+            <component
+              :is="isRotating(entry) ? 'li' : 'div'"
+              v-for="(option, o) in optionsOf(entry)"
+              :key="option.exerciseId"
+              :class="isRotating(entry) ? 'mt-2 border-t border-line pt-2' : ''"
             >
+              <div v-if="isRotating(entry)" class="flex items-center gap-2.5">
+                <span
+                  class="flex size-6 flex-none items-center justify-center rounded-full border border-line bg-bg text-[12px] font-bold"
+                  aria-hidden="true"
+                  data-numeric
+                >
+                  {{ o + 1 }}
+                </span>
+                <span class="min-w-0 flex-1 text-[15px] font-semibold">{{ nameOf(option.exerciseId) }}</span>
+                <button
+                  type="button"
+                  :aria-label="`Poista ${nameOf(option.exerciseId)} kierrosta`"
+                  class="-mr-1 flex size-11 flex-none items-center justify-center rounded-full text-ink-muted"
+                  @click="update(removeFromRotation(template, { block: b, exercise: e, option: o }))"
+                >
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">
+                <input
+                  :value="targetOf(option).sets"
+                  type="text"
+                  inputmode="numeric"
+                  :aria-label="`${nameOf(option.exerciseId)}: sarjoja`"
+                  class="h-11 w-14 rounded-xl border border-line bg-bg text-center text-lg font-bold"
+                  data-numeric
+                  @change="onTarget({ block: b, exercise: e, option: o }, 'sets', $event)"
+                />
+                <span class="text-ink-muted">sarjaa ×</span>
+                <input
+                  :value="measurementOf(option.exerciseId) === 'time' ? targetOf(option).durationSec : targetOf(option).reps"
+                  type="text"
+                  inputmode="numeric"
+                  :aria-label="`${nameOf(option.exerciseId)}: ${measurementOf(option.exerciseId) === 'time' ? 'sekuntia' : 'toistoja'}`"
+                  class="h-11 w-16 rounded-xl border border-line bg-bg text-center text-lg font-bold"
+                  data-numeric
+                  @change="onTarget({ block: b, exercise: e, option: o }, 'value', $event)"
+                />
+                <span class="text-ink-muted">
+                  {{ measurementOf(option.exerciseId) === 'time' ? 's' : 'toistoa' }}
+                </span>
+                <span
+                  v-if="block.exercises.length === 1 && !isRotating(entry)"
+                  class="ml-auto text-[13px] text-ink-muted"
+                  data-numeric
+                >
+                  lepo {{ block.restSec }} s
+                </span>
+              </div>
+            </component>
+          </component>
+
+          <div v-if="isRotating(entry)" class="mt-2 flex items-center justify-between gap-2 border-t border-line pt-1">
+            <button
+              type="button"
+              class="min-h-11 text-[15px] font-semibold"
+              @click="openPicker('rotate', { block: b, exercise: e })"
+            >
+              + Lisää kiertoon
+            </button>
+            <span v-if="block.exercises.length === 1" class="text-[13px] text-ink-muted" data-numeric>
               lepo {{ block.restSec }} s
             </span>
           </div>
@@ -358,14 +421,14 @@ async function deleteTemplate() {
     <!-- Liikkeen valikko: harvoin tarvittavat toiminnot, jotta rivi pysyy väljänä. -->
     <dialog
       ref="menu"
-      :aria-label="menuEntry ? nameOf(menuEntry.exerciseId) : 'Liike'"
+      :aria-label="menuTitle"
       class="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[480px] flex-col rounded-t-3xl bg-bg p-0 text-ink backdrop:bg-black/40 open:flex"
       @close="closeMenu"
       @click="onMenuBackdrop"
     >
       <template v-if="menuAt && menuEntry && menuBlock && template">
         <h2 class="px-5 pt-5 font-display text-[22px] leading-tight font-bold tracking-[-0.02em]">
-          {{ nameOf(menuEntry.exerciseId) }}
+          {{ menuTitle }}
         </h2>
 
         <div class="flex flex-col gap-2 px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -388,9 +451,24 @@ async function deleteTemplate() {
             </button>
           </div>
 
-          <button type="button" class="min-h-12 rounded-(--radius-button) border border-line font-semibold" @click="startSwap">
-            Vaihda liike
-          </button>
+          <!-- Vaihtuvan liikkeen kiertoa muokataan kortissa, joten vaihto ja muutos ovat vain tavallisella liikkeellä. -->
+          <template v-if="!isRotating(menuEntry)">
+            <button
+              type="button"
+              class="min-h-12 rounded-(--radius-button) border border-line font-semibold"
+              @click="openPicker('swap', menuAt)"
+            >
+              Vaihda liike
+            </button>
+            <button
+              type="button"
+              class="flex min-h-12 flex-col items-center justify-center rounded-(--radius-button) border border-line px-3 py-2 font-semibold"
+              @click="openPicker('rotate', menuAt)"
+            >
+              Tee vaihtuvaksi
+              <span class="text-[13px] font-normal text-ink-muted">Liikkeet vuorottelevat kerta kerralta</span>
+            </button>
+          </template>
           <button
             v-if="inSuperset"
             type="button"
@@ -443,7 +521,7 @@ async function deleteTemplate() {
             class="min-h-12 rounded-(--radius-button) border border-line font-semibold"
             @click="act(removeExercise)"
           >
-            Poista liike
+            {{ isRotating(menuEntry) ? 'Poista vaihtuva liike' : 'Poista liike' }}
           </button>
           <button type="button" class="min-h-12 font-semibold text-ink-muted" @click="closeMenu">
             Valmis
@@ -454,7 +532,7 @@ async function deleteTemplate() {
 
     <ExercisePicker
       :open="pickerOpen"
-      :title="swapAt ? 'Vaihda liike' : 'Lisää liike'"
+      :title="pickerTitle"
       @select="onPick"
       @close="closePicker"
     />

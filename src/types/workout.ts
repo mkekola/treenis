@@ -110,6 +110,17 @@ export interface BlockExercise {
   feel?: Feel
   /** Muistiinpano tältä kerralta, esim. "Laite 2, istuin 4". */
   note?: string
+  /**
+   * Vain pohjassa: vaihtuvan liikkeen muut liikkeet omine tavoitteineen. Kierto alkaa
+   * itse liikkeestä ja jatkuu näihin järjestyksessä (src/lib/rotation.ts).
+   */
+  alternatives?: RotationOption[]
+}
+
+/** Vaihtuvan liikkeen yksi liike ja sen tavoitesarjat. */
+export interface RotationOption {
+  exerciseId: string
+  sets: SetEntry[]
 }
 
 /**

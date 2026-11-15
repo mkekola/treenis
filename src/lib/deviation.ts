@@ -1,3 +1,4 @@
+import { optionsOf } from '@/lib/rotation'
 import { DEFAULT_REPS, mostCommon } from '@/lib/template'
 import type { Block, BlockExercise, SetEntry, Workout, WorkoutTemplate } from '@/types/workout'
 
@@ -52,10 +53,18 @@ export function findDeviations(template: WorkoutTemplate, workout: Workout): Dev
 
   for (const block of template.blocks) {
     const done = performedById.get(block.id)?.exercises ?? []
-    const planned = block.exercises.map((entry) => entry.exerciseId)
-    const doneIds = done.map((entry) => entry.exerciseId)
-    const missing = planned.filter((id) => !doneIds.includes(id))
-    const extra = done.filter((entry) => !planned.includes(entry.exerciseId))
+    // Vaihtuvasta liikkeestä mikä tahansa kierron liike vastaa pohjaa: vuorottelu ei ole poikkeama.
+    const matches: { planned: number; match: BlockExercise }[] = []
+    const missing: string[] = []
+    for (const entry of block.exercises) {
+      const options = optionsOf(entry)
+      const match = done.find(
+        (d) => !matches.some((m) => m.match === d) && options.some((o) => o.exerciseId === d.exerciseId),
+      )
+      if (match) matches.push({ planned: options.find((o) => o.exerciseId === match.exerciseId)!.sets.length, match })
+      else missing.push(entry.exerciseId)
+    }
+    const extra = done.filter((entry) => !matches.some((m) => m.match === entry))
 
     // Lohkossa pois jäänyt ja tilalle tullut liike ovat vaihto, järjestyksessä pareittain.
     missing.forEach((fromId, i) => {
@@ -76,17 +85,14 @@ export function findDeviations(template: WorkoutTemplate, workout: Workout): Dev
     })
     for (const entry of extra.slice(missing.length)) deviations.push(added(entry, block.restSec))
 
-    for (const entry of block.exercises) {
-      const match = done.find((d) => d.exerciseId === entry.exerciseId)
-      if (!match) continue
-      const from = entry.sets.length
+    for (const { planned: from, match } of matches) {
       const to = doneCount(match)
       if (from !== to) {
         deviations.push({
           kind: 'sets',
-          key: `sets:${block.id}:${entry.exerciseId}:${to}`,
+          key: `sets:${block.id}:${match.exerciseId}:${to}`,
           blockId: block.id,
-          exerciseId: entry.exerciseId,
+          exerciseId: match.exerciseId,
           from,
           to,
         })
@@ -143,9 +149,12 @@ export function applyDeviations(
         entry.sets = clone(d.sets)
       }
     } else if (d.kind === 'sets') {
-      const entry = blockOf(d.blockId)?.exercises.find((e) => e.exerciseId === d.exerciseId)
-      const first = entry?.sets[0]
-      if (entry && first) entry.sets = Array.from({ length: d.to }, () => ({ ...first, done: false }))
+      // Vaihtuvalla liikkeellä sarjamäärä muuttuu vain sille kierron liikkeelle, joka tehtiin.
+      const option = blockOf(d.blockId)
+        ?.exercises.flatMap((e) => [e, ...(e.alternatives ?? [])])
+        .find((o) => o.exerciseId === d.exerciseId)
+      const first = option?.sets[0]
+      if (option && first) option.sets = Array.from({ length: d.to }, () => ({ ...first, done: false }))
     } else if (d.kind === 'remove') {
       const block = blockOf(d.blockId)
       if (block) block.exercises = block.exercises.filter((e) => e.exerciseId !== d.exerciseId)

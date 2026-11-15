@@ -6,7 +6,7 @@ import RecoveryCard from '@/components/RecoveryCard.vue'
 import { useDragReorder } from '@/composables/useDragReorder'
 import { formatDurationShort } from '@/lib/format'
 import { recentHistory } from '@/lib/history'
-import { buildSession, newSessionExercise, orderBlocks, swapExercise } from '@/lib/session'
+import { buildSession, newSessionExercise, orderBlocks, rotationChoice, swapExercise } from '@/lib/session'
 import { DEFAULT_REPS, estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
@@ -59,26 +59,36 @@ const BLOCK_GAP_PX = 16
 const blockList = useTemplateRef<HTMLElement>('blockList')
 const { drag, start, move, end, shift, moveBy } = useDragReorder(blockList, BLOCK_GAP_PX, reorder)
 
+const history = computed(() => recentHistory(workouts.workouts, new Date()))
+
 /**
  * Esikatselu rakennetaan samalla logiikalla kuin oikea treeni, mutta sitä ei
- * tallenneta. Näin painot ja nousuehdotukset ovat samat, jotka treenissä näkyvät.
+ * tallenneta. Näin painot, nousuehdotukset ja vaihtuvan liikkeen vuoro ovat
+ * samat, jotka treenissä näkyvät.
  */
+const planned = computed(() =>
+  template.value
+    ? buildSession({ id: 'esikatselu', now: new Date(), template: template.value, history: history.value, exercises: lookup })
+    : null,
+)
+
 const preview = computed(() => {
-  if (!template.value) return null
-  const history = recentHistory(workouts.workouts, new Date())
-  let built = buildSession({ id: 'esikatselu', now: new Date(), template: template.value, history, exercises: lookup })
+  if (!planned.value) return null
+  let built = planned.value
   for (const [key, exerciseId] of swaps.value) {
     const [block, index] = key.split(':').map(Number)
     const exercise = lookup(exerciseId)
     const current = built.blocks[block]?.exercises[index]
     if (!exercise || !current) continue
-    const replacement = newSessionExercise({
-      exercise,
-      sets: current.target.sets,
-      reps: current.target.reps || DEFAULT_REPS,
-      history,
-      lookup,
-    })
+    const replacement =
+      rotationChoice(current, exerciseId, history.value, lookup) ??
+      newSessionExercise({
+        exercise,
+        sets: current.target.sets,
+        reps: current.target.reps || DEFAULT_REPS,
+        history: history.value,
+        lookup,
+      })
     built = swapExercise(built, block, index, replacement)
   }
   return orderBlocks(built, blockOrder.value)
@@ -97,6 +107,14 @@ function onPick(exercise: Exercise) {
   const next = new Map(swaps.value)
   if (exercise.id === originalOf(at.block, at.exercise)) next.delete(keyOf(at.block, at.exercise))
   else next.set(keyOf(at.block, at.exercise), exercise.id)
+  swaps.value = next
+}
+
+/** Vaihtuvan liikkeen valinta tälle kerralle. Vuorossa olevan valinta palauttaa vuoron. */
+function choose(at: { block: number; exercise: number }, exerciseId: string) {
+  const next = new Map(swaps.value)
+  if (exerciseId === planned.value?.blocks[at.block]?.exercises[at.exercise]?.exerciseId) next.delete(keyOf(at.block, at.exercise))
+  else next.set(keyOf(at.block, at.exercise), exerciseId)
   swaps.value = next
 }
 
@@ -193,10 +211,10 @@ async function begin() {
       </header>
 
       <ul class="flex flex-wrap gap-1.5 text-[13px] font-semibold" data-numeric>
-        <li class="rounded-full bg-surface px-3 py-1">{{ exerciseCount(template) }} liikettä</li>
-        <li class="rounded-full bg-surface px-3 py-1">{{ setCount(template) }} sarjaa</li>
-        <li v-if="estimateDurationSec(template)" class="rounded-full bg-surface px-3 py-1">
-          noin {{ formatDurationShort(estimateDurationSec(template)) }}
+        <li class="rounded-full bg-surface px-3 py-1">{{ exerciseCount(preview) }} liikettä</li>
+        <li class="rounded-full bg-surface px-3 py-1">{{ setCount(preview) }} sarjaa</li>
+        <li v-if="estimateDurationSec(preview)" class="rounded-full bg-surface px-3 py-1">
+          noin {{ formatDurationShort(estimateDurationSec(preview)) }}
         </li>
       </ul>
 
@@ -254,7 +272,7 @@ async function begin() {
             <div
               v-for="{ entry, number, at, swapped } in block.exercises"
               :key="number"
-              class="flex items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1.5"
+              class="flex flex-wrap items-center gap-x-3 rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1.5"
             >
               <span
                 class="flex size-7 flex-none items-center justify-center rounded-full bg-track text-[12px] font-bold"
@@ -266,28 +284,30 @@ async function begin() {
               <span class="min-w-0 flex-1">
                 <span class="block text-[15px] font-semibold">{{ nameOf(entry.exerciseId) }}</span>
                 <span class="block text-[13px] text-ink-muted" data-numeric>{{ targetText(entry) }}</span>
-                <span v-if="swapped" class="block text-[12px] text-ink-muted">
-                  Vain tällä kertaa, pohjassa {{ nameOf(originalOf(at.block, at.exercise) ?? '') }}
-                </span>
-                <span class="flex gap-3 text-[13px] font-semibold text-ink-muted">
-                  <button
-                    type="button"
-                    :aria-label="`Vaihda ${nameOf(entry.exerciseId)} tälle kerralle`"
-                    class="min-h-9 underline"
-                    @click="swapping = at"
-                  >
-                    Vaihda
-                  </button>
-                  <button
-                    v-if="swapped"
-                    type="button"
-                    :aria-label="`Palauta ${nameOf(originalOf(at.block, at.exercise) ?? '')}`"
-                    class="min-h-9 underline"
-                    @click="restore(at.block, at.exercise)"
-                  >
-                    Palauta
-                  </button>
-                </span>
+                <template v-if="!entry.rotation">
+                  <span v-if="swapped" class="block text-[12px] text-ink-muted">
+                    Vain tällä kertaa, pohjassa {{ nameOf(originalOf(at.block, at.exercise) ?? '') }}
+                  </span>
+                  <span class="flex gap-3 text-[13px] font-semibold text-ink-muted">
+                    <button
+                      type="button"
+                      :aria-label="`Vaihda ${nameOf(entry.exerciseId)} tälle kerralle`"
+                      class="min-h-9 underline"
+                      @click="swapping = at"
+                    >
+                      Vaihda
+                    </button>
+                    <button
+                      v-if="swapped"
+                      type="button"
+                      :aria-label="`Palauta ${nameOf(originalOf(at.block, at.exercise) ?? '')}`"
+                      class="min-h-9 underline"
+                      @click="restore(at.block, at.exercise)"
+                    >
+                      Palauta
+                    </button>
+                  </span>
+                </template>
               </span>
               <span
                 v-if="weightText(entry)"
@@ -302,6 +322,25 @@ async function begin() {
                   {{ weightText(entry)?.hint === 'increase' ? 'Ehdotettu nosto:' : 'Ehdotettu lasku:' }}
                 </span>
                 {{ weightText(entry)?.text }}
+              </span>
+              <!-- Vaihtuva liike: kierron liikkeet valittavina, vuorossa oleva valmiiksi valittuna. -->
+              <span
+                v-if="entry.rotation"
+                role="group"
+                aria-label="Vaihtuva liike tällä kertaa"
+                class="mb-1.5 flex w-full flex-wrap gap-1.5 pl-10"
+              >
+                <button
+                  v-for="option in entry.rotation"
+                  :key="option.exerciseId"
+                  type="button"
+                  :aria-pressed="option.exerciseId === entry.exerciseId"
+                  class="min-h-9 rounded-full border px-3 text-[13px] font-semibold"
+                  :class="option.exerciseId === entry.exerciseId ? 'border-action bg-action text-on-action' : 'border-line bg-bg'"
+                  @click="choose(at, option.exerciseId)"
+                >
+                  {{ nameOf(option.exerciseId) }}
+                </button>
               </span>
             </div>
           </section>

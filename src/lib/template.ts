@@ -1,6 +1,7 @@
+import { optionsOf } from '@/lib/rotation'
 import { defaultSets } from '@/lib/session'
 import type { ActiveSession } from '@/types/session'
-import type { Block, BlockExercise, Exercise, Measurement, WorkoutTemplate } from '@/types/workout'
+import type { Block, Exercise, Measurement, SetEntry, WorkoutTemplate } from '@/types/workout'
 
 /**
  * Pohjan muokkaus. Kuten sessiossa, jokainen toiminto palauttaa uuden pohjan
@@ -10,10 +11,11 @@ import type { Block, BlockExercise, Exercise, Measurement, WorkoutTemplate } fro
  * toistomäärä (tai aikaliikkeellä kesto), ja done on aina false.
  */
 
-/** Liikkeen paikka pohjassa: lohko ja liike lohkon sisällä. */
+/** Liikkeen paikka pohjassa: lohko ja liike lohkon sisällä. Vaihtuvalla liikkeellä myös paikka kierrossa. */
 export interface ExerciseRef {
   block: number
   exercise: number
+  option?: number
 }
 
 export const DEFAULT_SETS = 3
@@ -45,7 +47,7 @@ export function addExercise(template: WorkoutTemplate, blockId: string, exercise
 }
 
 /** Tavoite luettuna pohjasta: sarjojen määrä ja ensimmäisen sarjan arvo. */
-export function targetOf(entry: BlockExercise): { sets: number; reps?: number; durationSec?: number } {
+export function targetOf(entry: { sets: SetEntry[] }): { sets: number; reps?: number; durationSec?: number } {
   const first = entry.sets[0]
   return { sets: entry.sets.length, reps: first?.reps, durationSec: first?.durationSec }
 }
@@ -58,7 +60,9 @@ export function setTarget(
   change: { sets?: number; value?: number },
 ): WorkoutTemplate {
   const next = clone(template)
-  const entry = next.blocks[at.block].exercises[at.exercise]
+  const block = next.blocks[at.block].exercises[at.exercise]
+  // Vaihtuvan liikkeen jokaisella liikkeellä on omat tavoitteensa. Kierron ensimmäinen on liike itse.
+  const entry = at.option ? block.alternatives![at.option - 1] : block
   const current = targetOf(entry)
   const count = Math.min(MAX_SETS, Math.max(1, Math.round(change.sets ?? current.sets)))
   const value = Math.max(1, Math.round(change.value ?? (measurement === 'time' ? current.durationSec : current.reps) ?? 1))
@@ -100,6 +104,47 @@ export function swapExercise(
   if (exercise.measurement !== currentMeasurement) {
     entry.sets = defaultSets(exercise.measurement, entry.sets.length, DEFAULT_REPS)
   }
+  return next
+}
+
+/**
+ * Lisää liikkeen vaihtuvan liikkeen kiertoon viimeiseksi. Saman mittaustavan liike saa
+ * kierron ensimmäisen tavoitteet pohjaksi, eri mittaustapa oletuksen. Jo kierrossa oleva
+ * liike ei lisäänny toiseen kertaan.
+ */
+export function addToRotation(
+  template: WorkoutTemplate,
+  at: ExerciseRef,
+  exercise: Exercise,
+  currentMeasurement: Measurement,
+): WorkoutTemplate {
+  const entry = template.blocks[at.block].exercises[at.exercise]
+  if (optionsOf(entry).some((option) => option.exerciseId === exercise.id)) return template
+  const next = clone(template)
+  const target = next.blocks[at.block].exercises[at.exercise]
+  const sets =
+    exercise.measurement === currentMeasurement
+      ? clone(target.sets)
+      : defaultSets(exercise.measurement, DEFAULT_SETS, DEFAULT_REPS)
+  target.alternatives = [...(target.alternatives ?? []), { exerciseId: exercise.id, sets }]
+  return next
+}
+
+/**
+ * Poistaa liikkeen kierrosta (at.option). Kun kierron ensimmäinen poistuu, seuraava
+ * nousee sen paikalle. Yhden liikkeen jäljelle jäädessä liike on taas tavallinen.
+ */
+export function removeFromRotation(template: WorkoutTemplate, at: ExerciseRef): WorkoutTemplate {
+  const next = clone(template)
+  const entry = next.blocks[at.block].exercises[at.exercise]
+  const options = optionsOf(entry)
+  if (options.length < 2) return template
+  options.splice(at.option ?? 0, 1)
+  const [first, ...rest] = options
+  entry.exerciseId = first.exerciseId
+  entry.sets = first.sets
+  if (rest.length) entry.alternatives = rest
+  else delete entry.alternatives
   return next
 }
 
@@ -158,7 +203,7 @@ export function detach(template: WorkoutTemplate, at: ExerciseRef, blockId: stri
   return next
 }
 
-export function exerciseCount(template: WorkoutTemplate): number {
+export function exerciseCount(template: Pick<WorkoutTemplate, 'blocks'>): number {
   return template.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
 }
 
@@ -215,7 +260,7 @@ const WORK_SEC_PER_SET = 40
  * lepo perään. Viimeisen kierroksen jälkeen ei levätä. Pyöristetään viiteen
  * minuuttiin, koska tarkempi luku lupaisi enemmän kuin arvio tietää.
  */
-export function estimateDurationSec(template: WorkoutTemplate): number {
+export function estimateDurationSec(template: Pick<WorkoutTemplate, 'blocks'>): number {
   const rounds = template.blocks.map((block) => ({
     count: Math.max(0, ...block.exercises.map((e) => e.sets.length)),
     work: block.exercises.length * WORK_SEC_PER_SET,
@@ -227,7 +272,7 @@ export function estimateDurationSec(template: WorkoutTemplate): number {
   return Math.max(0, Math.round((total - lastRest) / fiveMin) * fiveMin)
 }
 
-export function setCount(template: WorkoutTemplate): number {
+export function setCount(template: Pick<WorkoutTemplate, 'blocks'>): number {
   return template.blocks.reduce(
     (sum, block) => sum + block.exercises.reduce((s, e) => s + e.sets.length, 0),
     0,

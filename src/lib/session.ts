@@ -1,5 +1,6 @@
 import { lastNoteFor, sessionsFor } from '@/lib/history'
 import { suggestNext, workingWeightKg } from '@/lib/progression'
+import { nextOptionIndex, optionsOf } from '@/lib/rotation'
 import type { ActiveSession, SessionBlock, SessionExercise, SetRef, TimingEdits } from '@/types/session'
 import type {
   Block,
@@ -105,9 +106,24 @@ export function newSessionExercise(args: {
 }
 
 /**
+ * Vaihtuvan liikkeen liike kierrosta omilla tavoitteillaan. Kierto kulkee mukana,
+ * jotta valinnan voi vielä vaihtaa. Null, jos liike ei kuulu kiertoon.
+ */
+export function rotationChoice(
+  current: SessionExercise,
+  exerciseId: string,
+  history: Workout[],
+  lookup: ExerciseLookup,
+): SessionExercise | null {
+  const option = current.rotation?.find((o) => o.exerciseId === exerciseId)
+  return option ? { ...buildExercise(option, history, lookup), rotation: current.rotation } : null
+}
+
+/**
  * Rakentaa treenin pohjasta. Painot tulevat edellisistä kerroista ja
  * progressiosäännöstä: jos edellinen kerta oli kevyt, rivillä on valmiina
- * ehdotettu paino. Ilman pohjaa treeni alkaa tyhjänä.
+ * ehdotettu paino. Vaihtuvasta liikkeestä tulee kierrossa vuorossa oleva.
+ * Ilman pohjaa treeni alkaa tyhjänä.
  */
 export function buildSession(args: {
   id: string
@@ -122,7 +138,12 @@ export function buildSession(args: {
   const blocks: SessionBlock[] = (template?.blocks ?? []).map((block) => ({
     id: block.id,
     restSec: block.restSec,
-    exercises: block.exercises.map((source) => buildExercise(source, history, exercises)),
+    exercises: block.exercises.map((source) => {
+      const options = optionsOf(source)
+      if (options.length < 2 || !template) return buildExercise(source, history, exercises)
+      const chosen = options[nextOptionIndex(template.id, block.id, source, history)]
+      return { ...buildExercise(chosen, history, exercises), rotation: options }
+    }),
   }))
 
   return {
@@ -290,7 +311,9 @@ export function swapExercise(
   const current = session.blocks[block]?.exercises[exercise]
   if (!current || !canSwap(current)) return session
   const next = clone(session)
-  next.blocks[block].exercises[exercise] = clone(replacement)
+  // Kierto säilyy myös kierron ulkopuoliseen liikkeeseen vaihdettaessa, jotta paluu onnistuu.
+  const rotation = replacement.rotation ?? current.rotation
+  next.blocks[block].exercises[exercise] = clone(rotation ? { ...replacement, rotation } : replacement)
   return next
 }
 
