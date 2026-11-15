@@ -183,3 +183,25 @@ describe('sovitus laitteen treeneihin', () => {
     expect(reconcile(activity(), [], { removed: [deletedMerged] })).toEqual({ save: [], remove: [] })
   })
 })
+
+describe('palvelimelta haettu pelkkä Strava-treeni', () => {
+  // Palvelin palauttaa aina kirjatun osan (tyhjät lohkot) ja mitatun osan avaimet omassa
+  // järjestyksessään. Sovitus ei saa luulla treeniä uudeksi eikä tallentaa sitä turhaan.
+  const walk = activity({ id: 202, sportType: 'Walk', name: 'Evening Walk', distanceM: 5200, avgHr: 104 })
+  const fromServer = (): Workout => {
+    const { measured, ...rest } = workoutFromActivity(walk)
+    const reordered = Object.fromEntries(Object.entries(measured!).reverse()) as typeof measured
+    return { ...rest, measured: reordered, logged: { blocks: [] }, hiddenFromFriends: true, updatedAt: '2026-11-15T22:00:00Z' }
+  }
+
+  it('ei tallenna uudelleen, kun mikään ei ole muuttunut', () => {
+    expect(reconcile(walk, [fromServer()])).toEqual({ save: [], remove: [] })
+  })
+
+  it('muuttunut aktiviteetti päivittää treenin ja säilyttää piilotuksen', () => {
+    const renamed = { ...walk, name: 'Iltakävely' }
+    const { save } = reconcile(renamed, [fromServer()])
+    expect(save).toHaveLength(1)
+    expect(save[0]).toMatchObject({ id: stravaWorkoutId(202), title: 'Iltakävely', hiddenFromFriends: true })
+  })
+})

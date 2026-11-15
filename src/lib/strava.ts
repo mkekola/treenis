@@ -171,8 +171,28 @@ export interface Reconciliation {
 
 const NOTHING: Reconciliation = { save: [], remove: [] }
 
+/**
+ * Sisältö vertailukelpoiseksi: palvelimelta tulleessa treenissä avainten järjestys ja
+ * aikaleiman muoto ("+00:00" eikä "Z") ovat eri kuin laitteella muodostetussa.
+ */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, v]) => v !== undefined && v !== null)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => [k, canonical(v)]),
+    )
+  }
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value))) {
+    return new Date(value).toISOString()
+  }
+  return value
+}
+
 function same(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
 }
 
 /**
@@ -195,7 +215,8 @@ export function reconcile(
   options: { deleted?: boolean; removed?: Workout[] } = {},
 ): Reconciliation {
   const ownId = stravaWorkoutId(activity.id)
-  const own = workouts.find((w) => w.id === ownId && !w.logged)
+  // Tunniste riittää: palvelimelta haettuna pelkälläkin Strava-treenillä on tyhjä kirjattu osa.
+  const own = workouts.find((w) => w.id === ownId)
   if (options.deleted) return own ? { save: [], remove: [ownId] } : NOTHING
   if (options.removed?.some((w) => referencesActivity(w, activity.id))) return NOTHING
 
