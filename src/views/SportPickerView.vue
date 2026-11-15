@@ -2,15 +2,16 @@
 import { computed } from 'vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
-import { isCardio } from '@/lib/cardio'
-import { inRotation, templatesOf } from '@/lib/program'
+import { nextFor, weekGoals } from '@/lib/program'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
+import { useWorkouts } from '@/stores/workouts'
 import { SPORT_LABELS, type SportKey } from '@/types/workout'
 
 const programs = usePrograms()
 const templates = useTemplates()
+const workouts = useWorkouts()
 const colors = useSportColors()
 const { isDark } = useTheme()
 
@@ -28,13 +29,26 @@ const SPORTS: SportKey[] = [
 
 const vars = (sport: SportKey) => sportVars(colors.swatchFor(sport), isDark.value)
 
+/** Lajin seuraava treeni käytössä olevasta ohjelmasta, jos ohjelmassa on sen lajin pohjia. */
+const nextOf = (sport: SportKey) =>
+  programs.active ? nextFor(programs.active, templates.templates, sport) : undefined
+
 /** Sali on ylimpänä ja kertoo seuraavan treenin, jotta salille lähtiessä riittää yksi napautus. */
 const next = computed(() => {
-  const program = programs.active
-  const strength = templates.templates.filter((t) => !isCardio(t))
-  const first = program ? inRotation(templatesOf(program, strength))[0] : undefined
-  return first && program ? `Seuraavaksi ${first.name} · ${program.name}` : 'Valitse treeni tai aloita tyhjästä'
+  const first = nextOf('strength')
+  return first && programs.active ? `Seuraavaksi ${first.name} · ${programs.active.name}` : 'Valitse treeni tai aloita tyhjästä'
 })
+
+/** Kestävyyslajin seuraava pohja avaa kirjauksen valmiiksi täytettynä. */
+const linkTo = (sport: SportKey) => {
+  const template = nextOf(sport)
+  return template ? { path: `/kirjaa/${sport}`, query: { pohja: template.id } } : `/kirjaa/${sport}`
+}
+
+/** "Sali 1/2 · Juoksu 2/2": mitä viikosta vielä puuttuu, siellä missä treeni valitaan. */
+const goals = computed(() =>
+  programs.active ? weekGoals(programs.active, templates.templates, workouts.workouts, new Date()) : [],
+)
 </script>
 
 <template>
@@ -50,6 +64,14 @@ const next = computed(() => {
       </svg>
     </RouterLink>
     <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Kirjaa treeni</h1>
+
+    <p v-if="goals.length && programs.active" class="-mt-1.5 text-[13px] text-ink-muted" data-numeric>
+      Tällä viikolla ·
+      <template v-for="(goal, i) in goals" :key="goal.sport">
+        <template v-if="i"> · </template>
+        <span :class="goal.done >= goal.target ? 'font-semibold text-ink' : ''">{{ SPORT_LABELS[goal.sport] }} {{ goal.done }}/{{ goal.target }}</span>
+      </template>
+    </p>
 
     <RouterLink
       to="/treeni/uusi"
@@ -72,14 +94,19 @@ const next = computed(() => {
     <ul class="grid grid-cols-3 gap-2">
       <li v-for="sport in SPORTS" :key="sport">
         <RouterLink
-          :to="`/kirjaa/${sport}`"
+          :to="linkTo(sport)"
           :style="vars(sport)"
           class="flex min-h-22 flex-col items-center justify-center gap-1.5 rounded-[18px] bg-surface px-1.5 py-3 text-center text-[13px] font-semibold"
         >
           <span aria-hidden="true" class="flex size-11 items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]">
             <SportIcon :sport="sport" :size="24" />
           </span>
-          {{ SPORT_LABELS[sport] }}
+          <span class="w-full min-w-0">
+            {{ SPORT_LABELS[sport] }}
+            <span v-if="nextOf(sport)" class="block max-w-full truncate text-[11px] font-normal text-ink-muted">
+              <span class="sr-only">Seuraavaksi </span>{{ nextOf(sport)!.name }}
+            </span>
+          </span>
         </RouterLink>
       </li>
     </ul>

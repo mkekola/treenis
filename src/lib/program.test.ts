@@ -5,13 +5,16 @@ import {
   activeProgram,
   addTemplate,
   inRotation,
+  nextFor,
   programProgress,
   removeTemplate,
+  sportOf,
   templatesOf,
   unassigned,
+  weekGoals,
 } from '@/lib/program'
 import { doneSets, entry, strengthWorkout } from '@/test/fixtures'
-import type { Program } from '@/types/workout'
+import type { Program, Workout, WorkoutTemplate } from '@/types/workout'
 
 const [a, b] = initialTemplates
 const program = (id: string, activatedAt?: string, templateIds: string[] = []): Program => ({
@@ -95,5 +98,38 @@ describe('ohjelman edistyminen', () => {
 
   it('puuttuu, jos ohjelmaa ei ole otettu käyttöön', () => {
     expect(programProgress({ ...base, activatedAt: undefined }, workouts, new Date())).toBeNull()
+  })
+})
+
+describe('sekaohjelma', () => {
+  const run = (id: string, name: string, lastUsedAt?: string): WorkoutTemplate => ({
+    id, name, blocks: [], sport: 'run', segments: [], ...(lastUsedAt ? { lastUsedAt } : {}),
+  })
+  const intervals = run('t-int', 'Intervallit', '2026-11-10T17:00:00Z')
+  const pk = run('t-pk', 'PK-lenkki', '2026-11-12T17:00:00Z')
+  const mixed = program('p', '2026-11-01T00:00:00Z', [a.id, intervals.id, b.id, pk.id])
+  const all = [a, b, intervals, pk]
+
+  it('seuraava lajeittain: juoksulle se, jota ei ole juostu pisimpään', () => {
+    expect(nextFor(mixed, all, 'run')?.name).toBe('Intervallit')
+    expect(sportOf(nextFor(mixed, all, 'strength')!)).toBe('strength')
+    expect(nextFor(mixed, all, 'bike')).toBeUndefined()
+  })
+
+  it('viikon tavoite lajeittain: vain ohjelman pohjista tehdyt, tältä viikolta', () => {
+    const now = new Date(2026, 10, 18, 12) // ke 18.11.
+    const done = (date: string, templateId?: string): Workout => ({
+      id: `${date}-${templateId}`, sport: 'run', date, title: 'x', ...(templateId ? { templateId } : {}),
+    })
+    const goals = weekGoals(mixed, all, [
+      done('2026-11-16', a.id),
+      done('2026-11-17', pk.id),
+      done('2026-11-17'), // ilman pohjaa ei lasketa
+      done('2026-11-15', intervals.id), // edellinen viikko
+    ], now)
+    expect(goals).toEqual([
+      { sport: 'strength', done: 1, target: 2 },
+      { sport: 'run', done: 1, target: 2 },
+    ])
   })
 })

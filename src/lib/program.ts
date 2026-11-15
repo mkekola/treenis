@@ -1,5 +1,6 @@
+import { thisWeek } from '@/lib/calendar'
 import { totalVolumeKg } from '@/lib/workout'
-import type { Program, Workout, WorkoutTemplate } from '@/types/workout'
+import type { Program, SportKey, Workout, WorkoutTemplate } from '@/types/workout'
 
 /** Kiinteä tunniste ensimmäiselle ohjelmalle, jotta jokainen laite luo saman eikä kopioita synny. */
 export const DEFAULT_PROGRAM_ID = 'program-default'
@@ -93,4 +94,40 @@ export function programProgress(program: Program, workouts: Workout[], now: Date
     done: own.length,
     volumeKg: own.reduce((sum, w) => sum + totalVolumeKg(w), 0),
   }
+}
+
+/** Pohjan laji: salipohjalla ei ole lajia, joten se on sali. */
+export const sportOf = (template: WorkoutTemplate): SportKey => template.sport ?? 'strength'
+
+/** Lajin seuraava pohja ohjelmassa: se, jota ei ole tehty pisimpään. */
+export function nextFor(program: Program, templates: WorkoutTemplate[], sport: SportKey): WorkoutTemplate | undefined {
+  return inRotation(templatesOf(program, templates).filter((t) => sportOf(t) === sport))[0]
+}
+
+export interface WeekGoal {
+  sport: SportKey
+  done: number
+  /** Ohjelman saman lajin pohjien määrä: jokainen pohja kerran viikossa. */
+  target: number
+}
+
+/**
+ * Tämän viikon (ma–su) edistyminen lajeittain: "Sali 1/2 · Juoksu 2/2". Mukaan
+ * lasketaan vain ohjelman pohjista tehdyt treenit. Lajit ohjelman järjestyksessä.
+ */
+export function weekGoals(program: Program, templates: WorkoutTemplate[], workouts: Workout[], now: Date): WeekGoal[] {
+  const own = templatesOf(program, templates)
+  const sportById = new Map(own.map((t) => [t.id, sportOf(t)]))
+  const goals: WeekGoal[] = []
+  for (const template of own) {
+    const goal = goals.find((g) => g.sport === sportOf(template))
+    if (goal) goal.target++
+    else goals.push({ sport: sportOf(template), done: 0, target: 1 })
+  }
+  for (const workout of thisWeek(workouts, now)) {
+    const sport = workout.templateId ? sportById.get(workout.templateId) : undefined
+    const goal = goals.find((g) => g.sport === sport)
+    if (goal) goal.done++
+  }
+  return goals
 }

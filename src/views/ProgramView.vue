@@ -5,7 +5,7 @@ import ProgramChips from '@/components/ProgramChips.vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { CARDIO_SPORTS, isCardio, planSummary } from '@/lib/cardio'
-import { programProgress, templatesOf } from '@/lib/program'
+import { programProgress, templatesOf, weekGoals } from '@/lib/program'
 import { exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
@@ -43,6 +43,12 @@ const list = computed(() => (program.value ? templatesOf(program.value, template
 const progress = computed(() =>
   program.value && isActive.value ? programProgress(program.value, workouts.workouts, new Date()) : null,
 )
+
+/** "Sali 1/2 · Juoksu 2/2" tältä viikolta, vain käytössä olevalle ohjelmalle. */
+const goals = computed(() =>
+  program.value && isActive.value ? weekGoals(program.value, templates.templates, workouts.workouts, new Date()) : [],
+)
+const goalsText = computed(() => goals.value.map((g) => `${SPORT_LABELS[g.sport]} ${g.done}/${g.target}`).join(' · '))
 
 const tonnes = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 1 })
 const formatTonnes = (kg: number) => (kg >= 1000 ? `${tonnes.format(kg / 1000)} t` : `${Math.round(kg)} kg`)
@@ -205,6 +211,7 @@ async function deleteProgram() {
               :class="week <= progress.week ? '' : 'opacity-25'"
             />
           </div>
+          <p v-if="goals.length" class="text-[13px]" data-numeric>Tällä viikolla: {{ goalsText }}</p>
           <p class="text-[13px]" data-numeric>
             {{ progress.planned ? `${progress.done} / ${progress.planned}` : progress.done }} treeniä
             <span v-if="progress.volumeKg > 0">· {{ formatTonnes(progress.volumeKg) }} nostettu</span>

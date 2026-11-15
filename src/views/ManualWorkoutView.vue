@@ -6,6 +6,7 @@ import WorkoutForm from '@/components/WorkoutForm.vue'
 import { useTheme } from '@/composables/useTheme'
 import { goalText, isCardio, planTotals, segmentText } from '@/lib/cardio'
 import { copyInput, manualWorkout, newInput, type ManualInput } from '@/lib/manual'
+import { sportOf, templatesOf } from '@/lib/program'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
@@ -28,6 +29,18 @@ const plan = computed(() => {
   const template = templates.templates.find((t) => t.id === route.query.pohja)
   return template && isCardio(template) && template.sport === sport.value ? template : undefined
 })
+
+/** Käytössä olevan ohjelman saman lajin pohjat: kirjauksen voi liittää johonkin niistä. */
+const programTemplates = computed(() =>
+  programs.active
+    ? templatesOf(programs.active, templates.templates).filter((t) => sportOf(t) === sport.value)
+    : [],
+)
+
+/** Pohjan vaihto täyttää lomakkeen uudelleen, joten valinta on lomakkeen yläpuolella. */
+function choosePlan(id: string | null) {
+  void router.replace({ query: { ...route.query, pohja: id ?? undefined } })
+}
 
 const backTo = computed(() => {
   const owner = plan.value ? programs.ownerOf(plan.value.id) : undefined
@@ -88,6 +101,32 @@ async function save(input: ManualInput) {
         <SportIcon :sport="sport" />
       </span>
       <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">{{ SPORT_LABELS[sport] }}</h1>
+    </div>
+
+    <div v-if="programTemplates.length" class="flex flex-col gap-1.5">
+      <span id="ohjelman-treeni" class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Ohjelman treeni</span>
+      <div role="group" aria-labelledby="ohjelman-treeni" class="flex flex-wrap gap-1.5">
+        <button
+          v-for="template in programTemplates"
+          :key="template.id"
+          type="button"
+          :aria-pressed="plan?.id === template.id"
+          class="min-h-10 rounded-full px-3.5 text-sm font-semibold"
+          :class="plan?.id === template.id ? 'bg-[var(--sport-surface)] text-[var(--sport-on)]' : 'bg-track text-ink-muted'"
+          @click="choosePlan(template.id)"
+        >
+          {{ template.name }}
+        </button>
+        <button
+          type="button"
+          :aria-pressed="!plan"
+          class="min-h-10 rounded-full px-3.5 text-sm font-semibold"
+          :class="!plan ? 'bg-[var(--sport-surface)] text-[var(--sport-on)]' : 'bg-track text-ink-muted'"
+          @click="choosePlan(null)"
+        >
+          Ei ohjelmasta
+        </button>
+      </div>
     </div>
 
     <!-- Suunnitelma pohjasta: mitä piti tehdä, kun kirjataan mitä tehtiin. -->
