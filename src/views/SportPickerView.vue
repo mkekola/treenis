@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import SportIcon from '@/components/SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
+import { planSummary } from '@/lib/cardio'
 import { nextFor, weekGoals } from '@/lib/program'
+import { exerciseCount } from '@/lib/template'
 import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
@@ -16,39 +18,43 @@ const colors = useSportColors()
 const { isDark } = useTheme()
 
 /**
- * Kolme lajia rivillä, ja jokainen rivi on oma kokonaisuutensa: kävely ja
- * juoksu, pyöräily ja kehonhallinta, vesi, talvi, sekä kiipeily ja muu.
+ * Kolme lajia rivillä, ja jokainen rivi on oma kokonaisuutensa: sali, pyöräily ja
+ * kiipeily, kävely ja juoksu, vesi, talvi, sekä kehonhallinta ja muu.
  */
 const SPORTS: SportKey[] = [
+  'strength', 'bike', 'climb',
   'run', 'walk', 'hike',
-  'bike', 'yoga', 'pilates',
   'swim', 'windsurf', 'kitesurf',
   'nordic', 'alpine', 'skating',
-  'climb', 'other',
+  'yoga', 'pilates', 'other',
 ]
+
+/** Salitreeni aloitetaan valitsemalla pohja, muut lajit kirjataan lomakkeella. */
+const linkOf = (sport: SportKey) => (sport === 'strength' ? '/treeni/uusi' : `/kirjaa/${sport}`)
 
 const vars = (sport: SportKey) => sportVars(colors.swatchFor(sport), isDark.value)
 
-/** Lajin seuraava treeni käytössä olevasta ohjelmasta, jos ohjelmassa on sen lajin pohjia. */
-const nextOf = (sport: SportKey) =>
-  programs.active ? nextFor(programs.active, templates.templates, sport) : undefined
-
-/** Sali on ylimpänä ja kertoo seuraavan treenin, jotta salille lähtiessä riittää yksi napautus. */
-const next = computed(() => {
-  const first = nextOf('strength')
-  return first && programs.active ? `Seuraavaksi ${first.name} · ${programs.active.name}` : 'Valitse treeni tai aloita tyhjästä'
+/**
+ * Käytössä oleva ohjelma kokonaisuutena: rivi per laji, jossa seuraava treeni ja
+ * viikon tilanne ("0/2"). Salirivi vie salitreenin valintaan, kestävyysrivi
+ * kirjaukseen valmiiksi täytettynä.
+ */
+const programRows = computed(() => {
+  const program = programs.active
+  if (!program) return []
+  return weekGoals(program, templates.templates, workouts.workouts, new Date()).flatMap((goal) => {
+    const next = nextFor(program, templates.templates, goal.sport)
+    if (!next) return []
+    const strength = goal.sport === 'strength'
+    return [{
+      ...goal,
+      next,
+      detail: strength ? `${exerciseCount(next)} liikettä` : planSummary(next) || SPORT_LABELS[goal.sport],
+      to: strength ? '/treeni/uusi' : { path: `/kirjaa/${goal.sport}`, query: { pohja: next.id } },
+    }]
+  })
 })
 
-/** Kestävyyslajin seuraava pohja avaa kirjauksen valmiiksi täytettynä. */
-const linkTo = (sport: SportKey) => {
-  const template = nextOf(sport)
-  return template ? { path: `/kirjaa/${sport}`, query: { pohja: template.id } } : `/kirjaa/${sport}`
-}
-
-/** "Sali 1/2 · Juoksu 2/2": mitä viikosta vielä puuttuu, siellä missä treeni valitaan. */
-const goals = computed(() =>
-  programs.active ? weekGoals(programs.active, templates.templates, workouts.workouts, new Date()) : [],
-)
 </script>
 
 <template>
@@ -65,48 +71,49 @@ const goals = computed(() =>
     </RouterLink>
     <h1 class="font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">Kirjaa treeni</h1>
 
-    <p v-if="goals.length && programs.active" class="-mt-1.5 text-[13px] text-ink-muted" data-numeric>
-      Tällä viikolla ·
-      <template v-for="(goal, i) in goals" :key="goal.sport">
-        <template v-if="i"> · </template>
-        <span :class="goal.done >= goal.target ? 'font-semibold text-ink' : ''">{{ SPORT_LABELS[goal.sport] }} {{ goal.done }}/{{ goal.target }}</span>
-      </template>
-    </p>
+    <section v-if="programRows.length && programs.active" aria-labelledby="ohjelma" class="rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1">
+      <h2 id="ohjelma" class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+        {{ programs.active.name }}
+      </h2>
+      <ul>
+        <li v-for="row in programRows" :key="row.sport" class="border-t border-line first:border-t-0">
+          <RouterLink :to="row.to" :style="vars(row.sport)" class="flex items-center gap-3 py-2.5">
+            <span aria-hidden="true" class="flex size-11 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)] [&_svg]:size-6">
+              <SportIcon :sport="row.sport" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[16px] font-semibold tracking-[-0.01em]">
+                <span class="sr-only">Seuraavaksi </span>{{ row.next.name }}
+              </span>
+              <span class="block truncate text-[13px] text-ink-muted" data-numeric>{{ row.detail }}</span>
+            </span>
+            <span
+              class="flex-none text-[15px] font-semibold"
+              :class="row.done >= row.target ? 'text-ink' : 'text-ink-muted'"
+              data-numeric
+            >
+              <span class="sr-only">{{ SPORT_LABELS[row.sport] }} tällä viikolla </span>{{ row.done }}/{{ row.target }}
+            </span>
+            <svg class="size-5 flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9,6 15,12 9,18" />
+            </svg>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
 
-    <RouterLink
-      to="/treeni/uusi"
-      :style="vars('strength')"
-      class="flex items-center gap-3 rounded-(--radius-card) bg-surface p-3.5"
-    >
-      <span aria-hidden="true" class="flex size-13 flex-none items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]">
-        <SportIcon sport="strength" />
-      </span>
-      <span class="min-w-0 flex-1">
-        <span class="block text-[17px] font-semibold tracking-[-0.01em]">Salitreeni</span>
-        <span class="block text-[13px] text-ink-muted">{{ next }}</span>
-      </span>
-      <svg class="size-5 flex-none text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="9,6 15,12 9,18" />
-      </svg>
-    </RouterLink>
-
-    <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Muut lajit</h2>
+    <h2 class="mt-2 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Kaikki lajit</h2>
     <ul class="grid grid-cols-3 gap-2">
       <li v-for="sport in SPORTS" :key="sport">
         <RouterLink
-          :to="linkTo(sport)"
+          :to="linkOf(sport)"
           :style="vars(sport)"
           class="flex min-h-22 flex-col items-center justify-center gap-1.5 rounded-[18px] bg-surface px-1.5 py-3 text-center text-[13px] font-semibold"
         >
           <span aria-hidden="true" class="flex size-11 items-center justify-center rounded-full bg-[var(--sport-surface)] text-[var(--sport-on)]">
             <SportIcon :sport="sport" :size="24" />
           </span>
-          <span class="w-full min-w-0">
-            {{ SPORT_LABELS[sport] }}
-            <span v-if="nextOf(sport)" class="block max-w-full truncate text-[11px] font-normal text-ink-muted">
-              <span class="sr-only">Seuraavaksi </span>{{ nextOf(sport)!.name }}
-            </span>
-          </span>
+          {{ SPORT_LABELS[sport] }}
         </RouterLink>
       </li>
     </ul>
