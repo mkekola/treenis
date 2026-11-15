@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ExercisePicker from '@/components/ExercisePicker.vue'
 import RecoveryCard from '@/components/RecoveryCard.vue'
 import { formatDurationShort } from '@/lib/format'
 import { recentHistory } from '@/lib/history'
-import { buildSession } from '@/lib/session'
-import { estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
+import { buildSession, newSessionExercise, swapExercise } from '@/lib/session'
+import { DEFAULT_REPS, estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
 import { useSession } from '@/stores/session'
 import { useTemplates } from '@/stores/templates'
 import { useWorkouts } from '@/stores/workouts'
 import type { SessionExercise } from '@/types/session'
+import type { Exercise } from '@/types/workout'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,21 +26,61 @@ const session = useSession()
 const template = computed(() => templates.templates.find((t) => t.id === route.params.templateId))
 const program = computed(() => (template.value ? programs.ownerOf(template.value.id) : undefined))
 
+const lookup = (id: string) => exercises.byId.get(id)
+
+/**
+ * Tämän kerran vaihdot ("lohko:liike" → uusi liike), esim. kun laite on varattu.
+ * Pohja ei muutu. Toistuva vaihto tulee yhteenvedossa ehdotuksena päivittää pohja.
+ */
+const swaps = ref(new Map<string, string>())
+const keyOf = (block: number, exercise: number) => `${block}:${exercise}`
+
 /**
  * Esikatselu rakennetaan samalla logiikalla kuin oikea treeni, mutta sitä ei
  * tallenneta. Näin painot ja nousuehdotukset ovat samat, jotka treenissä näkyvät.
  */
-const preview = computed(() =>
-  template.value
-    ? buildSession({
-        id: 'esikatselu',
-        now: new Date(),
-        template: template.value,
-        history: recentHistory(workouts.workouts, new Date()),
-        exercises: (id) => exercises.byId.get(id),
-      })
-    : null,
-)
+const preview = computed(() => {
+  if (!template.value) return null
+  const history = recentHistory(workouts.workouts, new Date())
+  let built = buildSession({ id: 'esikatselu', now: new Date(), template: template.value, history, exercises: lookup })
+  for (const [key, exerciseId] of swaps.value) {
+    const [block, index] = key.split(':').map(Number)
+    const exercise = lookup(exerciseId)
+    const current = built.blocks[block]?.exercises[index]
+    if (!exercise || !current) continue
+    const replacement = newSessionExercise({
+      exercise,
+      sets: current.target.sets,
+      reps: current.target.reps || DEFAULT_REPS,
+      history,
+      lookup,
+    })
+    built = swapExercise(built, block, index, replacement)
+  }
+  return built
+})
+
+/** Pohjan alkuperäinen liike, jotta vaihdetun rivin voi palauttaa ja nimetä. */
+const originalOf = (block: number, exercise: number) =>
+  template.value?.blocks[block]?.exercises[exercise]?.exerciseId
+
+const swapping = ref<{ block: number; exercise: number } | null>(null)
+
+function onPick(exercise: Exercise) {
+  const at = swapping.value
+  swapping.value = null
+  if (!at) return
+  const next = new Map(swaps.value)
+  if (exercise.id === originalOf(at.block, at.exercise)) next.delete(keyOf(at.block, at.exercise))
+  else next.set(keyOf(at.block, at.exercise), exercise.id)
+  swaps.value = next
+}
+
+function restore(block: number, exercise: number) {
+  const next = new Map(swaps.value)
+  next.delete(keyOf(block, exercise))
+  swaps.value = next
+}
 
 const nameOf = (id: string) => exercises.byId.get(id)?.name ?? 'Tuntematon liike'
 const perSide = (id: string) => exercises.byId.get(id)?.perSide ?? false
@@ -69,15 +111,24 @@ function weightText(
 /** Liikkeiden juokseva numerointi lohkojen yli. */
 const numbered = computed(() => {
   let n = 0
-  return (preview.value?.blocks ?? []).map((block) => ({
+  return (preview.value?.blocks ?? []).map((block, blockIndex) => ({
     ...block,
-    exercises: block.exercises.map((entry) => ({ entry, number: ++n })),
+    exercises: block.exercises.map((entry, exerciseIndex) => ({
+      entry,
+      number: ++n,
+      at: { block: blockIndex, exercise: exerciseIndex },
+      swapped: swaps.value.has(keyOf(blockIndex, exerciseIndex)),
+    })),
   }))
 })
 
 async function begin() {
   if (!template.value || session.recovery) return
   await session.start(template.value)
+  for (const [key, exerciseId] of swaps.value) {
+    const [block, exercise] = key.split(':').map(Number)
+    await session.swapExercise(block, exercise, exerciseId)
+  }
   await router.push('/treeni')
 }
 </script>
@@ -139,9 +190,9 @@ async function begin() {
           Supersarja · lepo {{ block.restSec }} s kierroksen jälkeen
         </p>
         <div
-          v-for="{ entry, number } in block.exercises"
+          v-for="{ entry, number, at, swapped } in block.exercises"
           :key="number"
-          class="flex items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 py-3"
+          class="flex items-center gap-3 rounded-(--radius-card) bg-surface px-3.5 pt-3 pb-1.5"
         >
           <span
             class="flex size-7 flex-none items-center justify-center rounded-full bg-track text-[12px] font-bold"
@@ -153,6 +204,28 @@ async function begin() {
           <span class="min-w-0 flex-1">
             <span class="block text-[15px] font-semibold">{{ nameOf(entry.exerciseId) }}</span>
             <span class="block text-[13px] text-ink-muted" data-numeric>{{ targetText(entry) }}</span>
+            <span v-if="swapped" class="block text-[12px] text-ink-muted">
+              Vain tällä kertaa, pohjassa {{ nameOf(originalOf(at.block, at.exercise) ?? '') }}
+            </span>
+            <span class="flex gap-3 text-[13px] font-semibold text-ink-muted">
+              <button
+                type="button"
+                :aria-label="`Vaihda ${nameOf(entry.exerciseId)} tälle kerralle`"
+                class="min-h-9 underline"
+                @click="swapping = at"
+              >
+                Vaihda
+              </button>
+              <button
+                v-if="swapped"
+                type="button"
+                :aria-label="`Palauta ${nameOf(originalOf(at.block, at.exercise) ?? '')}`"
+                class="min-h-9 underline"
+                @click="restore(at.block, at.exercise)"
+              >
+                Palauta
+              </button>
+            </span>
           </span>
           <span
             v-if="weightText(entry)"
@@ -202,5 +275,7 @@ async function begin() {
         </button>
       </div>
     </template>
+
+    <ExercisePicker :open="swapping !== null" title="Vaihda tälle kerralle" @select="onPick" @close="swapping = null" />
   </div>
 </template>
