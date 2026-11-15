@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RecoveryCard from '@/components/RecoveryCard.vue'
 import { formatDurationShort } from '@/lib/format'
+import { recentHistory } from '@/lib/history'
 import { buildSession } from '@/lib/session'
 import { estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
 import { useExercises } from '@/stores/exercises'
@@ -33,7 +34,7 @@ const preview = computed(() =>
         id: 'esikatselu',
         now: new Date(),
         template: template.value,
-        history: workouts.workouts,
+        history: recentHistory(workouts.workouts, new Date()),
         exercises: (id) => exercises.byId.get(id),
       })
     : null,
