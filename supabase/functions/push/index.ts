@@ -165,14 +165,24 @@ async function notify(actor: string, type: string, id: string | undefined): Prom
         tag: `friend-${actor}`,
       })
     }
+    // Vain ensimmäisestä reaktiosta per kaveri per treeni: vaihto ei lähetä uutta ilmoitusta.
     case 'reaction': {
       const { data: reaction } = await admin
         .from('reactions')
-        .select('reaction, created_at')
+        .select('reaction, created_at, notified_at')
         .eq('workout_id', id)
         .eq('user_id', actor)
         .maybeSingle()
-      if (!reaction || !fresh(reaction.created_at)) return 0
+      if (!reaction || reaction.notified_at || !fresh(reaction.created_at)) return 0
+      // Merkintä ehdollisena: peräkkäisistä nopeista vaihdoista vain yksi ehtii ilmoittaa.
+      const { data: claimed } = await admin
+        .from('reactions')
+        .update({ notified_at: new Date().toISOString() })
+        .eq('workout_id', id)
+        .eq('user_id', actor)
+        .is('notified_at', null)
+        .select('workout_id')
+      if (!claimed?.length) return 0
       const { data: workout } = await admin.from('workouts').select('user_id, title').eq('id', id).maybeSingle()
       if (!workout || workout.user_id === actor || !(await wants(workout.user_id, 'reactions'))) return 0
       return sendTo(workout.user_id, {
