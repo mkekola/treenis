@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ExercisePicker from '@/components/ExercisePicker.vue'
 import FeelPrompt from '@/components/FeelPrompt.vue'
@@ -138,9 +138,45 @@ const doneIn = (b: SessionBlock) =>
 const totalIn = (b: SessionBlock) => b.exercises.reduce((sum, e) => sum + e.sets.length, 0)
 
 const blockDone = computed(() => !!block.value && block.value.exercises.every(isExerciseDone))
-const hasNext = computed(
-  () => !!active.value && active.value.currentBlock < active.value.blocks.length - 1,
+const isBlockDone = (b: SessionBlock) => b.exercises.every(isExerciseDone)
+
+/** Seuraava tekemätön liike: ensin käsillä olevan jälkeen, sitten alusta. -1, kun kaikki on tehty. */
+const nextOpen = computed(() => {
+  const blocks = active.value?.blocks ?? []
+  const current = active.value?.currentBlock ?? 0
+  const order = [...blocks.keys()].filter((i) => i > current).concat([...blocks.keys()].filter((i) => i < current))
+  return order.find((i) => !isBlockDone(blocks[i])) ?? -1
+})
+
+const allDone = computed(() => !!active.value?.blocks.length && active.value.blocks.every(isBlockDone))
+
+// --- siirtyminen seuraavaan liikkeeseen ---
+
+/** Tuntumaa kysytään vain painoliikkeiltä. Vastattu tai ohitettu kelpaa. */
+const feelAnswered = (e: SessionExercise) =>
+  e.measurement !== 'weight_reps' || e.feel !== undefined || e.feelSkipped === true
+
+const readyToMove = computed(
+  () => !!block.value && block.value.exercises.every((e) => isExerciseDone(e) && feelAnswered(e)),
 )
+
+/**
+ * Kun liike valmistuu ja tuntuma on vastattu, seuraava tekemätön liike aukeaa itsestään.
+ * Siirto odottaa hetken, jotta "Ensi kerralle ehdotus" ehtii näkyä. Liikkeeseen, jolle
+ * itse palaa, jäädään: siirto tapahtuu vain, kun valmistuminen tapahtuu tässä liikkeessä.
+ */
+const ADVANCE_DELAY_MS = 1500
+let advanceTimer: ReturnType<typeof setTimeout> | undefined
+
+watch([() => block.value?.id, readyToMove], ([id, ready], [previousId, wasReady]) => {
+  clearTimeout(advanceTimer)
+  if (id !== previousId || !ready || wasReady || nextOpen.value < 0) return
+  const delay = block.value?.exercises.some((e) => e.measurement === 'weight_reps') ? ADVANCE_DELAY_MS : 0
+  advanceTimer = setTimeout(() => {
+    if (block.value?.id === id && nextOpen.value >= 0) void session.goToBlock(nextOpen.value)
+  }, delay)
+})
+onBeforeUnmount(() => clearTimeout(advanceTimer))
 
 // --- liikevalitsin: vaihda liike tai lisää uusi ---
 
@@ -346,7 +382,8 @@ function finish() {
         <button
           v-if="otherIndex !== active.currentBlock"
           type="button"
-          class="flex w-full items-center gap-2.5 rounded-(--radius-field) bg-surface px-3.5 py-2.5 text-left"
+          class="flex w-full items-center gap-2.5 rounded-(--radius-field) border-2 bg-surface px-3.5 py-2 text-left"
+          :class="isBlockDone(other) ? 'border-transparent opacity-60' : 'border-[var(--sport-surface)]'"
           @click="session.goToBlock(otherIndex)"
         >
           <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">
@@ -364,6 +401,11 @@ function finish() {
 
     <div class="flex-1" />
 
+    <section v-if="allDone" role="status" class="mx-5 mt-4 rounded-(--radius-feature) bg-[var(--sport-surface)] p-4 text-center">
+      <p class="font-display text-[22px] leading-tight font-bold text-[var(--sport-on)]">Kaikki liikkeet tehty</p>
+      <p class="mt-1 text-[13px] text-[var(--sport-on)]">Päätä treeni, niin se tallentuu päiväkirjaan.</p>
+    </section>
+
     <div class="mx-5 mt-4 flex flex-col gap-2">
       <button
         v-if="block"
@@ -374,17 +416,17 @@ function finish() {
         + Lisää liike
       </button>
       <button
-        v-if="blockDone && hasNext"
+        v-if="blockDone && nextOpen >= 0"
         type="button"
         class="min-h-13 rounded-(--radius-button) bg-action text-base font-semibold text-on-action"
-        @click="session.goToBlock(active.currentBlock + 1)"
+        @click="session.goToBlock(nextOpen)"
       >
         Seuraava liike
       </button>
       <button
         type="button"
         class="min-h-13 rounded-(--radius-button) text-base font-semibold"
-        :class="blockDone && hasNext ? 'border border-line' : 'bg-action text-on-action'"
+        :class="blockDone && nextOpen >= 0 ? 'border border-line' : 'bg-action text-on-action'"
         @click="finish"
       >
         Päätä treeni
