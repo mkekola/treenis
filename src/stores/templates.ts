@@ -21,14 +21,18 @@ export const useTemplates = defineStore('templates', () => {
     else templates.value[index] = template
   }
 
-  /** Tallentaa laitteelle ja lähetysjonoon samassa transaktiossa, kuten treenit. */
+  /**
+   * Tallentaa laitteelle ja lähetysjonoon samassa transaktiossa, kuten treenit. Lista
+   * päivittyy ennen tallennusta, jotta nopeasti peräkkäiset muokkaukset rakentuvat
+   * edellisen päälle eivätkä kumoa toisiaan. Transaktiot ajetaan samassa järjestyksessä.
+   */
   async function save(template: WorkoutTemplate) {
     const saved = { ...template, updatedAt: new Date().toISOString() }
+    upsertInList(saved)
     await db.transaction('rw', db.templates, db.outbox, async () => {
       await db.templates.put(plain(saved))
       await db.outbox.put({ id: saved.id, kind: 'template', updatedAt: saved.updatedAt })
     })
-    upsertInList(saved)
   }
 
   /** Poisto on tallennus poistomerkinnällä, jotta se välittyy muille laitteille. */
