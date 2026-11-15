@@ -16,6 +16,7 @@ import { usePrograms } from '@/stores/programs'
 import { sportVars, useSportColors } from '@/stores/sportColors'
 import { useTemplates } from '@/stores/templates'
 import {
+  CARDIO_ZONE_HINTS,
   CARDIO_ZONE_LABELS,
   SPORT_LABELS,
   type CardioAmount,
@@ -381,6 +382,9 @@ const numberField = 'h-11 rounded-xl border border-line bg-bg text-center text-l
               {{ CARDIO_ZONE_LABELS[zone] }}
             </button>
           </div>
+          <p v-if="segment.zone" class="-mt-1 text-[13px] text-ink-muted">
+            {{ CARDIO_ZONE_LABELS[segment.zone] }} · {{ CARDIO_ZONE_HINTS[segment.zone] }}
+          </p>
           <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
             <label class="flex items-center gap-2">
               <span class="w-17 text-[13px] text-ink-muted">Vauhti</span>

@@ -134,10 +134,18 @@ export interface CardioAmount {
   unit: CardioUnit
 }
 
-/** Teho juoksijoiden tutuilla nimillä: peruskestävyys, vauhtikestävyys, maksimikestävyys, maksimi. */
+/** Teho suomalaisen valmennuksen nimillä: peruskestävyys, vauhtikestävyys, maksimikestävyys, nopeus. */
 export type CardioZone = 'pk' | 'vk' | 'mk' | 'max'
 
-export const CARDIO_ZONE_LABELS: Record<CardioZone, string> = { pk: 'PK', vk: 'VK', mk: 'MK', max: 'Maks' }
+export const CARDIO_ZONE_LABELS: Record<CardioZone, string> = { pk: 'PK', vk: 'VK', mk: 'MK', max: 'Nopeus' }
+
+/** Valitun tehon selitys napin alle, jotta lyhenteet aukeavat myös muille kuin juoksijoille. */
+export const CARDIO_ZONE_HINTS: Record<CardioZone, string> = {
+  pk: 'peruskestävyys, rauhallinen: pystyt puhumaan',
+  vk: 'vauhtikestävyys, reipas: puhe katkeilee',
+  mk: 'maksimikestävyys, kova: 2–5 min vetoja',
+  max: 'lyhyet spurtit täysillä',
+}
 
 /**
  * Kestävyyspohjan osio, kuten salipohjan liike: esimerkiksi "Vedot 6 × 400 m, palautus 90 s".
