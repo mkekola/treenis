@@ -169,18 +169,16 @@ async function notify(actor: string, type: string, id: string | undefined): Prom
     case 'reaction': {
       const { data: reaction } = await admin
         .from('reactions')
-        .select('reaction, created_at, notified_at')
+        .select('reaction, created_at')
         .eq('workout_id', id)
         .eq('user_id', actor)
         .maybeSingle()
-      if (!reaction || reaction.notified_at || !fresh(reaction.created_at)) return 0
-      // Merkintä ehdollisena: peräkkäisistä nopeista vaihdoista vain yksi ehtii ilmoittaa.
+      if (!reaction || !fresh(reaction.created_at)) return 0
+      // Ilmoitus muistetaan erillään reaktiosta, jotta poisto ja uusi reaktio eivät ilmoita
+      // uudelleen. Lisäys ilman päällekirjoitusta: nopeista vaihdoista vain yksi ehtii ilmoittaa.
       const { data: claimed } = await admin
-        .from('reactions')
-        .update({ notified_at: new Date().toISOString() })
-        .eq('workout_id', id)
-        .eq('user_id', actor)
-        .is('notified_at', null)
+        .from('reaction_notices')
+        .upsert({ workout_id: id, user_id: actor }, { onConflict: 'workout_id,user_id', ignoreDuplicates: true })
         .select('workout_id')
       if (!claimed?.length) return 0
       const { data: workout } = await admin.from('workouts').select('user_id, title').eq('id', id).maybeSingle()
