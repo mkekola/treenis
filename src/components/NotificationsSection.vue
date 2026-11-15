@@ -21,6 +21,7 @@ const OPTIONS: { key: keyof NotificationSettings; label: string; hint: string }[
   { key: 'reactions', label: 'Reaktiot', hint: 'Kun joku reagoi treeniisi' },
   { key: 'challenges', label: 'Haasteet', hint: 'Kutsu, 2 päivää jäljellä ja lopputulos' },
   { key: 'streak', label: 'Viikkoputki', hint: 'Lauantaina, jos viikolla on alle 2 treeniä' },
+  { key: 'rest', label: 'Lepo päättyy', hint: 'Kun olet treenin aikana toisessa sovelluksessa' },
 ]
 
 async function enable() {

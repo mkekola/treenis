@@ -8,6 +8,8 @@
 //   scheduled  tietokannan ajastus kerran tunnissa (pg_cron, otsake x-cron-secret).
 //           Suomen ajan mukaan: haasteesta 2 pv jäljellä klo 18, haasteen tulos klo 9,
 //           viikkoputki vaarassa lauantaina klo 12. dryRun palauttaa viestit lähettämättä.
+//   rest    tietokannan tarkistus 5 s välein (otsake x-cron-secret), kun jonkin lepo on
+//           päättynyt: "Lepo ohi" niille, jotka ovat treenin aikana toisessa sovelluksessa.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -89,7 +91,7 @@ async function sendTo(userId: string, message: Message): Promise<number> {
 
 // ------------------------------------------------------------------ tapahtumat
 
-type Preference = 'friend_requests' | 'reactions' | 'challenges' | 'streak'
+type Preference = 'friend_requests' | 'reactions' | 'challenges' | 'streak' | 'rest'
 
 /** Asetusriviä ei ole ennen käyttöönottoa, jolloin kaikki on päällä (Marian päätös). */
 async function wants(userId: string, preference: Preference): Promise<boolean> {
@@ -376,6 +378,20 @@ async function scheduled(at: string | undefined, dryRun: boolean) {
   return { now, sent }
 }
 
+// ------------------------------------------------------------------- lepo
+
+/** Erääntyneet lepoajastukset. Tietokanta poistaa ne samalla, joten kukin lähtee kerran. */
+async function restEnded(): Promise<number> {
+  const { data, error } = await admin.rpc('claim_due_rest_alarms')
+  if (error) throw error
+  let sent = 0
+  for (const alarm of (data ?? []) as { user_id: string; body: string }[]) {
+    if (!(await wants(alarm.user_id, 'rest'))) continue
+    sent += await sendTo(alarm.user_id, { title: 'Lepo ohi', body: alarm.body, url: '/treeni', tag: 'rest' })
+  }
+  return sent
+}
+
 /** Ajastuksen salaisuus on tietokannan Vaultissa: vain tietokannan herätys tuntee sen. */
 async function assertCron(req: Request) {
   const { data } = await admin.rpc('push_cron_secret')
@@ -401,6 +417,9 @@ Deno.serve(async (req) => {
       case 'scheduled':
         await assertCron(req)
         return json(await scheduled(body.at, body.dryRun === true))
+      case 'rest':
+        await assertCron(req)
+        return json({ sent: await restEnded() })
       case 'notify':
         return json({ sent: await notify(await userIdOf(req), String(body.type), body.id) })
       default:

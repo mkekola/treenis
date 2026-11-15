@@ -11,6 +11,7 @@ import {
   editTiming,
   isExerciseDone,
   moveBlock,
+  nextSetLabel,
   orderBlocks,
   setExerciseNote,
   newSessionExercise,
@@ -372,5 +373,24 @@ describe('esikatselussa järjestetty treeni', () => {
     expect(ordered.currentBlock).toBe(0)
     expect(orderBlocks(session, [0, 0, 1, 2, 3, 4])).toBe(session)
     expect(orderBlocks(session, [0, 1])).toBe(session)
+  })
+})
+
+describe('levon ilmoituksen teksti', () => {
+  const name = (id: string) => lookup(id)?.name ?? id
+
+  it('käsillä olevan liikkeen seuraava sarja painoineen', () => {
+    let s = startA()
+    s = setValues(s, at(0, 0), { weightKg: 80 })
+    s = completeSet(s, at(0, 0), NOW)
+    expect(nextSetLabel(s, name)).toBe('Jalkakyykky 80 kg × 10')
+  })
+
+  it('valmiin liikkeen jälkeen seuraava tekemätön liike, kaiken jälkeen ei mitään', () => {
+    const s = startA()
+    const allDoneFirst = { ...s, blocks: s.blocks.map((b, i) => (i === 0 ? { ...b, exercises: b.exercises.map((e) => ({ ...e, sets: e.sets.map((set) => ({ ...set, done: true })) })) } : b)) }
+    expect(nextSetLabel(allDoneFirst, name)).toMatch(/^Penkkipunnerrus käsipainoilla /)
+    const allDone = { ...s, blocks: s.blocks.map((b) => ({ ...b, exercises: b.exercises.map((e) => ({ ...e, sets: e.sets.map((set) => ({ ...set, done: true })) })) })) }
+    expect(nextSetLabel(allDone, name)).toBeNull()
   })
 })

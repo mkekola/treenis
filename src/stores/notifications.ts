@@ -8,6 +8,7 @@ export interface NotificationSettings {
   reactions: boolean
   challenges: boolean
   streak: boolean
+  rest: boolean
 }
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
@@ -33,10 +34,10 @@ export const useNotifications = defineStore('notifications', () => {
     enabled.value = Notification.permission === 'granted' && !!(await subscription())
     const { data, error } = await supabase
       .from('notification_settings')
-      .select('friend_requests, reactions, challenges, streak')
+      .select('friend_requests, reactions, challenges, streak, rest')
       .maybeSingle()
     if (error) throw error
-    settings.value = data ?? { friend_requests: true, reactions: true, challenges: true, streak: true }
+    settings.value = data ?? { friend_requests: true, reactions: true, challenges: true, streak: true, rest: true }
   }
 
   /** Kysyy luvan ja tallentaa laitteen ilmoitusosoitteen. Kutsutaan napin painalluksesta (iOS vaatii). */

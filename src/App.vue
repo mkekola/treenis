@@ -3,9 +3,12 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppNav from '@/components/AppNav.vue'
+import { useRestAlarm } from '@/composables/useRestAlarm'
 
 const route = useRoute()
 const router = useRouter()
+
+useRestAlarm()
 
 // Takaisin pyyhkäistessä iOS liu'uttaa jo oman kuvansa edellisestä sivusta. Jos sivu
 // sen jälkeen vielä häivytetään esiin, se välähtää. Selaimen takaisin- ja

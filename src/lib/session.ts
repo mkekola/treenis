@@ -338,6 +338,36 @@ export function setExerciseNote(session: ActiveSession, block: number, exercise:
   return next
 }
 
+const kgText = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
+
+/**
+ * Seuraava tekemätön sarja tekstinä levon ilmoitukseen: "Jalkakyykky 80 kg × 10".
+ * Ensin käsillä oleva liike, sitten seuraavat. Supersarjassa vuorossa on liike, josta on
+ * tehty vähiten sarjoja, koska kierroksella liikkeet vuorottelevat.
+ */
+export function nextSetLabel(session: ActiveSession, nameOf: (exerciseId: string) => string): string | null {
+  const indexes = [...session.blocks.keys()]
+  const order = [
+    ...indexes.filter((i) => i >= session.currentBlock),
+    ...indexes.filter((i) => i < session.currentBlock),
+  ]
+  for (const index of order) {
+    const open = session.blocks[index].exercises.filter((e) => e.sets.some((set) => !set.done))
+    if (!open.length) continue
+    const doneCount = (e: SessionExercise) => e.sets.filter((set) => set.done).length
+    const exercise = open.reduce((best, e) => (doneCount(e) < doneCount(best) ? e : best))
+    const set = exercise.sets.find((s) => !s.done)!
+    const amount =
+      exercise.measurement === 'time'
+        ? `${set.durationSec ?? 0} s`
+        : exercise.measurement === 'reps'
+          ? `${set.reps ?? 0} toistoa`
+          : `${set.weightKg ? `${kgText.format(set.weightKg)} kg ` : ''}× ${set.reps ?? 0}`
+    return `${nameOf(exercise.exerciseId)} ${amount}`
+  }
+  return null
+}
+
 /** Lohkot annetussa järjestyksessä, esim. esikatselussa järjestetyt. Ensimmäinen on käsillä. */
 export function orderBlocks(session: ActiveSession, order: number[]): ActiveSession {
   const valid = order.length === session.blocks.length && new Set(order).size === order.length
