@@ -13,7 +13,7 @@ import { primeAudio } from '@/lib/beep'
 import { formatDuration, formatSet, formatShortDate } from '@/lib/format'
 import { recentHistory, sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
-import { signalRestEnd } from '@/lib/restSignal'
+import { loadRestSignal, signalRestEnd } from '@/lib/restSignal'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
@@ -77,7 +77,8 @@ function stateOf(setIndex: number, sets: { done: boolean }[]) {
 }
 
 function complete(blockIndex: number, exerciseIndex: number, setIndex: number) {
-  primeAudio()
+  // Äänikanava avataan vain äänimerkkiä varten: auki ollessaan se voi keskeyttää musiikin.
+  if (loadRestSignal() === 'sound') primeAudio()
   void session.completeSet({ block: blockIndex, exercise: exerciseIndex, set: setIndex })
 }
 
