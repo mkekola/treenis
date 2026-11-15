@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import ExercisePicker from '@/components/ExercisePicker.vue'
 import { formatShortDate } from '@/lib/format'
+import { isIsoDate } from '@/lib/manual'
 import { matchExercise, parseNotes, setsSummary, toWorkout, type ParsedWorkout } from '@/lib/notesImport'
 import { useExercises } from '@/stores/exercises'
 import { useWorkouts } from '@/stores/workouts'
@@ -31,7 +32,9 @@ function interpret() {
   }))
 }
 
-const importable = computed(() => (drafts.value ?? []).filter((d) => d.include && d.parsed.exercises.length))
+const importable = computed(() =>
+  (drafts.value ?? []).filter((d) => d.include && d.parsed.exercises.length && isIsoDate(d.parsed.date)),
+)
 
 /** Samana päivänä on jo salitreeni: voi olla sama treeni, joka on jo kirjattu. */
 function hasDuplicate(date: string) {

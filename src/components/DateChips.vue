@@ -9,6 +9,13 @@ const now = new Date()
 const today = localDate(now)
 const yesterday = localDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
 
+/** iOS:n päivävalitsimessa on Tyhjennä-nappi. Treenillä on aina päivä, joten tyhjä palauttaa edellisen. */
+function pick(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.value) date.value = input.value
+  else input.value = date.value
+}
+
 const chip = 'min-h-11 rounded-full px-3.5 text-sm font-semibold'
 const on = 'bg-[var(--sport-surface)] text-[var(--sport-on)]'
 const off = 'bg-track text-ink-muted'
@@ -25,11 +32,12 @@ const off = 'bg-track text-ink-muted'
     <!-- Korostuu, kun valittuna on muu kuin tänään tai eilen. -->
     <input
       :id="`${labelId}-paiva`"
-      v-model="date"
+      :value="date"
       type="date"
       :max="today"
       required
       aria-label="Valitse päivä"
+      @input="pick"
       :class="[chip, date !== today && date !== yesterday ? on : off]"
     />
   </div>

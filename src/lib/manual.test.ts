@@ -29,6 +29,13 @@ describe('syötteiden tulkinta', () => {
     expect(startedAtOf('2026-11-12', '')).toBeUndefined()
   })
 
+  it('tyhjä päivä tai mahdoton kellonaika ei kaada, vaan aikaa ei ole', () => {
+    // iOS:n päivävalitsimen Tyhjennä-nappi antaa tyhjän päivän.
+    expect(startedAtOf('', '17:30')).toBeUndefined()
+    expect(startedAtOf('2026-11-12', '25:00')).toBeUndefined()
+    expect(startedAtOf('2026-11-12', '17:75')).toBeUndefined()
+  })
+
   it('tänään ehdotetaan alkamisajaksi nyt miinus kesto, menneelle päivälle ei arvata', () => {
     expect(suggestedStart('2026-11-13', 45 * 60, NOW)).toBe('18:15')
     expect(suggestedStart('2026-11-12', 45 * 60, NOW)).toBe('')
@@ -39,6 +46,7 @@ describe('syötteiden tulkinta', () => {
     expect(isComplete(input, '2026-11-13')).toBe(true)
     expect(isComplete({ ...input, durationSec: 0 }, '2026-11-13')).toBe(false)
     expect(isComplete({ ...input, date: '2026-11-14' }, '2026-11-13')).toBe(false)
+    expect(isComplete({ ...input, date: '' }, '2026-11-13')).toBe(false)
   })
 
   it('salitreenin kesto on vapaaehtoinen, eikä tyhjää kestoa tallenneta nollana', () => {

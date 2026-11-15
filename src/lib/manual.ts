@@ -28,10 +28,20 @@ export function timeOf(iso: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** Päivä ja paikallinen kellonaika ISO-aikaleimaksi, tai undefined ilman aikaa. */
+/** "2026-11-12" ja oikea päivä. Tyhjä tulee esimerkiksi iOS:n päivävalitsimen Tyhjennä-napista. */
+export function isIsoDate(date: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(new Date(`${date}T00:00:00`).getTime())
+}
+
+/**
+ * Päivä ja paikallinen kellonaika ISO-aikaleimaksi, tai undefined ilman aikaa.
+ * Virheellinen päivä tai aika ei kaada: Date.toISOString heittäisi RangeErrorin.
+ */
 export function startedAtOf(date: string, time: string): string | undefined {
-  if (!/^\d{1,2}[:.]\d{2}$/.test(time.trim())) return undefined
-  const [h, m] = time.trim().split(/[:.]/).map(Number)
+  const match = /^(\d{1,2})[:.](\d{2})$/.exec(time.trim())
+  if (!match || !isIsoDate(date)) return undefined
+  const [h, m] = [Number(match[1]), Number(match[2])]
+  if (h > 23 || m > 59) return undefined
   return new Date(`${date}T${pad(h)}:${pad(m)}:00`).toISOString()
 }
 
@@ -66,7 +76,7 @@ export function suggestedStart(date: string, durationSec: number, now: Date): st
  * treeneillä ole kestoa.
  */
 export function isComplete(input: ManualInput, today: string): boolean {
-  return (input.sport === 'strength' || input.durationSec > 0) && input.date <= today
+  return isIsoDate(input.date) && (input.sport === 'strength' || input.durationSec > 0) && input.date <= today
 }
 
 /** Uusi käsin kirjattu treeni. */
