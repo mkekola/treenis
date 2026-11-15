@@ -39,9 +39,15 @@ export function useRestAlarm() {
     await supabase.from('rest_alarms').delete().eq('user_id', auth.userId)
   }
 
-  // Verkkovirhe ei saa näkyä käyttäjälle: pahimmillaan ilmoitus jää tulematta tai tulee turhaan.
+  /**
+   * Ajastus ja peruminen jonossa: nopeassa käynnissä toisessa sovelluksessa peruminen ei saa
+   * ohittaa vielä kesken olevaa ajastusta. Verkkovirhe ei näy käyttäjälle: pahimmillaan
+   * ilmoitus jää tulematta tai tulee turhaan.
+   */
+  let queue = Promise.resolve()
   function onVisibility() {
-    void (document.visibilityState === 'hidden' ? schedule() : cancel()).catch(() => {})
+    const task = document.visibilityState === 'hidden' ? schedule : cancel
+    queue = queue.then(task).catch(() => {})
   }
 
   onMounted(() => document.addEventListener('visibilitychange', onVisibility))
