@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVisibleViewport } from '@/composables/useVisibleViewport'
-import { MEASUREMENT_LABELS, MUSCLE_GROUP_LABELS, MUSCLE_LABELS } from '@/data/exerciseLibrary'
+import { MEASUREMENT_LABELS, MUSCLE_AREAS, MUSCLE_GROUP_LABELS, MUSCLE_LABELS } from '@/data/exerciseLibrary'
 import { frequentExerciseIds } from '@/lib/history'
 import { localDate } from '@/lib/session'
 import { musclesOf, substitutesFor } from '@/lib/substitutes'
 import { useExercises } from '@/stores/exercises'
 import { useWorkouts } from '@/stores/workouts'
-import type { Exercise, Measurement, MuscleGroup } from '@/types/workout'
+import type { Exercise, Measurement, Muscle } from '@/types/workout'
 
 const props = defineProps<{
   open: boolean
@@ -27,7 +27,7 @@ const query = ref('')
 
 // --- oma liike ---
 const creating = ref(false)
-const newGroup = ref<MuscleGroup>('chest')
+const newMuscles = ref<Muscle[]>([])
 const newMeasurement = ref<Measurement>('weight_reps')
 const newPerSide = ref(false)
 
@@ -40,6 +40,7 @@ watch(
     }
     query.value = ''
     creating.value = false
+    newMuscles.value = []
     dialog.value?.showModal()
     await nextTick()
     dialog.value?.querySelector<HTMLInputElement>('input[type="search"]')?.focus()
@@ -89,10 +90,16 @@ const describe = (exercise: Exercise) =>
 /** Korvaavalle liikkeelle lihakset, jotta näkee miksi se on ehdotettu. */
 const describeMuscles = (exercise: Exercise) => musclesOf(exercise).map((m) => MUSCLE_LABELS[m]).join(', ')
 
+function toggleMuscle(muscle: Muscle) {
+  newMuscles.value = newMuscles.value.includes(muscle)
+    ? newMuscles.value.filter((m) => m !== muscle)
+    : [...newMuscles.value, muscle]
+}
+
 function create() {
   const exercise = exercises.addCustom({
     name: query.value,
-    muscleGroup: newGroup.value,
+    muscles: newMuscles.value,
     measurement: newMeasurement.value,
     perSide: newPerSide.value,
   })
@@ -135,20 +142,30 @@ function onBackdropClick(event: MouseEvent) {
     </header>
 
     <!-- Oman liikkeen lomake -->
-    <form v-if="creating" class="flex flex-col gap-3 px-5 pt-3 pb-6" @submit.prevent="create">
+    <form v-if="creating" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 pt-3 pb-6" @submit.prevent="create">
       <p class="text-[15px] font-semibold">{{ query.trim() }}</p>
 
-      <label class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
-        Lihasryhmä
-        <select
-          v-model="newGroup"
-          class="mt-1 block h-12 w-full rounded-(--radius-field) border border-line bg-surface px-3 text-[15px] font-normal tracking-normal text-ink normal-case"
-        >
-          <option v-for="(label, key) in MUSCLE_GROUP_LABELS" :key="key" :value="key">
-            {{ label }}
-          </option>
-        </select>
-      </label>
+      <!-- Päälihakset korvaavien liikkeiden ehdotuksiin. Ensimmäinen valittu ratkaisee lihasryhmän. -->
+      <fieldset>
+        <legend class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">Päälihakset</legend>
+        <p class="mt-0.5 text-[13px] text-ink-muted">Valitse 1–3. Niiden perusteella Treenis ehdottaa korvaavia liikkeitä.</p>
+        <div v-for="area in MUSCLE_AREAS" :key="area.label" class="mt-2">
+          <p class="text-[13px] font-semibold">{{ area.label }}</p>
+          <div class="mt-1 flex flex-wrap gap-1.5">
+            <button
+              v-for="muscle in area.muscles"
+              :key="muscle"
+              type="button"
+              :aria-pressed="newMuscles.includes(muscle)"
+              class="min-h-9 rounded-full border px-3 text-[13px] font-semibold"
+              :class="newMuscles.includes(muscle) ? 'border-action bg-action text-on-action' : 'border-line bg-surface'"
+              @click="toggleMuscle(muscle)"
+            >
+              {{ MUSCLE_LABELS[muscle] }}
+            </button>
+          </div>
+        </div>
+      </fieldset>
 
       <label class="text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
         Mitä kirjataan

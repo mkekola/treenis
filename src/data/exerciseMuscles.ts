@@ -104,6 +104,27 @@ export const CURATED_SUBSTITUTES: Record<string, string[]> = {
   'hip-adductor': ['sumo-squat'],
 }
 
+/** Lihaksen lihasryhmä: oman liikkeen ryhmä tulee ensimmäisestä valitusta lihaksesta. */
+export const MUSCLE_GROUP_OF: Record<Muscle, MuscleGroup> = {
+  chest: 'chest',
+  front_delts: 'shoulders',
+  side_delts: 'shoulders',
+  rear_delts: 'shoulders',
+  lats: 'back',
+  upper_back: 'back',
+  lower_back: 'back',
+  biceps: 'arms',
+  triceps: 'arms',
+  forearms: 'arms',
+  quads: 'legs',
+  hamstrings: 'legs',
+  glutes: 'glutes',
+  adductors: 'legs',
+  calves: 'legs',
+  abs: 'core',
+  obliques: 'core',
+}
+
 /** Omat liikkeet ilman lihasvalintaa: lihakset arvioidaan lihasryhmästä. */
 export const GROUP_MUSCLES: Record<MuscleGroup, Muscle[]> = {
   chest: ['chest'],

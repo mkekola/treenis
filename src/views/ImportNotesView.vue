@@ -62,7 +62,7 @@ async function save() {
         draft.matches[index]?.id ??
           exercises.addCustom({
             name: parsed.name,
-            muscleGroup: 'full_body',
+            muscles: [],
             measurement: parsed.sets.some((s) => s.weightKg !== undefined) ? 'weight_reps' : 'reps',
             perSide: false,
           }).id,

@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { EXERCISE_LIBRARY } from '@/data/exerciseLibrary'
+import { MUSCLE_GROUP_OF } from '@/data/exerciseMuscles'
 import { db, plain } from '@/db'
 import { normalize, searchExercises } from '@/lib/exerciseSearch'
-import type { Exercise, Measurement, MuscleGroup } from '@/types/workout'
+import type { Exercise, Measurement, Muscle } from '@/types/workout'
 
 export interface NewExercise {
   name: string
-  muscleGroup: MuscleGroup
+  /** Päälihakset. Tyhjä: koko kehon liike. */
+  muscles: Muscle[]
   measurement: Measurement
   perSide: boolean
 }
@@ -45,7 +47,9 @@ export const useExercises = defineStore('exercises', () => {
     const exercise: Exercise = {
       id: `custom-${crypto.randomUUID()}`,
       name: input.name.trim(),
-      muscleGroup: input.muscleGroup,
+      // Lihasryhmä näkyy liikelistassa, joten se johdetaan ensimmäisestä lihaksesta.
+      muscleGroup: input.muscles[0] ? MUSCLE_GROUP_OF[input.muscles[0]] : 'full_body',
+      muscles: input.muscles,
       measurement: input.measurement,
       perSide: input.perSide,
       aliases: [],

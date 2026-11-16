@@ -107,6 +107,24 @@ describe('pohjien ja omien liikkeiden rivit', () => {
     expect(toLocal(exerciseFromRow(row))).toEqual(exercise)
   })
 
+  it('oman liikkeen lihakset kulkevat rivillä, vanhalla liikkeellä niitä ei ole', () => {
+    const base: Exercise = {
+      id: 'custom-2',
+      name: 'Hip thrust laitteessa',
+      muscleGroup: 'glutes',
+      measurement: 'weight_reps',
+      perSide: false,
+      aliases: [],
+      custom: true,
+      updatedAt: '2026-11-17T12:00:00.000Z',
+    }
+    const chosen = { ...base, muscles: ['glutes' as const, 'hamstrings' as const] }
+    expect(exerciseToRow(chosen).muscles).toEqual(['glutes', 'hamstrings'])
+    expect(toLocal(exerciseFromRow({ ...exerciseToRow(chosen), deleted_at: null }))).toEqual(chosen)
+    expect(exerciseToRow(base).muscles).toBeNull()
+    expect(exerciseFromRow({ ...exerciseToRow(base), deleted_at: null }).muscles).toBeUndefined()
+  })
+
   it('välittää poistomerkinnän', () => {
     const row = templateToRow({ ...initialTemplates[1], deletedAt: '2026-11-10T12:00:00Z' })
     expect(templateFromRow(row).deletedAt).toBe('2026-11-10T12:00:00Z')

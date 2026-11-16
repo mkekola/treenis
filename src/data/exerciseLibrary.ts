@@ -183,7 +183,7 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   full_body: 'Koko keho',
 }
 
-/** Päälihakset salikielellä. */
+/** Päälihakset salikielellä, alueittain kuten omaa liikettä luodessa. */
 export const MUSCLE_LABELS: Record<Muscle, string> = {
   chest: 'Rinta',
   front_delts: 'Etuolkapää',
@@ -203,6 +203,15 @@ export const MUSCLE_LABELS: Record<Muscle, string> = {
   abs: 'Vatsat',
   obliques: 'Vinot vatsat',
 }
+
+export const MUSCLE_AREAS: { label: string; muscles: Muscle[] }[] = [
+  {
+    label: 'Ylävartalo',
+    muscles: ['chest', 'front_delts', 'side_delts', 'rear_delts', 'lats', 'upper_back', 'lower_back', 'biceps', 'triceps', 'forearms'],
+  },
+  { label: 'Alavartalo', muscles: ['quads', 'hamstrings', 'glutes', 'adductors', 'calves'] },
+  { label: 'Keskivartalo', muscles: ['abs', 'obliques'] },
+]
 
 export const MEASUREMENT_LABELS: Record<Measurement, string> = {
   weight_reps: 'Paino ja toistot',

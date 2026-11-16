@@ -4,6 +4,7 @@ import type {
   CardioSegment,
   Exercise,
   Measurement,
+  Muscle,
   MuscleGroup,
   Program,
   ProgramLevel,
@@ -106,6 +107,8 @@ export interface ExerciseRow {
   measurement: Measurement
   per_side: boolean
   aliases: string[]
+  /** Puuttuu ennen lihasvalintaa luodulta liikkeeltä. */
+  muscles: Muscle[] | null
   weight_step_kg: number | null
   updated_at: string
   deleted_at: string | null
@@ -119,6 +122,7 @@ export function exerciseToRow(e: Exercise): Omit<ExerciseRow, 'deleted_at'> {
     measurement: e.measurement,
     per_side: e.perSide,
     aliases: e.aliases,
+    muscles: e.muscles ?? null,
     weight_step_kg: e.weightStepKg ?? null,
     updated_at: e.updatedAt ?? new Date().toISOString(),
   }
@@ -132,6 +136,7 @@ export function exerciseFromRow(row: ExerciseRow): Exercise & Synced {
     measurement: row.measurement,
     perSide: row.per_side,
     aliases: row.aliases,
+    ...(row.muscles ? { muscles: row.muscles } : {}),
     custom: true,
     ...(row.weight_step_kg !== null ? { weightStepKg: row.weight_step_kg } : {}),
     updatedAt: row.updated_at,
