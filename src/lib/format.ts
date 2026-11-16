@@ -1,4 +1,5 @@
 import type { Measurement, SetEntry, SportKey, Workout } from '@/types/workout'
+import { formatWorkTime, isTimedSet } from '@/lib/timed'
 import { avgHr, distanceM, durationSec, kindOf, totalVolumeKg } from '@/lib/workout'
 
 /** Kapea sitova välilyönti: luku ja yksikkö eivät rivity erilleen. */
@@ -113,9 +114,13 @@ export function workoutMetrics(workout: Workout): string[] {
 
 const kgFormat = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
 
-/** Sarja lyhyesti: "42,5 × 8", toistoliikkeessä "10", aikaliikkeessä "45 s". */
+/** Sarja lyhyesti: "42,5 × 8", toistoliikkeessä "10", aikaliikkeessä "45 s", aikasarjassa "31 / 1 min". */
 export function formatSet(set: SetEntry, measurement: Measurement): string {
   if (measurement === 'time') return `${set.durationSec ?? 0}${NBSP_THIN}s`
+  if (isTimedSet(set)) {
+    const reps = measurement === 'reps' ? `${set.reps}` : `${kgFormat.format(set.weightKg ?? 0)} × ${set.reps}`
+    return `${reps} / ${formatWorkTime(set.durationSec!)}`
+  }
   if (measurement === 'reps') return `${set.reps ?? 0}`
   return `${kgFormat.format(set.weightKg ?? 0)} × ${set.reps ?? 0}`
 }

@@ -1,7 +1,8 @@
 import { lastNoteFor, sessionsFor } from '@/lib/history'
 import { suggestNext, workingWeightKg } from '@/lib/progression'
 import { nextOptionIndex, optionsOf } from '@/lib/rotation'
-import type { ActiveSession, SessionBlock, SessionExercise, SetRef, TimingEdits } from '@/types/session'
+import { formatWorkTime, hasTimeTarget } from '@/lib/timed'
+import type { ActiveSession, PreviousResult, SessionBlock, SessionExercise, SetRef, TimingEdits } from '@/types/session'
 import type {
   Block,
   BlockExercise,
@@ -40,10 +41,14 @@ export function buildExercise(
 ): SessionExercise {
   const exercise = lookup(source.exerciseId)
   const measurement: Measurement = exercise?.measurement ?? 'weight_reps'
-  const target = { sets: source.sets.length, reps: source.sets[0]?.reps ?? 0 }
+  // Aikasarjassa toistot kirjataan vasta ajan jälkeen, eikä painoa ehdoteta toistojen perusteella.
+  const timed = hasTimeTarget(source.sets, measurement)
+  const target = timed
+    ? { sets: source.sets.length, reps: 0, durationSec: source.sets[0].durationSec }
+    : { sets: source.sets.length, reps: source.sets[0]?.reps ?? 0 }
 
-  const past = sessionsFor(source.exerciseId, history)
-  const suggestion = exercise ? suggestNext(exercise, target, past) : null
+  const past = sessionsFor(source.exerciseId, history, 2, timed)
+  const suggestion = exercise && !timed ? suggestNext(exercise, target, past) : null
   const last = past[0]
   const lastKg = last ? workingWeightKg(last) : null
 
@@ -59,11 +64,20 @@ export function buildExercise(
 
   const previousNote = lastNoteFor(source.exerciseId, history)
 
+  // Aikasarjan "viimeksi" on edellisen kerran paras toistomäärä, painoliikkeellä myös paino.
+  const lastReps = timed && last ? Math.max(0, ...last.sets.filter((set) => set.done).map((set) => set.reps ?? 0)) : 0
+  let previous: PreviousResult | undefined
+  if (lastKg !== null || lastReps > 0) {
+    previous = { feel: last?.feel }
+    if (lastKg !== null) previous.weightKg = lastKg
+    if (lastReps > 0) previous.reps = lastReps
+  }
+
   return {
     exerciseId: source.exerciseId,
     measurement,
     target,
-    previous: lastKg !== null ? { weightKg: lastKg, feel: last?.feel } : undefined,
+    previous,
     ...(previousNote ? { previousNote } : {}),
     hint,
     sets: source.sets.map((set) => ({
@@ -249,6 +263,7 @@ export function completeSet(session: ActiveSession, ref: SetRef, now: Date): Act
 
   set.done = true
   next.updatedAt = now.toISOString()
+  next.work = undefined
 
   const roundDone = block.exercises.every((e) => e.sets[ref.set] === undefined || e.sets[ref.set].done)
   next.restEndsAt = roundDone ? new Date(now.getTime() + block.restSec * 1000).toISOString() : undefined
@@ -348,6 +363,24 @@ export function skipRest(session: ActiveSession): ActiveSession {
   return { ...clone(session), restEndsAt: undefined }
 }
 
+/**
+ * Käynnistää aikasarjan työajan. Lepo päättyy samalla: työ alkaa, kun käyttäjä niin
+ * päättää. Aikaleima eikä laskuri, kuten levossa, jotta aika jatkuu uudelleenlatauksen yli.
+ */
+export function startWork(session: ActiveSession, ref: SetRef, now: Date): ActiveSession {
+  const set = setAt(session, ref)
+  if (!set?.durationSec || set.done) return session
+  return {
+    ...clone(session),
+    restEndsAt: undefined,
+    work: { set: ref, endsAt: new Date(now.getTime() + set.durationSec * 1000).toISOString() },
+  }
+}
+
+export function stopWork(session: ActiveSession): ActiveSession {
+  return { ...clone(session), work: undefined }
+}
+
 export function setCurrentBlock(session: ActiveSession, index: number): ActiveSession {
   if (index < 0 || index >= session.blocks.length) return session
   return { ...clone(session), currentBlock: index }
@@ -380,8 +413,9 @@ export function nextSetLabel(session: ActiveSession, nameOf: (exerciseId: string
     const doneCount = (e: SessionExercise) => e.sets.filter((set) => set.done).length
     const exercise = open.reduce((best, e) => (doneCount(e) < doneCount(best) ? e : best))
     const set = exercise.sets.find((s) => !s.done)!
-    const amount =
-      exercise.measurement === 'time'
+    const amount = exercise.target.durationSec
+      ? formatWorkTime(exercise.target.durationSec)
+      : exercise.measurement === 'time'
         ? `${set.durationSec ?? 0} s`
         : exercise.measurement === 'reps'
           ? `${set.reps ?? 0} toistoa`

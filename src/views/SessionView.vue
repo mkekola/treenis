@@ -15,6 +15,7 @@ import { recentHistory, sessionsFor } from '@/lib/history'
 import { suggestNext } from '@/lib/progression'
 import { loadRestSignal, signalRestEnd } from '@/lib/restSignal'
 import { canRemoveSet, canSwap, isExerciseDone } from '@/lib/session'
+import { formatWorkTime } from '@/lib/timed'
 import { useExercises } from '@/stores/exercises'
 import { useSession } from '@/stores/session'
 import { sportVars, useSportColors } from '@/stores/sportColors'
@@ -69,6 +70,39 @@ watch(restLeft, (left, before) => {
   if (before > 0 && left === 0 && endsAt && Date.now() - Date.parse(endsAt) < SIGNAL_GRACE_MS) signalRestEnd()
 })
 
+// --- aikasarjan työaika ---
+
+const workLeft = computed(() => {
+  const end = active.value?.work?.endsAt
+  return end ? Math.max(0, Math.ceil((Date.parse(end) - now.value) / 1000)) : null
+})
+
+/** Jäljellä oleva työaika vain sille riville, jonka ajastin on käynnissä. */
+function workLeftFor(blockIndex: number, exerciseIndex: number, setIndex: number): number | undefined {
+  const at = active.value?.work?.set
+  if (!at || workLeft.value === null) return undefined
+  return at.block === blockIndex && at.exercise === exerciseIndex && at.set === setIndex ? workLeft.value : undefined
+}
+
+function startWork(blockIndex: number, exerciseIndex: number, setIndex: number) {
+  // Napautus avaa äänikanavan, jotta merkki kuuluu myös iPhonessa ajan lopussa.
+  if (loadRestSignal() === 'sound') primeAudio()
+  void session.startWork({ block: blockIndex, exercise: exerciseIndex, set: setIndex })
+}
+
+// Ajan loppuessa sama merkki kuin levon lopussa, ja toistokenttä aukeaa rivillä. Heti
+// avattaessa, koska aika on voinut loppua sovelluksen ollessa suljettuna.
+watch(
+  workLeft,
+  (left) => {
+    const endsAt = active.value?.work?.endsAt
+    if (left !== 0 || !endsAt) return
+    if (Date.now() - Date.parse(endsAt) < SIGNAL_GRACE_MS) signalRestEnd()
+    void session.stopWork()
+  },
+  { immediate: true },
+)
+
 // --- sarjat ---
 
 function firstOpenSet(sets: { done: boolean }[]): number {
@@ -120,13 +154,15 @@ function toggleExpanded(exerciseId: string) {
 
 /** Toistoja yhteensä yli tavoitteen: sovellus huomaa, että teit enemmän kuin ohjelmassa. */
 function surplus(exercise: SessionExercise): number {
-  if (exercise.measurement !== 'weight_reps') return 0
+  if (exercise.measurement !== 'weight_reps' || exercise.target.durationSec) return 0
   return exercise.sets.reduce((sum, set) => sum + Math.max(0, (set.reps ?? 0) - exercise.target.reps), 0)
 }
 
 /** Mitä vastaus teki: sama sääntö kuin seuraavan kerran ehdotuksessa, jotta lupaus pitää. */
 function suggestionText(exercise: SessionExercise): string | null {
   if (exercise.feel === undefined && !exercise.feelSkipped) return null
+  // Aikasarjan toistot eivät kerro painon sopivuudesta samalla tavalla kuin toistotavoite.
+  if (exercise.target.durationSec) return null
   const definition = exercises.byId.get(exercise.exerciseId)
   if (!definition) return null
 
@@ -311,7 +347,8 @@ function finish() {
         </button>
       </div>
       <p class="mt-0.5 text-xs text-[var(--sport-on)]" data-numeric>
-        Tavoite {{ exercise.target.sets }} × {{ exercise.target.reps }}
+        Tavoite {{ exercise.target.sets }} ×
+        {{ exercise.target.durationSec ? formatWorkTime(exercise.target.durationSec) : exercise.target.reps }}
         <template v-if="!exercise.previous"> · ensimmäinen kerta</template>
       </p>
 
@@ -384,6 +421,10 @@ function finish() {
             :measurement="exercise.measurement"
             :hint="exercise.hint"
             :previous="exercise.previous"
+            :work-sec="exercise.target.durationSec"
+            :work-left="workLeftFor(active.currentBlock, exerciseIndex, setIndex)"
+            @start-work="startWork(active.currentBlock, exerciseIndex, setIndex)"
+            @stop-work="session.stopWork()"
             @complete="complete(active.currentBlock, exerciseIndex, setIndex)"
             @undo="session.uncompleteSet({ block: active.currentBlock, exercise: exerciseIndex, set: setIndex })"
             @edit="(values) => edit(active!.currentBlock, exerciseIndex, setIndex, values)"

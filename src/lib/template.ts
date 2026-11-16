@@ -1,5 +1,6 @@
 import { optionsOf } from '@/lib/rotation'
 import { defaultSets } from '@/lib/session'
+import { hasTimeTarget } from '@/lib/timed'
 import type { ActiveSession } from '@/types/session'
 import type { Block, Exercise, Measurement, SetEntry, WorkoutTemplate } from '@/types/workout'
 
@@ -22,6 +23,8 @@ export const DEFAULT_SETS = 3
 export const DEFAULT_REPS = 10
 export const DEFAULT_REST_SEC = 90
 export const MAX_SETS = 10
+/** Aikatavoitteen oletus, kun toistotavoite vaihdetaan ajaksi. */
+export const DEFAULT_WORK_SEC = 60
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -52,7 +55,7 @@ export function targetOf(entry: { sets: SetEntry[] }): { sets: number; reps?: nu
   return { sets: entry.sets.length, reps: first?.reps, durationSec: first?.durationSec }
 }
 
-/** Muuttaa sarjamäärää tai toistoja (aikaliikkeellä kestoa). Kaikki sarjat saavat saman arvon. */
+/** Muuttaa sarjamäärää tai toistoja (aikaliikkeellä ja aikatavoitteella kestoa). Kaikki sarjat saavat saman arvon. */
 export function setTarget(
   template: WorkoutTemplate,
   at: ExerciseRef,
@@ -64,10 +67,31 @@ export function setTarget(
   // Vaihtuvan liikkeen jokaisella liikkeellä on omat tavoitteensa. Kierron ensimmäinen on liike itse.
   const entry = at.option ? block.alternatives![at.option - 1] : block
   const current = targetOf(entry)
+  const time = measurement === 'time' || hasTimeTarget(entry.sets, measurement)
   const count = Math.min(MAX_SETS, Math.max(1, Math.round(change.sets ?? current.sets)))
-  const value = Math.max(1, Math.round(change.value ?? (measurement === 'time' ? current.durationSec : current.reps) ?? 1))
+  const value = Math.max(1, Math.round(change.value ?? (time ? current.durationSec : current.reps) ?? 1))
   entry.sets = Array.from({ length: count }, () =>
-    measurement === 'time' ? { durationSec: value, done: false } : { reps: value, done: false },
+    time ? { durationSec: value, done: false } : { reps: value, done: false },
+  )
+  return next
+}
+
+/**
+ * Vaihtaa toisto- tai painoliikkeen tavoitteen toistoista aikaan tai takaisin. Sarjamäärä
+ * säilyy, arvo alkaa oletuksesta. Aikaliikkeellä (lankku) tavoite on aina aika.
+ */
+export function setTargetKind(
+  template: WorkoutTemplate,
+  at: ExerciseRef,
+  measurement: Measurement,
+  kind: 'reps' | 'time',
+): WorkoutTemplate {
+  const entry = template.blocks[at.block].exercises[at.exercise]
+  if (measurement === 'time' || hasTimeTarget(entry.sets, measurement) === (kind === 'time')) return template
+  const next = clone(template)
+  const target = next.blocks[at.block].exercises[at.exercise]
+  target.sets = target.sets.map(() =>
+    kind === 'time' ? { durationSec: DEFAULT_WORK_SEC, done: false } : { reps: DEFAULT_REPS, done: false },
   )
   return next
 }
@@ -234,6 +258,10 @@ export function fromSession(session: ActiveSession, id: string, name: string): W
     id: block.id,
     restSec: block.restSec,
     exercises: block.exercises.map((entry) => {
+      if (entry.target.durationSec) {
+        const durationSec = entry.target.durationSec
+        return { exerciseId: entry.exerciseId, sets: entry.sets.map(() => ({ durationSec, done: false })) }
+      }
       const time = entry.measurement === 'time'
       const value =
         mostCommon(
@@ -252,7 +280,7 @@ export function fromSession(session: ActiveSession, id: string, name: string): W
   return { id, name, blocks }
 }
 
-/** Arvioitu työaika sarjaa kohden. Tarkentuu myöhemmin, kun historiaa on. */
+/** Arvioitu työaika sarjaa kohden, kun sarjalla ei ole omaa kestoa. Tarkentuu myöhemmin, kun historiaa on. */
 const WORK_SEC_PER_SET = 40
 
 /**
@@ -263,7 +291,7 @@ const WORK_SEC_PER_SET = 40
 export function estimateDurationSec(template: Pick<WorkoutTemplate, 'blocks'>): number {
   const rounds = template.blocks.map((block) => ({
     count: Math.max(0, ...block.exercises.map((e) => e.sets.length)),
-    work: block.exercises.length * WORK_SEC_PER_SET,
+    work: block.exercises.reduce((sum, e) => sum + (e.sets[0]?.durationSec ?? WORK_SEC_PER_SET), 0),
     rest: block.restSec,
   }))
   const total = rounds.reduce((sum, r) => sum + r.count * (r.work + r.rest), 0)

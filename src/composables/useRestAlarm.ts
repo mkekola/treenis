@@ -9,7 +9,7 @@ import { useSession } from '@/stores/session'
 const MIN_AHEAD_MS = 3000
 
 /**
- * Levon päättymisilmoitus, kun käyttäjä on treenin aikana toisessa sovelluksessa.
+ * Levon ja aikasarjan työajan päättymisilmoitus, kun käyttäjä on treenin aikana toisessa sovelluksessa.
  * Taustalle siirtyessä ajastus tallennetaan palvelimelle, joka lähettää ilmoituksen
  * levon päättyessä. Palatessa ajastus poistetaan, koska sovelluksen oma äänimerkki
  * hoitaa silloin asian. Toimii koko sovelluksessa, ei vain treeninäkymässä.
@@ -23,13 +23,27 @@ export function useRestAlarm() {
 
   async function schedule() {
     const active = session.active
-    const endsAt = active?.restEndsAt
+    // Aikasarjan työaika ja lepo eivät ole käynnissä yhtä aikaa: työn aloitus päättää levon.
+    const endsAt = active?.work?.endsAt ?? active?.restEndsAt
     if (!active || !endsAt || !auth.userId || !allowed()) return
     if (Date.parse(endsAt) - Date.now() < MIN_AHEAD_MS) return
-    const next = nextSetLabel(active, (id) => exercises.byId.get(id)?.name ?? 'Seuraava liike')
+    const name = (id: string) => exercises.byId.get(id)?.name ?? 'Seuraava liike'
+    if (active.work) {
+      const { block, exercise } = active.work.set
+      const exerciseId = active.blocks[block]?.exercises[exercise]?.exerciseId
+      await supabase.from('rest_alarms').upsert({
+        user_id: auth.userId,
+        fires_at: endsAt,
+        title: 'Aika loppui',
+        body: `Kirjaa toistot: ${exerciseId ? name(exerciseId) : 'sarja'}`.slice(0, 200),
+      })
+      return
+    }
+    const next = nextSetLabel(active, name)
     await supabase.from('rest_alarms').upsert({
       user_id: auth.userId,
       fires_at: endsAt,
+      title: null,
       body: next ? `Seuraavaksi: ${next}`.slice(0, 200) : 'Seuraava sarja odottaa.',
     })
   }

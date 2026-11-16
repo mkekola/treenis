@@ -8,6 +8,7 @@ import { formatDurationShort } from '@/lib/format'
 import { recentHistory } from '@/lib/history'
 import { buildSession, newSessionExercise, orderBlocks, rotationChoice, swapExercise } from '@/lib/session'
 import { DEFAULT_REPS, estimateDurationSec, setCount, exerciseCount } from '@/lib/template'
+import { formatWorkTime } from '@/lib/timed'
 import { useExercises } from '@/stores/exercises'
 import { usePrograms } from '@/stores/programs'
 import { useSession } from '@/stores/session'
@@ -131,9 +132,18 @@ const kgFormat = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
 const kg = (value: number) => kgFormat.format(value)
 
 function targetText(entry: SessionExercise): string {
-  const value = entry.measurement === 'time' ? `${entry.sets[0]?.durationSec ?? 0} s` : String(entry.target.reps)
+  const value = entry.target.durationSec
+    ? formatWorkTime(entry.target.durationSec)
+    : entry.measurement === 'time'
+      ? `${entry.sets[0]?.durationSec ?? 0} s`
+      : String(entry.target.reps)
   const sides = perSide(entry.exerciseId) ? ' per puoli' : ''
-  const previous = entry.hint && entry.previous ? ` · viimeksi ${kg(entry.previous.weightKg)} kg` : ''
+  const last = entry.previous
+  const previous = entry.hint && last?.weightKg !== undefined
+    ? ` · viimeksi ${kg(last.weightKg)} kg`
+    : entry.target.durationSec && last?.reps
+      ? ` · viimeksi ${last.reps} toistoa`
+      : ''
   return `${entry.sets.length} × ${value}${sides}${previous}`
 }
 

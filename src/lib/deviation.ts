@@ -26,7 +26,8 @@ function clone<T>(value: T): T {
  */
 function targetsFrom(entry: BlockExercise): SetEntry[] {
   const done = entry.sets.filter((set) => set.done)
-  const time = done.some((set) => set.durationSec !== undefined && set.reps === undefined)
+  // Aikaliikkeen ja aikasarjan tavoite on kesto, muuten toistot.
+  const time = done.some((set) => set.durationSec !== undefined)
   const value =
     mostCommon(
       done.map((set) => (time ? set.durationSec : set.reps)).filter((v): v is number => v !== undefined && v > 0),

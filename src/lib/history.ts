@@ -1,5 +1,6 @@
 import type { ExerciseSession } from '@/lib/progression'
 import { localDate } from '@/lib/session'
+import { isTimedSet } from '@/lib/timed'
 import type { PreviousNote } from '@/types/session'
 import type { Workout } from '@/types/workout'
 
@@ -31,13 +32,18 @@ export function sessionsFor(
   exerciseId: string,
   workouts: Workout[],
   limit = 2,
+  /** Aikasarjat ja tavalliset sarjat erikseen: minuutin toistot eivät ole toistotavoitteen sarja. */
+  timed = false,
 ): ExerciseSession[] {
   const sessions: ExerciseSession[] = []
 
   for (const workout of [...workouts].sort(newestFirst)) {
     const found = (workout.logged?.blocks ?? [])
       .flatMap((block) => block.exercises)
-      .find((exercise) => exercise.exerciseId === exerciseId && exercise.sets.some((s) => s.done))
+      .find(
+        (exercise) =>
+          exercise.exerciseId === exerciseId && exercise.sets.some((s) => s.done && isTimedSet(s) === timed),
+      )
 
     if (!found) continue
     sessions.push({ sets: found.sets, feel: found.feel })

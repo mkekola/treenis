@@ -119,6 +119,8 @@ export const useSession = defineStore('session', () => {
     update((s) => logic.setExerciseNote(s, block, exercise, note))
   const editTiming = (edits: TimingEdits) => update((s) => logic.editTiming(s, edits))
   const skipRest = () => update((s) => logic.skipRest(s))
+  const startWork = (ref: SetRef) => update((s) => logic.startWork(s, ref, new Date()))
+  const stopWork = () => update((s) => logic.stopWork(s))
   const goToBlock = (index: number) => update((s) => logic.setCurrentBlock(s, index))
   const moveBlock = (from: number, to: number) => update((s) => logic.moveBlock(s, from, to))
   const orderBlocks = (order: number[]) => update((s) => logic.orderBlocks(s, order))
@@ -185,6 +187,8 @@ export const useSession = defineStore('session', () => {
     setExerciseNote,
     editTiming,
     skipRest,
+    startWork,
+    stopWork,
     goToBlock,
     moveBlock,
     orderBlocks,

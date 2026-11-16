@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
+import { formatDuration } from '@/lib/format'
 import { canComplete } from '@/lib/session'
+import { formatWorkTime } from '@/lib/timed'
 import type { PreviousResult, WeightHint } from '@/types/session'
 import { FEEL_LABELS, type Measurement, type SetEntry } from '@/types/workout'
 
@@ -17,17 +19,34 @@ const props = defineProps<{
   measurement: Measurement
   hint?: WeightHint
   previous?: PreviousResult
+  /** Aikasarjan työaika. Silloin toistot kirjataan ajan jälkeen. */
+  workSec?: number
+  /** Jäljellä oleva työaika, kun tämän rivin ajastin on käynnissä. */
+  workLeft?: number
 }>()
 
-const emit = defineEmits<{ complete: []; undo: []; edit: [values: SetValues] }>()
+const emit = defineEmits<{
+  complete: []
+  undo: []
+  edit: [values: SetValues]
+  'start-work': []
+  'stop-work': []
+}>()
 
 const kgFormat = new Intl.NumberFormat('fi-FI', { maximumFractionDigits: 2 })
 const kg = (value: number) => kgFormat.format(value)
 
-/** "62,5 kg × 12", "× 12" kun painoa ei ole vielä kirjattu. */
+const timed = computed(() => props.workSec !== undefined)
+const running = computed(() => props.workLeft !== undefined)
+
+/** "62,5 kg × 12", "× 12" kun painoa ei ole vielä kirjattu. Aikasarja ilman toistoja: "1 min". */
 const label = computed(() => {
   const { weightKg, reps, durationSec } = props.set
   if (props.measurement === 'time') return `${durationSec ?? 0} s`
+  if (timed.value && reps === undefined) {
+    const time = formatWorkTime(props.workSec!)
+    return props.measurement === 'weight_reps' && weightKg ? `${kg(weightKg)} kg · ${time}` : time
+  }
   if (props.measurement === 'reps') return `${reps ?? 0} toistoa`
   return `${weightKg ? `${kg(weightKg)} kg` : '—'} × ${reps ?? 0}`
 })
@@ -46,7 +65,8 @@ watch(
   () => [props.state, props.set.weightKg, props.measurement] as const,
   ([state, weight, measurement]) => {
     if (state !== 'current') prompting.value = false
-    else if (measurement === 'weight_reps' && !weight) prompting.value = true
+    // Aikasarjassa paino kirjataan ajan jälkeen toistojen kanssa, jotta ajastimen voi käynnistää heti.
+    else if (measurement === 'weight_reps' && !weight && !timed.value) prompting.value = true
   },
   { immediate: true },
 )
@@ -63,7 +83,11 @@ const previousLabel = computed(() => {
   const { previous } = props
   if (!previous) return null
   const feel = previous.feel ? `, tuntui: ${FEEL_LABELS[previous.feel].toLowerCase()}` : ''
-  return `viimeksi ${kg(previous.weightKg)} kg${feel}`
+  const parts = [
+    previous.weightKg !== undefined ? `${kg(previous.weightKg)} kg` : null,
+    previous.reps !== undefined ? `${previous.reps} toistoa` : null,
+  ].filter(Boolean)
+  return parts.length ? `viimeksi ${parts.join(' × ')}${feel}` : null
 })
 
 // --- muokkaus ---
@@ -78,12 +102,22 @@ function parse(text: string): number | undefined {
   return Number.isFinite(value) && value > 0 ? value : undefined
 }
 
+const repsInput = useTemplateRef<HTMLInputElement>('repsInput')
+
 function startEdit() {
   weightText.value = props.set.weightKg ? String(props.set.weightKg).replace('.', ',') : ''
   repsText.value = props.set.reps ? String(props.set.reps) : ''
   secondsText.value = props.set.durationSec ? String(props.set.durationSec) : ''
   editing.value = true
 }
+
+// Kun työaika loppuu tai sen lopettaa, toistokenttä aukeaa valmiiksi kirjoitettavaksi.
+watch(running, async (now, before) => {
+  if (!before || now) return
+  startEdit()
+  await nextTick()
+  repsInput.value?.focus()
+})
 
 function applyEdit() {
   emit('edit', edited.value)
@@ -226,7 +260,29 @@ const rowId = useId()
         {{ index + 1 }}
       </span>
 
-      <div v-if="!editing" class="min-w-0 flex-1">
+      <!-- Aikasarjan työaika käynnissä: jäljellä oleva aika isona, palkki ja lopetus. -->
+      <div v-if="running" class="min-w-0 flex-1">
+        <span class="flex items-center gap-3">
+          <span class="font-display text-[34px] leading-none font-bold tracking-[-0.02em]" role="timer" data-numeric>
+            {{ formatDuration(workLeft ?? 0) }}
+          </span>
+          <button
+            type="button"
+            class="ml-auto min-h-11 rounded-full border border-line bg-bg px-4 text-[15px] font-semibold"
+            @click="emit('stop-work')"
+          >
+            Lopeta
+          </button>
+        </span>
+        <span class="mt-2.5 block h-1.5 overflow-hidden rounded-full bg-[var(--sport-surface)]" aria-hidden="true">
+          <span
+            class="block h-full rounded-full bg-[var(--sport-on)]"
+            :style="{ width: `${Math.round(((workLeft ?? 0) / (workSec ?? 1)) * 100)}%` }"
+          />
+        </span>
+      </div>
+
+      <div v-else-if="!editing" class="min-w-0 flex-1">
         <span class="flex flex-wrap items-center gap-x-2">
           <button
             type="button"
@@ -245,7 +301,9 @@ const rowId = useId()
           </span>
         </span>
         <span class="block text-[11px] text-ink-muted">
-          <template v-if="previousLabel">{{ previousLabel }} · </template>napauta muuttaaksesi
+          <template v-if="previousLabel">{{ previousLabel }} · </template>
+          <template v-if="timed && set.reps === undefined">aloita ▶, kirjaa toistot ajan jälkeen</template>
+          <template v-else>napauta muuttaaksesi</template>
         </span>
       </div>
 
@@ -264,6 +322,7 @@ const rowId = useId()
         <label v-if="measurement !== 'time'" class="min-w-0 flex-1 text-[11px] font-bold text-ink-muted uppercase">
           toistot
           <input
+            ref="repsInput"
             v-model="repsText"
             type="text"
             inputmode="numeric"
@@ -286,7 +345,21 @@ const rowId = useId()
         </button>
       </form>
 
+      <!-- Aikasarja ennen toistoja: ruksin paikalla ajastimen käynnistys. -->
       <button
+        v-if="timed && !running && !editing && set.reps === undefined"
+        type="button"
+        class="flex h-12 flex-none items-center gap-1.5 rounded-full bg-[var(--sport-on)] px-3.5 text-[15px] font-bold text-[var(--sport-surface)]"
+        :aria-label="`Aloita sarja ${index + 1}, ${formatWorkTime(workSec!)}`"
+        @click="emit('start-work')"
+      >
+        <svg class="size-3.5" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+          <polygon points="2,1 11,6 2,11" />
+        </svg>
+        <span data-numeric>{{ formatDuration(workSec!) }}</span>
+      </button>
+      <button
+        v-else-if="!running"
         type="button"
         class="flex size-12 flex-none items-center justify-center rounded-xl border-2 border-ink bg-transparent text-ink active:bg-action active:text-on-action disabled:opacity-40"
         :disabled="!canFinish"
@@ -309,7 +382,7 @@ const rowId = useId()
       {{ index + 1 }}
     </span>
     <span class="min-w-0 flex-1 text-[17px] font-semibold text-ink-muted" data-numeric>
-      {{ set.weightKg || measurement !== 'weight_reps' ? label : `sama paino × ${set.reps ?? 0}` }}
+      {{ set.weightKg || measurement !== 'weight_reps' || timed ? label : `sama paino × ${set.reps ?? 0}` }}
     </span>
     <span
       aria-hidden="true"

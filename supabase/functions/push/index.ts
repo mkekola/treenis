@@ -8,8 +8,9 @@
 //   scheduled  tietokannan ajastus kerran tunnissa (pg_cron, otsake x-cron-secret).
 //           Suomen ajan mukaan: haasteesta 2 pv jäljellä klo 18, haasteen tulos klo 9,
 //           viikkoputki vaarassa lauantaina klo 12. dryRun palauttaa viestit lähettämättä.
-//   rest    tietokannan tarkistus 5 s välein (otsake x-cron-secret), kun jonkin lepo on
-//           päättynyt: "Lepo ohi" niille, jotka ovat treenin aikana toisessa sovelluksessa.
+//   rest    tietokannan tarkistus 5 s välein (otsake x-cron-secret), kun jonkin lepo tai
+//           aikasarjan työaika on päättynyt: ilmoitus niille, jotka ovat treenin aikana
+//           toisessa sovelluksessa.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -388,14 +389,18 @@ async function scheduled(at: string | undefined, dryRun: boolean) {
 
 // ------------------------------------------------------------------- lepo
 
-/** Erääntyneet lepoajastukset. Tietokanta poistaa ne samalla, joten kukin lähtee kerran. */
+/**
+ * Erääntyneet lepo- ja työaika-ajastukset. Tietokanta poistaa ne samalla, joten kukin lähtee
+ * kerran. Työajan ajastuksella on oma otsikko, levon ajastuksella ei.
+ */
 async function restEnded(): Promise<number> {
   const { data, error } = await admin.rpc('claim_due_rest_alarms')
   if (error) throw error
   let sent = 0
-  for (const alarm of (data ?? []) as { user_id: string; body: string }[]) {
+  for (const alarm of (data ?? []) as { user_id: string; title: string | null; body: string }[]) {
     if (!(await wants(alarm.user_id, 'rest'))) continue
-    sent += await sendTo(alarm.user_id, { title: 'Lepo ohi', body: alarm.body, url: '/treeni', tag: 'rest' })
+    const title = alarm.title ?? 'Lepo ohi'
+    sent += await sendTo(alarm.user_id, { title, body: alarm.body, url: '/treeni', tag: 'rest' })
   }
   return sent
 }

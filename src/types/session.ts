@@ -3,11 +3,15 @@ import type { BlockExercise, Feel, Measurement, RotationOption } from '@/types/w
 export interface SessionTarget {
   sets: number
   reps: number
+  /** Aikasarjan työaika (src/lib/timed.ts). Silloin toistot kirjataan ajan jälkeen. */
+  durationSec?: number
 }
 
 /** Mitä liikkeestä tehtiin viimeksi, näytetään sarjarivin alla. */
 export interface PreviousResult {
-  weightKg: number
+  weightKg?: number
+  /** Aikasarjan paras toistomäärä edellisellä kerralla. */
+  reps?: number
   feel?: Feel
 }
 
@@ -62,6 +66,8 @@ export interface ActiveSession {
   notes?: string
   /** Levon päättymishetki. Aikaleima eikä laskuri, jotta lepo jatkuu sivun uudelleenlatauksen yli. */
   restEndsAt?: string
+  /** Käynnissä oleva aikasarjan työaika: mikä sarja ja milloin aika loppuu. */
+  work?: { set: SetRef; endsAt: string }
   /**
    * Yhteenvedossa korjattu ajankohta, vain muutetut kentät. Tallennetaan heti, jotta korjaus
    * säilyy, vaikka sovellus latautuisi uudelleen ennen Tallenna-painallusta.
