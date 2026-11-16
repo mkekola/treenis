@@ -1,43 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppNav from '@/components/AppNav.vue'
 import { useRestAlarm } from '@/composables/useRestAlarm'
 
 const route = useRoute()
-const router = useRouter()
 
 useRestAlarm()
-
-// Takaisin pyyhkäistessä iOS liu'uttaa jo oman kuvansa edellisestä sivusta. Jos sivu
-// sen jälkeen vielä häivytetään esiin, se välähtää. Selaimen takaisin- ja
-// eteenpäin-siirtymät (tyyppi 'pop') näytetään siksi heti, sovelluksen omat linkit
-// pehmeästi kuten ennen.
-const instant = ref(false)
-let popped = false
-router.options.history.listen((_to, _from, info) => {
-  popped = info.type === 'pop'
-})
-router.beforeEach(() => {
-  instant.value = popped
-  popped = false
-})
-const transition = computed(() => ({
-  name: instant.value ? 'instant' : 'page',
-  duration: { enter: instant.value ? 0 : 180, leave: 0 },
-}))
-
-// Yläpalkki vaihtuu samassa hetkessä kuin sivu: kun vanha sivu on poistunut ja uusi
-// tulee esiin. Jos palkki katoaisi heti reitin vaihtuessa, vanha sivu hyppäisi sen
-// verran ylös ennen poistumistaan. Päänäkymien välillä palkki pysyy paikallaan.
-const headerShown = ref(false)
-void router.isReady().then(() => {
-  headerShown.value = Boolean(route.meta.header)
-})
-function onPageEnter() {
-  headerShown.value = Boolean(route.meta.header)
-}
 </script>
 
 <template>
@@ -45,15 +14,9 @@ function onPageEnter() {
     class="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col pt-[env(safe-area-inset-top)]"
   >
     <main class="flex-1 pb-3">
-      <Transition :name="transition.name" :duration="transition.duration">
-        <AppHeader v-if="headerShown" />
-      </Transition>
-      <!-- Uusi näkymä liukuu rauhallisesti esiin. Vanha poistuu heti, jotta siirtymä ei hidasta käyttöä. -->
-      <RouterView v-slot="{ Component }">
-        <Transition :name="transition.name" mode="out-in" :duration="transition.duration" @before-enter="onPageEnter">
-          <component :is="Component" />
-        </Transition>
-      </RouterView>
+      <AppHeader v-if="route.meta.header" />
+      <!-- Sivu vaihtuu heti ilman häivytystä: häivytys näytti välähdykseltä, kun vanha sivu ehti kadota ensin. -->
+      <RouterView />
     </main>
     <AppNav v-if="!route.meta.hideNav" />
   </div>
