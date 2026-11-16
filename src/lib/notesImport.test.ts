@@ -176,7 +176,7 @@ Treeni A 8.11.
       'Maastaveto trap-tangolla',
       'Pystypunnerrus laitteessa',
       'Taljasoutu',
-      'Reisiloitonnus',
+      'Reiden loitonnus',
       'Face pull',
       'Hauiskääntö taljalla',
       'Jalkakyykky',
@@ -320,7 +320,7 @@ Mave
       'Hack-kyykky',
       'Pohjenousu',
       '(uusi) Vatsakierrot',
-      'Rintaflyes',
+      'Chest fly',
       'Penkkidippi',
       'Maastaveto',
     ])
