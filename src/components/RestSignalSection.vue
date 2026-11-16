@@ -48,7 +48,7 @@ function choose(value: RestSignal) {
       </label>
     </fieldset>
     <p v-if="!vibrationAvailable" class="mt-1 text-[13px] text-ink-muted">
-      Värinä ei ole mahdollinen tällä laitteella: iPhone ei salli selainsovelluksen väristä.
+      Värinä ei ole mahdollinen tässä selaimessa.
     </p>
   </section>
 </template>
