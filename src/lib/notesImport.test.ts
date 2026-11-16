@@ -178,13 +178,13 @@ Treeni A 8.11.
       'Taljasoutu',
       'Reiden loitonnus',
       'Face pull',
-      'Hauiskääntö taljalla',
+      'Hauiskääntö taljassa',
       'Jalkakyykky',
       'Penkkipunnerrus käsipainoilla',
       'Pohjenousu',
       'Ylätalja',
       'Askelkyykky',
-      'Ojentajapunnerrus taljalla',
+      'Ojentajapunnerrus taljassa',
       'Ylätalja',
     ])
   })

@@ -24,7 +24,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   ex('dumbbell-bench-press', 'Penkkipunnerrus käsipainoilla', 'chest', 'weight_reps', ['käsipainopenkki']),
   ex('incline-dumbbell-press', 'Vinopenkki käsipainoilla', 'chest', 'weight_reps', ['vinopenkki käsipainoilla']),
   ex('dumbbell-fly', 'Chest fly', 'chest', 'weight_reps', ['rintaflyes', 'flyes', 'fly', 'levitys', 'pec deck', 'peck-deck', 'pec machine', 'vipunostot maaten']),
-  ex('cable-crossover', 'Rintavipu taljalla', 'chest', 'weight_reps', ['crossover', 'kaapeliristi', 'rintavipu kaapelilla', 'ristikkäistalja']),
+  ex('cable-crossover', 'Rintavipu taljassa', 'chest', 'weight_reps', ['rintavipu taljalla', 'crossover', 'kaapeliristi', 'rintavipu kaapelilla', 'ristikkäistalja']),
   ex('chest-press-machine', 'Rintaprässi', 'chest', 'weight_reps', ['chest press', 'rintapunnerrus laitteessa']),
   ex('push-up', 'Punnerrus', 'chest', 'reps', ['punnerrukset', 'push up', 'lauta']),
   ex('dips', 'Dippi', 'chest', 'reps', ['dipit', 'dips', 'pystypunnerrus tangoissa']),
@@ -61,8 +61,8 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   ex('dumbbell-curl', 'Hauiskääntö käsipainoilla', 'arms', 'weight_reps', ['hauis käsipainoilla', 'käsipainokääntö', 'hauiskäännö käsipainoilla']),
   ex('hammer-curl', 'Vasarakääntö', 'arms', 'weight_reps', ['hammer curl', 'vasara', 'vasarakäännö']),
   ex('preacher-curl', 'Scott-penkki', 'arms', 'weight_reps', ['saarnaajapenkki', 'hauiskääntö scott penkissä', 'preacher', 'scott']),
-  ex('cable-curl', 'Hauiskääntö taljalla', 'arms', 'weight_reps', ['hauis taljalla', 'kaapelihauis', 'hauiskääntö kaapelilla', 'hauiskäännö kaapelilla']),
-  ex('triceps-pushdown', 'Ojentajapunnerrus taljalla', 'arms', 'weight_reps', ['ojentajapunnerrus', 'pushdown', 'ojentajaveto', 'ojentaja', 'ojentajat']),
+  ex('cable-curl', 'Hauiskääntö taljassa', 'arms', 'weight_reps', ['hauiskääntö taljalla', 'hauis taljalla', 'kaapelihauis', 'hauiskääntö kaapelilla', 'hauiskäännö kaapelilla']),
+  ex('triceps-pushdown', 'Ojentajapunnerrus taljassa', 'arms', 'weight_reps', ['ojentajapunnerrus taljalla', 'ojentajapunnerrus', 'pushdown', 'ojentajaveto', 'ojentaja', 'ojentajat']),
   ex('skull-crusher', 'Ranskalainen punnerrus', 'arms', 'weight_reps', ['skull crusher', 'ranskalainen', 'ojentajapunnerrus makuulla']),
   ex('overhead-triceps-extension', 'Ojentajapunnerrus pään yli', 'arms', 'weight_reps', ['overhead extension', 'ojentaja pään yli']),
   ex('close-grip-bench', 'Penkkipunnerrus kapealla otteella', 'arms', 'weight_reps', ['kapea penkki']),
@@ -91,7 +91,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   // Pakarat
   ex('hip-thrust', 'Lantionnosto', 'glutes', 'weight_reps', ['hip thrust', 'pakarat', 'lantio']),
   ex('glute-bridge', 'Lantiosilta', 'glutes', 'reps', ['glute bridge', 'silta']),
-  ex('cable-kickback', 'Pakaranpotku taljalla', 'glutes', 'weight_reps', ['kickback', 'potku taljalla', 'pakaranpotku kaapelilla', 'lonkan ojennus taljassa'], true),
+  ex('cable-kickback', 'Pakaranpotku taljassa', 'glutes', 'weight_reps', ['pakaranpotku taljalla', 'kickback', 'potku taljalla', 'pakaranpotku kaapelilla', 'lonkan ojennus taljassa'], true),
   ex('good-morning', 'Good morning', 'glutes', 'weight_reps', ['goodmorning', 'hyvää huomenta']),
 
   // Keskivartalo
@@ -100,7 +100,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   ex('hollow-hold', 'Hollow hold', 'core', 'time', ['hollow', 'venepito']),
   ex('crunch', 'Vatsarutistus', 'core', 'reps', ['vatsarutistukset', 'crunch', 'vatsat']),
   ex('sit-up', 'Istumaannousu', 'core', 'reps', ['sit up', 'vatsaprässi']),
-  ex('cable-crunch', 'Vatsarutistus taljalla', 'core', 'weight_reps', ['cable crunch', 'kaapelivatsa', 'vatsarutistus kaapelilla']),
+  ex('cable-crunch', 'Vatsarutistus taljassa', 'core', 'weight_reps', ['vatsarutistus taljalla', 'cable crunch', 'kaapelivatsa', 'vatsarutistus kaapelilla']),
   ex('hanging-leg-raise', 'Riipunnassa jalkojen nosto', 'core', 'reps', ['jalannosto', 'jalan nostot roikkuen', 'hanging leg raise', 'polvennosto']),
   ex('russian-twist', 'Venäläinen kierto', 'core', 'weight_reps', ['russian twist', 'kierto', 'vartalon kierto paino sylissä']),
   ex('ab-wheel', 'Vatsarulla', 'core', 'reps', ['ab wheel', 'rulla']),

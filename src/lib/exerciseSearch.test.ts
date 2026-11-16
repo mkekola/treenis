@@ -27,7 +27,7 @@ describe('searchExercises', () => {
 
   it('löytää Marian sanaston', () => {
     expect(names('taljasoutu')[0]).toBe('Taljasoutu')
-    expect(names('ojentajapunnerrus')[0]).toBe('Ojentajapunnerrus taljalla')
+    expect(names('ojentajapunnerrus')[0]).toBe('Ojentajapunnerrus taljassa')
   })
 
   it('palauttaa tyhjän kun mikään ei osu, ja kaiken tyhjällä haulla', () => {

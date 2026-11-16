@@ -249,7 +249,7 @@ export function parseNotes(text: string, today: Date): ParsedWorkout[] {
 /** Välinelyhenteet muistiinpanoissa ja kirjaston nimissä: "Penkkipunnerrus KP" → "käsipainoilla". */
 const EQUIPMENT: Record<string, string> = {
   KP: 'käsipainoilla',
-  TL: 'taljalla',
+  TL: 'taljassa',
   L: 'laitteessa',
   LT: 'tangolla',
   T: 'tangolla',
