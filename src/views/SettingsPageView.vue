@@ -46,9 +46,11 @@ const section = computed(() => SECTIONS[key.value])
     </RouterLink>
     <h1 class="-mt-1 font-display text-[30px] leading-[1.05] font-bold tracking-[-0.02em]">{{ title }}</h1>
 
-    <component :is="section" v-if="section" />
-    <!-- Levon loppumerkki ei ole push-ilmoitus, mutta kuuluu samaan kysymykseen: miten sovellus ilmoittaa. -->
-    <RestSignalSection v-if="key === 'ilmoitukset'" />
+    <template v-if="section">
+      <component :is="section" />
+      <!-- Levon loppumerkki ei ole push-ilmoitus, mutta kuuluu samaan kysymykseen: miten sovellus ilmoittaa. -->
+      <RestSignalSection v-if="key === 'ilmoitukset'" />
+    </template>
     <p v-else class="text-[15px] text-ink-muted">Sivua ei löytynyt.</p>
   </div>
 </template>
