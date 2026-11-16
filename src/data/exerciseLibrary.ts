@@ -1,4 +1,5 @@
-import type { Exercise, Measurement, MuscleGroup } from '@/types/workout'
+import { LIBRARY_MUSCLES } from '@/data/exerciseMuscles'
+import type { Exercise, Measurement, Muscle, MuscleGroup } from '@/types/workout'
 
 /**
  * Valmis liikekirjasto. Historia kytkeytyy id:hen eikä nimeen, joten nimen
@@ -13,7 +14,7 @@ function ex(
   aliases: string[] = [],
   perSide = false,
 ): Exercise {
-  return { id, name, muscleGroup, measurement, perSide, aliases, custom: false }
+  return { id, name, muscleGroup, muscles: LIBRARY_MUSCLES[id] ?? [], measurement, perSide, aliases, custom: false }
 }
 
 export const EXERCISE_LIBRARY: Exercise[] = [
@@ -180,6 +181,27 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   glutes: 'Pakarat',
   core: 'Keskivartalo',
   full_body: 'Koko keho',
+}
+
+/** Päälihakset salikielellä. */
+export const MUSCLE_LABELS: Record<Muscle, string> = {
+  chest: 'Rinta',
+  front_delts: 'Etuolkapää',
+  side_delts: 'Sivuolkapää',
+  rear_delts: 'Takaolkapää',
+  lats: 'Leveä selkälihas',
+  upper_back: 'Yläselkä',
+  lower_back: 'Alaselkä',
+  biceps: 'Hauis',
+  triceps: 'Ojentajat',
+  forearms: 'Kyynärvarret',
+  quads: 'Etureidet',
+  hamstrings: 'Takareidet',
+  glutes: 'Pakarat',
+  adductors: 'Sisäreidet',
+  calves: 'Pohkeet',
+  abs: 'Vatsat',
+  obliques: 'Vinot vatsat',
 }
 
 export const MEASUREMENT_LABELS: Record<Measurement, string> = {

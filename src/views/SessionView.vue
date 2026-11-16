@@ -542,6 +542,7 @@ function finish() {
     <ExercisePicker
       :open="picker !== null"
       :title="picker?.mode === 'swap' ? 'Vaihda liike' : 'Lisää liike'"
+      :substitute-for="picker?.mode === 'swap' ? block?.exercises[picker.exercise]?.exerciseId : undefined"
       @select="onPick"
       @close="picker = null"
     />

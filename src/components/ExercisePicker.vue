@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVisibleViewport } from '@/composables/useVisibleViewport'
-import { MEASUREMENT_LABELS, MUSCLE_GROUP_LABELS } from '@/data/exerciseLibrary'
+import { MEASUREMENT_LABELS, MUSCLE_GROUP_LABELS, MUSCLE_LABELS } from '@/data/exerciseLibrary'
 import { frequentExerciseIds } from '@/lib/history'
 import { localDate } from '@/lib/session'
+import { musclesOf, substitutesFor } from '@/lib/substitutes'
 import { useExercises } from '@/stores/exercises'
 import { useWorkouts } from '@/stores/workouts'
 import type { Exercise, Measurement, MuscleGroup } from '@/types/workout'
 
-const props = defineProps<{ open: boolean; title: string }>()
+const props = defineProps<{
+  open: boolean
+  title: string
+  /** Vaihdettava tai kiertoon täydennettävä liike: sen korvaavat liikkeet näytetään ylimpänä. */
+  substituteFor?: string
+}>()
 const emit = defineEmits<{ select: [exercise: Exercise]; close: [] }>()
 
 const exercises = useExercises()
@@ -45,12 +51,29 @@ const results = computed(() => exercises.search(query.value))
 /** Kolme kuukautta: lista seuraa nykyistä ohjelmaa. */
 const FREQUENT_DAYS = 90
 
-/** Tyhjällä haulla eniten tehdyt liikkeet ensin: salilla vaihdetaan yleensä liikkeeseen, jonka tuntee. */
-const recents = computed<Exercise[]>(() => {
-  if (query.value.trim()) return []
+/** Liikkeet yleisimmästä alkaen viimeisen kolmen kuukauden ajalta. */
+const frequentIds = computed(() => {
   const since = new Date()
   since.setDate(since.getDate() - FREQUENT_DAYS)
-  return frequentExerciseIds(workouts.workouts, localDate(since), 6)
+  return frequentExerciseIds(workouts.workouts, localDate(since), exercises.all.length)
+})
+
+/**
+ * Tyhjällä haulla ensin liikkeet, jotka treenaavat samoja lihaksia kuin vaihdettava
+ * liike, tasapisteissä tutuimmat ensin. Esimerkiksi laite on varattu.
+ */
+const substitutes = computed<Exercise[]>(() => {
+  const current = props.substituteFor ? exercises.byId.get(props.substituteFor) : undefined
+  if (query.value.trim() || !current) return []
+  return substitutesFor(current, exercises.all, frequentIds.value)
+})
+
+/** Sitten eniten tehdyt liikkeet: salilla vaihdetaan yleensä liikkeeseen, jonka tuntee. */
+const recents = computed<Exercise[]>(() => {
+  if (query.value.trim()) return []
+  return frequentIds.value
+    .filter((id) => id !== props.substituteFor && !substitutes.value.some((e) => e.id === id))
+    .slice(0, 6)
     .map((id) => exercises.byId.get(id))
     .filter((exercise): exercise is Exercise => exercise !== undefined)
 })
@@ -62,6 +85,9 @@ const canCreate = computed(
 
 const describe = (exercise: Exercise) =>
   `${MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · ${MEASUREMENT_LABELS[exercise.measurement]}${exercise.perSide ? ' · per puoli' : ''}`
+
+/** Korvaavalle liikkeelle lihakset, jotta näkee miksi se on ehdotettu. */
+const describeMuscles = (exercise: Exercise) => musclesOf(exercise).map((m) => MUSCLE_LABELS[m]).join(', ')
 
 function create() {
   const exercise = exercises.addCustom({
@@ -174,8 +200,28 @@ function onBackdropClick(event: MouseEvent) {
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-6">
-        <template v-if="recents.length">
+        <template v-if="substitutes.length">
           <h3 class="mt-2 mb-1.5 text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
+            Korvaavat liikkeet
+          </h3>
+          <ul class="flex flex-col gap-1.5">
+            <li v-for="exercise in substitutes" :key="`substitute-${exercise.id}`">
+              <button
+                type="button"
+                class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
+                @click="emit('select', exercise)"
+              >
+                <span class="text-[15px] font-semibold">{{ exercise.name }}</span>
+                <span class="text-xs text-ink-muted">{{ describeMuscles(exercise) }}</span>
+              </button>
+            </li>
+          </ul>
+        </template>
+        <template v-if="recents.length">
+          <h3
+            class="mb-1.5 text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase"
+            :class="substitutes.length ? 'mt-4' : 'mt-2'"
+          >
             Eniten tehdyt
           </h3>
           <ul class="flex flex-col gap-1.5">
@@ -195,7 +241,13 @@ function onBackdropClick(event: MouseEvent) {
           </h3>
         </template>
 
-        <ul class="flex flex-col gap-1.5" :class="{ 'mt-2': !recents.length }">
+        <h3
+          v-if="substitutes.length && !recents.length"
+          class="mt-4 mb-1.5 text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase"
+        >
+          Kaikki liikkeet
+        </h3>
+        <ul class="flex flex-col gap-1.5" :class="{ 'mt-2': !recents.length && !substitutes.length }">
           <li v-for="exercise in results" :key="exercise.id">
             <button
               type="button"

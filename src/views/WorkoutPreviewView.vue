@@ -100,6 +100,12 @@ const originalOf = (block: number, exercise: number) =>
   template.value?.blocks[block]?.exercises[exercise]?.exerciseId
 
 const swapping = ref<{ block: number; exercise: number } | null>(null)
+/** Vaihdettavana oleva liike, myös jos se on jo vaihdettu tälle kerralle. */
+const swappingId = computed(() => {
+  const at = swapping.value
+  if (!at) return undefined
+  return swaps.value.get(keyOf(at.block, at.exercise)) ?? originalOf(at.block, at.exercise)
+})
 
 function onPick(exercise: Exercise) {
   const at = swapping.value
@@ -389,6 +395,12 @@ async function begin() {
       </div>
     </template>
 
-    <ExercisePicker :open="swapping !== null" title="Vaihda tälle kerralle" @select="onPick" @close="swapping = null" />
+    <ExercisePicker
+      :open="swapping !== null"
+      title="Vaihda tälle kerralle"
+      :substitute-for="swappingId"
+      @select="onPick"
+      @close="swapping = null"
+    />
   </div>
 </template>

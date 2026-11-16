@@ -59,11 +59,36 @@ export type MuscleGroup =
   | 'core'
   | 'full_body'
 
+/** Päälihas. Tarkempi kuin lihasryhmä, jotta korvaava liike treenaa samoja lihaksia. */
+export type Muscle =
+  | 'chest'
+  | 'front_delts'
+  | 'side_delts'
+  | 'rear_delts'
+  | 'lats'
+  | 'upper_back'
+  | 'lower_back'
+  | 'biceps'
+  | 'triceps'
+  | 'forearms'
+  | 'quads'
+  | 'hamstrings'
+  | 'glutes'
+  | 'adductors'
+  | 'calves'
+  | 'abs'
+  | 'obliques'
+
 /** Liikekirjaston liike. Historia kytkeytyy tunnisteeseen, ei nimeen. */
 export interface Exercise {
   id: string
   name: string
   muscleGroup: MuscleGroup
+  /**
+   * Päälihakset. Tyhjä kirjaston liikkeellä: koko kehon liike. Puuttuu omalta liikkeeltä,
+   * joka on luotu ennen lihasvalintaa: silloin lihakset arvioidaan lihasryhmästä.
+   */
+  muscles?: Muscle[]
   measurement: Measurement
   /** Yhden puolen liike: kirjattu luku tarkoittaa per puoli, sama molemmille. */
   perSide: boolean

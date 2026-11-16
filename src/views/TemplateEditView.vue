@@ -558,6 +558,7 @@ async function deleteTemplate() {
     <ExercisePicker
       :open="pickerOpen"
       :title="pickerTitle"
+      :substitute-for="pickFor ? template?.blocks[pickFor.at.block]?.exercises[pickFor.at.exercise]?.exerciseId : undefined"
       @select="onPick"
       @close="closePicker"
     />
