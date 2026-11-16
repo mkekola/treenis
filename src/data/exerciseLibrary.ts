@@ -89,7 +89,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   ex('sumo-squat', 'Sumokyykky', 'legs', 'weight_reps', ['sumo', 'sumo squat', 'leveä kyykky']),
 
   // Pakarat
-  ex('hip-thrust', 'Lantionnosto', 'glutes', 'weight_reps', ['hip thrust', 'pakarat', 'lantio']),
+  ex('hip-thrust', 'Hip thrust', 'glutes', 'weight_reps', ['lantionnosto', 'pakarat', 'lantio']),
   ex('glute-bridge', 'Lantiosilta', 'glutes', 'reps', ['glute bridge', 'silta']),
   ex('cable-kickback', 'Pakaranpotku taljassa', 'glutes', 'weight_reps', ['pakaranpotku taljalla', 'kickback', 'potku taljalla', 'pakaranpotku kaapelilla', 'lonkan ojennus taljassa'], true),
   ex('good-morning', 'Good morning', 'glutes', 'weight_reps', ['goodmorning', 'hyvää huomenta']),
