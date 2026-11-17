@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ChallengeCard from '@/components/ChallengeCard.vue'
 import FeedItem from '@/components/FeedItem.vue'
@@ -24,16 +24,31 @@ const hasStravaData = computed(() => feed.rows.some((row) => row.from_strava))
 /** Päivät otsikoiksi: "Tänään", "Eilen", "Perjantai 13.11." toistuisi muuten joka rivillä. */
 const days = computed(() => groupByDay(feed.rows, new Date()))
 
-async function load() {
-  loadError.value = ''
+let loadedAt = 0
+
+/** Taustapäivitys on hiljainen: epäonnistuessa vanha syöte jää näkyviin ilman virhettä. */
+async function load(background = false) {
+  if (!background) loadError.value = ''
   try {
     await Promise.all([friends.load(), feed.load(), challenges.load()])
+    loadedAt = Date.now()
   } catch {
-    loadError.value = 'Kaverit tarvitsevat verkkoyhteyden. Kokeile uudelleen.'
+    if (!background) loadError.value = 'Kaverit tarvitsevat verkkoyhteyden. Kokeile uudelleen.'
   }
 }
 
-onMounted(load)
+/** Taustalta palatessa haetaan uudet kommentit ja reaktiot, jos edellisestä hausta on hetki. */
+const REFRESH_AFTER_MS = 30_000
+
+function onVisibility() {
+  if (document.visibilityState === 'visible' && Date.now() - loadedAt > REFRESH_AFTER_MS) load(true)
+}
+
+onMounted(() => {
+  load()
+  document.addEventListener('visibilitychange', onVisibility)
+})
+onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibility))
 
 /** Kommentti-ilmoitus avaa syötteen osoitteella /kaverit?treeni=<id>. */
 const route = useRoute()
@@ -121,7 +136,7 @@ async function hide(workoutId: string) {
       <button
         type="button"
         class="mt-3 min-h-11 w-full rounded-(--radius-button) border border-line font-semibold"
-        @click="load"
+        @click="load()"
       >
         Yritä uudelleen
       </button>
