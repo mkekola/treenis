@@ -164,6 +164,17 @@
   button {
     font: inherit;
   }
+
+  /* iOS Safari antaa päivämääräkentälle oman minimileveyden, jolloin se ei mahdu kapeaan sarakkeeseen. */
+  input[type='date'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+
+  input[type='date']::-webkit-date-and-time-value {
+    text-align: inherit;
+  }
 }
 
 /* Napin painallus joustaa hieman, jotta kosketus tuntuu. */
