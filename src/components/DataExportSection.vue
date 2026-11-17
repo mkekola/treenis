@@ -48,6 +48,7 @@ function downloadJson() {
       templates: templates.templates,
       programs: programs.programs,
       customExercises: exercises.custom,
+      substitutePins: [...exercises.pins.values()].filter((p) => p.substituteIds.length),
     },
     new Date(),
   )

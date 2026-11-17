@@ -41,6 +41,16 @@ describe('korvaavat liikkeet', () => {
     expect(names(found)[0]).toBe('Sumokyykky')
   })
 
+  it('kiinnitetyt tulevat ensin, eivätkä vie ehdotusten paikkoja', () => {
+    const found = substitutesFor(exercise('back-squat'), EXERCISE_LIBRARY, [], ['walking-lunge', 'leg-press'])
+    expect(names(found)).toEqual(['Askelkyykky kävellen', 'Jalkaprässi', 'Etukyykky', 'Goblet-kyykky', 'Hack-kyykky', 'Kyykky Smith-laitteessa'])
+  })
+
+  it('liikettä itseään ei voi kiinnittää omaksi korvaajakseen', () => {
+    const found = substitutesFor(exercise('back-squat'), EXERCISE_LIBRARY, [], ['back-squat'])
+    expect(names(found)).not.toContain('Jalkakyykky')
+  })
+
   it('hauiskäännölle ei leuanvetoa: liian vähän yhteisiä lihaksia', () => {
     expect(names(substitutesFor(exercise('barbell-curl'), EXERCISE_LIBRARY))).not.toContain('Leuanveto')
   })

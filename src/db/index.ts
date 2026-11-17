@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type { StravaActivity } from '@/lib/strava'
 import type { ActiveSession } from '@/types/session'
 import { DEFAULT_PROGRAM_ID, DEFAULT_PROGRAM_NAME } from '@/lib/program'
-import type { Exercise, Program, Workout, WorkoutTemplate } from '@/types/workout'
+import type { Exercise, Program, SubstitutePins, Workout, WorkoutTemplate } from '@/types/workout'
 
 /** Käynnissä oleva treeni. Yksi rivi, koska treenejä ei tehdä kahta yhtä aikaa. */
 export interface ActiveSessionRecord {
@@ -10,12 +10,13 @@ export interface ActiveSessionRecord {
   session: ActiveSession
 }
 
-export type SyncKind = 'workout' | 'template' | 'exercise' | 'program'
+export type SyncKind = 'workout' | 'template' | 'exercise' | 'program' | 'substitutes'
 
 /**
  * Laitteella muuttunut rivi, jota ei ole vielä lähetetty Supabaseen.
  * Tunnisteet eivät mene ristiin: treenit ovat UUID:ita, pohjat "template-…",
- * omat liikkeet "custom-…" ja ohjelmat "program-…".
+ * omat liikkeet "custom-…", ohjelmat "program-…" ja korvaavien kiinnitykset
+ * "substitutes:" + liikkeen tunniste.
  */
 export interface OutboxRecord {
   id: string
@@ -52,6 +53,7 @@ class TreenisDb extends Dexie {
   activeSession!: Table<ActiveSessionRecord, string>
   outbox!: Table<OutboxRecord, string>
   stravaActivities!: Table<StravaActivity, number>
+  substitutePins!: Table<SubstitutePins, string>
 
   constructor() {
     super('treenis')
@@ -124,6 +126,8 @@ class TreenisDb extends Dexie {
     // Versio 5 lisää Stravasta tuodut aktiviteetit. Sovellus yhdistää ne
     // kirjattuihin treeneihin täällä, koska vain laite näkee synkkaamattomat treenit.
     this.version(5).stores({ stravaActivities: 'id' })
+    // Versio 6 lisää kiinnitetyt korvaavat liikkeet.
+    this.version(6).stores({ substitutePins: 'exerciseId' })
   }
 }
 

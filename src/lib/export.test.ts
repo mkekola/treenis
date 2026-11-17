@@ -42,7 +42,7 @@ describe('CSV-vienti', () => {
 describe('JSON-vienti', () => {
   it('sisältää kaiken ja muodon version', () => {
     const json = JSON.parse(
-      exportJson({ workouts: [strengthWorkout('w1', '2026-11-12', [])], templates: [], programs: [], customExercises: [] }, new Date('2026-11-14T12:00:00Z')),
+      exportJson({ workouts: [strengthWorkout('w1', '2026-11-12', [])], templates: [], programs: [], customExercises: [], substitutePins: [] }, new Date('2026-11-14T12:00:00Z')),
     )
     expect(json).toMatchObject({ app: 'Treenis', version: 1, exportedAt: '2026-11-14T12:00:00.000Z' })
     expect(json.workouts).toHaveLength(1)

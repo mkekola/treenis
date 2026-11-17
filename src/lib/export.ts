@@ -1,11 +1,20 @@
 import { avgHr, distanceM, durationSec, isFromStrava } from '@/lib/workout'
-import { FEEL_LABELS, SPORT_LABELS, type Exercise, type Program, type Workout, type WorkoutTemplate } from '@/types/workout'
+import {
+  FEEL_LABELS,
+  SPORT_LABELS,
+  type Exercise,
+  type Program,
+  type SubstitutePins,
+  type Workout,
+  type WorkoutTemplate,
+} from '@/types/workout'
 
 export interface ExportData {
   workouts: Workout[]
   templates: WorkoutTemplate[]
   programs: Program[]
   customExercises: Exercise[]
+  substitutePins: SubstitutePins[]
 }
 
 /**
@@ -22,6 +31,7 @@ export function exportJson(data: ExportData, exportedAt: Date): string {
       programs: data.programs,
       templates: data.templates,
       customExercises: data.customExercises,
+      substitutePins: data.substitutePins,
     },
     null,
     2,

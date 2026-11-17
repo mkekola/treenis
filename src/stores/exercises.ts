@@ -4,7 +4,8 @@ import { EXERCISE_LIBRARY } from '@/data/exerciseLibrary'
 import { MUSCLE_GROUP_OF } from '@/data/exerciseMuscles'
 import { db, plain } from '@/db'
 import { normalize, searchExercises } from '@/lib/exerciseSearch'
-import type { Exercise, Measurement, Muscle } from '@/types/workout'
+import { pinsOutboxId } from '@/lib/sync'
+import type { Exercise, Measurement, Muscle, SubstitutePins } from '@/types/workout'
 
 export interface NewExercise {
   name: string
@@ -16,9 +17,12 @@ export interface NewExercise {
 
 export const useExercises = defineStore('exercises', () => {
   const custom = ref<Exercise[]>([])
+  /** Kiinnitetyt korvaavat liikkeet liikkeittäin. */
+  const pins = ref(new Map<string, SubstitutePins>())
 
   async function load() {
     custom.value = await db.customExercises.toArray()
+    pins.value = new Map((await db.substitutePins.toArray()).map((p) => [p.exerciseId, p]))
   }
 
   const all = computed(() => [...EXERCISE_LIBRARY, ...custom.value])
@@ -81,5 +85,42 @@ export const useExercises = defineStore('exercises', () => {
     custom.value = custom.value.filter((e) => e.id !== id)
   }
 
-  return { all, custom, byId, search, findByName, load, addCustom, applyRemote, removeLocal }
+  function pinnedFor(exerciseId: string): string[] {
+    return pins.value.get(exerciseId)?.substituteIds ?? []
+  }
+
+  /** Kiinnittää korvaajan tai irrottaa kiinnitetyn. Näkyy heti, ennen kuin tallennus on valmis. */
+  async function togglePin(exerciseId: string, substituteId: string) {
+    const current = pinnedFor(exerciseId)
+    const substituteIds = current.includes(substituteId)
+      ? current.filter((id) => id !== substituteId)
+      : [...current, substituteId]
+    const next: SubstitutePins = { exerciseId, substituteIds, updatedAt: new Date().toISOString() }
+    pins.value = new Map(pins.value).set(exerciseId, next)
+    await db.transaction('rw', db.substitutePins, db.outbox, async () => {
+      await db.substitutePins.put(plain(next))
+      await db.outbox.put({ id: pinsOutboxId(exerciseId), kind: 'substitutes', updatedAt: next.updatedAt })
+    })
+  }
+
+  async function applyRemotePins(remote: SubstitutePins) {
+    await db.substitutePins.put(plain(remote))
+    pins.value = new Map(pins.value).set(remote.exerciseId, remote)
+  }
+
+  return {
+    all,
+    custom,
+    byId,
+    pins,
+    search,
+    findByName,
+    load,
+    addCustom,
+    applyRemote,
+    removeLocal,
+    pinnedFor,
+    togglePin,
+    applyRemotePins,
+  }
 })

@@ -106,6 +106,16 @@ export interface Exercise {
 }
 
 /**
+ * Käyttäjän kiinnittämät korvaavat liikkeet yhdelle liikkeelle. Kiinnitetyt näkyvät
+ * korvaavien kärjessä ennen lihasvertailun ehdotuksia. Tyhjä lista: kaikki irrotettu.
+ */
+export interface SubstitutePins {
+  exerciseId: string
+  substituteIds: string[]
+  updatedAt: string
+}
+
+/**
  * Tuntuma kysytään liikkeen viimeisen sarjan jälkeen, levon aikana.
  * Progressiosääntö jakaa sanat kolmeen tekoon: nosta, pidä, laske.
  */

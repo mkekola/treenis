@@ -6,6 +6,9 @@ import {
   exerciseFromRow,
   exerciseToRow,
   latestUpdate,
+  pinsFromRow,
+  pinsOutboxId,
+  pinsToRow,
   programFromRow,
   programToRow,
   pushAll,
@@ -16,6 +19,7 @@ import {
   type ExerciseRow,
   type ProgramRow,
   type RemoteWorkout,
+  type SubstitutePinsRow,
   type TemplateRow,
 } from '@/lib/sync'
 import { useExercises } from '@/stores/exercises'
@@ -79,6 +83,13 @@ export const useSync = defineStore('sync', () => {
       const { error } = await supabase
         .from('templates')
         .upsert({ ...templateToRow(template), user_id: userId })
+      if (error) throw error
+      return true
+    }
+    if (entry.kind === 'substitutes') {
+      const pins = await db.substitutePins.get(entry.id.slice('substitutes:'.length))
+      if (!pins) return true
+      const { error } = await supabase.from('substitute_pins').upsert({ ...pinsToRow(pins), user_id: userId })
       if (error) throw error
       return true
     }
@@ -164,6 +175,19 @@ export const useSync = defineStore('sync', () => {
     }
   }
 
+  async function pullPins() {
+    const { data, error } = await supabase.from('substitute_pins').select('exercise_id, substitute_ids, updated_at')
+    if (error) throw error
+    for (const remote of (data as SubstitutePinsRow[]).map(pinsFromRow)) {
+      const action = remoteAction(
+        remote,
+        await db.substitutePins.get(remote.exerciseId),
+        await isPending(pinsOutboxId(remote.exerciseId)),
+      )
+      if (action === 'put') await exercises.applyRemotePins(remote)
+    }
+  }
+
   async function once() {
     const { data } = await supabase.auth.getSession()
     if (!data.session) {
@@ -180,6 +204,7 @@ export const useSync = defineStore('sync', () => {
       await pullTemplates()
       await pullPrograms()
       await pullExercises()
+      await pullPins()
       // Strava sovitetaan vasta kun laitteen treenit ovat ajan tasalla. Strava-
       // virhe ei tee koko synkasta virheellistä: kirjatut treenit kulkivat jo.
       const stravaChanged = await strava.sync().catch(() => false)
@@ -219,6 +244,9 @@ export const useSync = defineStore('sync', () => {
     })
     programs.$onAction(({ name, after }) => {
       if (name === 'save') after(() => void run())
+    })
+    exercises.$onAction(({ name, after }) => {
+      if (name === 'togglePin') after(() => void run())
     })
     window.addEventListener('online', () => void run())
     document.addEventListener('visibilitychange', () => {

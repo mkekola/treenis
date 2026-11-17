@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import PickerRow from './PickerRow.vue'
 import { useVisibleViewport } from '@/composables/useVisibleViewport'
 import { MEASUREMENT_LABELS, MUSCLE_AREAS, MUSCLE_GROUP_LABELS, MUSCLE_LABELS } from '@/data/exerciseLibrary'
 import { frequentExerciseIds } from '@/lib/history'
@@ -61,12 +62,13 @@ const frequentIds = computed(() => {
 
 /**
  * Tyhjällä haulla ensin liikkeet, jotka treenaavat samoja lihaksia kuin vaihdettava
- * liike, tasapisteissä tutuimmat ensin. Esimerkiksi laite on varattu.
+ * liike, tasapisteissä tutuimmat ensin. Esimerkiksi laite on varattu. Itse kiinnitetyt
+ * korvaajat ovat kärjessä.
  */
 const substitutes = computed<Exercise[]>(() => {
   const current = props.substituteFor ? exercises.byId.get(props.substituteFor) : undefined
   if (query.value.trim() || !current) return []
-  return substitutesFor(current, exercises.all, frequentIds.value)
+  return substitutesFor(current, exercises.all, frequentIds.value, exercises.pinnedFor(current.id))
 })
 
 /** Sitten eniten tehdyt liikkeet: salilla vaihdetaan yleensä liikkeeseen, jonka tuntee. */
@@ -222,16 +224,14 @@ function onBackdropClick(event: MouseEvent) {
             Korvaavat liikkeet
           </h3>
           <ul class="flex flex-col gap-1.5">
-            <li v-for="exercise in substitutes" :key="`substitute-${exercise.id}`">
-              <button
-                type="button"
-                class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
-                @click="emit('select', exercise)"
-              >
-                <span class="text-[15px] font-semibold">{{ exercise.name }}</span>
-                <span class="text-xs text-ink-muted">{{ describeMuscles(exercise) }}</span>
-              </button>
-            </li>
+            <PickerRow
+              v-for="exercise in substitutes"
+              :key="`substitute-${exercise.id}`"
+              :exercise="exercise"
+              :detail="describeMuscles(exercise)"
+              :substitute-for="substituteFor"
+              @select="emit('select', exercise)"
+            />
           </ul>
         </template>
         <template v-if="recents.length">
@@ -242,16 +242,14 @@ function onBackdropClick(event: MouseEvent) {
             Eniten tehdyt
           </h3>
           <ul class="flex flex-col gap-1.5">
-            <li v-for="exercise in recents" :key="`recent-${exercise.id}`">
-              <button
-                type="button"
-                class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
-                @click="emit('select', exercise)"
-              >
-                <span class="text-[15px] font-semibold">{{ exercise.name }}</span>
-                <span class="text-xs text-ink-muted">{{ describe(exercise) }}</span>
-              </button>
-            </li>
+            <PickerRow
+              v-for="exercise in recents"
+              :key="`recent-${exercise.id}`"
+              :exercise="exercise"
+              :detail="describe(exercise)"
+              :substitute-for="substituteFor"
+              @select="emit('select', exercise)"
+            />
           </ul>
           <h3 class="mt-4 mb-1.5 text-xs font-semibold tracking-[0.06em] text-ink-muted uppercase">
             Kaikki liikkeet
@@ -265,24 +263,14 @@ function onBackdropClick(event: MouseEvent) {
           Kaikki liikkeet
         </h3>
         <ul class="flex flex-col gap-1.5" :class="{ 'mt-2': !recents.length && !substitutes.length }">
-          <li v-for="exercise in results" :key="exercise.id">
-            <button
-              type="button"
-              class="flex min-h-12 w-full flex-col justify-center rounded-(--radius-field) bg-surface px-3.5 py-2 text-left"
-              @click="emit('select', exercise)"
-            >
-              <span class="flex items-center gap-2">
-                <span class="text-[15px] font-semibold">{{ exercise.name }}</span>
-                <span
-                  v-if="exercise.custom"
-                  class="rounded-full border border-line px-1.5 text-[10px] font-bold tracking-[0.04em] text-ink-muted uppercase"
-                >
-                  Oma
-                </span>
-              </span>
-              <span class="text-xs text-ink-muted">{{ describe(exercise) }}</span>
-            </button>
-          </li>
+          <PickerRow
+            v-for="exercise in results"
+            :key="exercise.id"
+            :exercise="exercise"
+            :detail="describe(exercise)"
+            :substitute-for="substituteFor"
+            @select="emit('select', exercise)"
+          />
         </ul>
 
         <p v-if="!results.length" class="py-4 text-center text-sm text-ink-muted">

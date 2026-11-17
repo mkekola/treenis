@@ -9,6 +9,7 @@ import type {
   Program,
   ProgramLevel,
   SportKey,
+  SubstitutePins,
   Workout,
   WorkoutTemplate,
 } from '@/types/workout'
@@ -251,3 +252,20 @@ export function stravaActivityFromRow(row: StravaActivityRow): StravaActivity {
     ...optional('elevationGainM', row.elevation_gain_m),
   }
 }
+
+export interface SubstitutePinsRow {
+  exercise_id: string
+  substitute_ids: string[]
+  updated_at: string
+}
+
+export function pinsToRow(pins: SubstitutePins): SubstitutePinsRow {
+  return { exercise_id: pins.exerciseId, substitute_ids: pins.substituteIds, updated_at: pins.updatedAt }
+}
+
+export function pinsFromRow(row: SubstitutePinsRow): SubstitutePins {
+  return { exerciseId: row.exercise_id, substituteIds: row.substitute_ids, updatedAt: row.updated_at }
+}
+
+/** Kiinnitysten jonotunniste, jottei se mene ristiin oman liikkeen kanssa. */
+export const pinsOutboxId = (exerciseId: string) => `substitutes:${exerciseId}`
