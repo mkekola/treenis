@@ -5,7 +5,6 @@ import {
   groupByDay,
   myReaction,
   nextReaction,
-  reactionLabel,
   reactionNames,
   summarizeReactions,
   type FeedRow,
@@ -30,14 +29,13 @@ describe('reaktiot', () => {
 
   it('näyttää tutut nimeltä, oman "Sinä" ja vieraat lukumääränä', () => {
     const [clap, fire] = summarizeReactions(reactions, me)
-    expect(reactionLabel(clap)).toBe('Taputus: Sinä')
-    expect(reactionLabel(fire)).toBe('Tulessa: Anna, Mikko ja 1 muu')
+    expect(reactionNames(clap)).toBe('Sinä')
     expect(reactionNames(fire)).toBe('Anna, Mikko ja 1 muu')
   })
 
   it('oma reaktio on "Sinä", vaikka nimeä ei olisi asetettu', () => {
     const [fire] = summarizeReactions([{ reaction: 'fire', userId: me, name: null }], me)
-    expect(reactionLabel(fire)).toBe('Tulessa: Sinä')
+    expect(reactionNames(fire)).toBe('Sinä')
   })
 
   it('löytää oman reaktion', () => {
