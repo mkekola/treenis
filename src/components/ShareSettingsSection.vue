@@ -14,7 +14,7 @@ onMounted(async () => {
 })
 
 const OPTIONS: { key: keyof ShareSettings; label: string; hint: string }[] = [
-  { key: 'workouts', label: 'Treenit', hint: 'Laji ja treenin nimi, esim. "Sali · Treeni 1"' },
+  { key: 'workouts', label: 'Treenit', hint: 'Laji, päivä, kesto ja matka' },
   { key: 'records', label: 'Ennätykset', hint: 'Liike ja uusi paino' },
   { key: 'exercises', label: 'Liikkeet ja sarjat', hint: 'Liikkeet, sarjamäärät ja raskain paino' },
   {
