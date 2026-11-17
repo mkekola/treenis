@@ -204,7 +204,7 @@ const byGroup = computed(() => {
       </section>
 
       <p v-if="!months.length" class="py-6 text-center text-sm text-ink-muted">
-        Ei vielä treenejä. Kirjaa ensimmäinen alta.
+        Ei vielä treenejä. Kirjaamasi ja Stravasta tuodut treenit näkyvät tässä.
       </p>
 
       <PoweredByStrava v-if="hasStravaData" class="mt-1.5 mb-1 self-center" />

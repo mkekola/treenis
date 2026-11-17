@@ -31,6 +31,7 @@ async function create() {
     <p class="-mt-1 text-[13px] text-ink-muted">
       Ohjelma kokoaa treenit, joita teet vuorotellen. Käytössä olevan ohjelman treenit tulevat
       ensimmäisinä, kun aloitat salitreenin.
+      <template v-if="!programs.programs.length">Ohjelma ei ole pakollinen: salitreenin voi aloittaa myös tyhjästä.</template>
     </p>
 
     <!-- Julistekortit: ohjelman väri täyttää kortin, ja lajin ikoni rajautuu reunan yli kuin valokuva. -->
