@@ -29,10 +29,10 @@ export interface FeedRow {
   from_strava: boolean
   duration_sec: number | null
   distance_m: number | null
-  /** null, jos kaveri ei jaa liikkeitä. */
+  /** null, jos kaveri ei jaa liikkeitä. bestKg on null myös, jos kaveri ei jaa painoja. */
   exercises: { exerciseId: string; name: string | null; sets: number; bestKg: number | null }[] | null
-  /** null, jos kaveri ei jaa ennätyksiä. */
-  records: { exerciseId: string; name: string | null; weightKg: number }[] | null
+  /** null, jos kaveri ei jaa ennätyksiä. weightKg on null, jos kaveri ei jaa painoja. */
+  records: { exerciseId: string; name: string | null; weightKg: number | null }[] | null
   /** name on null, jos reagoija ei ole sinä eikä kaverisi. */
   reactions: { reaction: ReactionKey; userId: string; name: string | null }[]
 }

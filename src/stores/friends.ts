@@ -12,6 +12,8 @@ export interface ShareSettings {
   exercises: boolean
   /** Stravasta tuodut treenit. Oletuksena pois: vaatii käyttäjän nimenomaisen luvan. */
   strava: boolean
+  /** Kilot liikkeissä ja ennätyksissä. Pois päältä liikkeet ja ennätykset näkyvät ilman painoja. */
+  weights: boolean
 }
 
 /** Tietokantafunktion request_friend vastaukset. */
@@ -94,7 +96,7 @@ export const useFriends = defineStore('friends', () => {
     if (!me) return
     const { data, error } = await supabase
       .from('profiles')
-      .select('share_workouts, share_records, share_exercises, share_strava')
+      .select('share_workouts, share_records, share_exercises, share_strava, share_weights')
       .eq('id', me)
       .single()
     if (error) throw error
@@ -103,6 +105,7 @@ export const useFriends = defineStore('friends', () => {
       records: data.share_records,
       exercises: data.share_exercises,
       strava: data.share_strava,
+      weights: data.share_weights,
     }
   }
 

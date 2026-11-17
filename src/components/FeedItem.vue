@@ -95,7 +95,8 @@ function pick(key: ReactionKey) {
         :key="record.exerciseId"
         class="self-start rounded-(--radius-chip) bg-[var(--record-surface)] px-2.5 py-1 text-[13px] font-semibold text-[var(--record-on)]"
       >
-        Ennätys: {{ nameOf(record.exerciseId, record.name) }} <span data-numeric>{{ kg(record.weightKg) }} kg</span>
+        Ennätys: {{ nameOf(record.exerciseId, record.name) }}
+        <span v-if="record.weightKg !== null" data-numeric>{{ kg(record.weightKg) }} kg</span>
       </li>
     </ul>
 

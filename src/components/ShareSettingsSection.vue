@@ -15,14 +15,22 @@ onMounted(async () => {
 
 const OPTIONS: { key: keyof ShareSettings; label: string; hint: string }[] = [
   { key: 'workouts', label: 'Treenit', hint: 'Laji, päivä, kesto ja matka' },
-  { key: 'records', label: 'Ennätykset', hint: 'Liike ja uusi paino' },
-  { key: 'exercises', label: 'Liikkeet ja sarjat', hint: 'Liikkeet, sarjamäärät ja raskain paino' },
+  { key: 'records', label: 'Ennätykset', hint: 'Liike, jossa teit ennätyksen' },
+  { key: 'exercises', label: 'Liikkeet ja sarjat', hint: 'Liikkeet ja sarjamäärät' },
+  { key: 'weights', label: 'Painot', hint: 'Raskain paino liikkeissä ja ennätyksissä' },
   {
     key: 'strava',
     label: 'Stravasta tuodut treenit',
     hint: 'Laji, päivä, kesto ja matka. Ei sykettä, karttoja eikä Stravassa kirjoitettua nimeä.',
   },
 ]
+
+/** Ennätykset ja liikkeet näkyvät vain treenien mukana, painot vain ennätysten tai liikkeiden mukana. */
+function available(key: keyof ShareSettings, share: ShareSettings) {
+  if (key === 'workouts') return true
+  if (key === 'weights') return share.workouts && (share.records || share.exercises)
+  return share.workouts
+}
 
 async function toggle(key: keyof ShareSettings) {
   if (!friends.share) return
@@ -40,10 +48,9 @@ async function toggle(key: keyof ShareSettings) {
     <h2 class="text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Kaverit näkevät</h2>
     <ul v-if="friends.share" class="mt-1">
       <li v-for="option in OPTIONS" :key="option.key" class="border-t border-line first:border-t-0">
-        <!-- Ennätykset ja liikkeet näkyvät vain treenien mukana. -->
         <label
           class="flex min-h-14 items-center gap-3 py-2"
-          :class="option.key !== 'workouts' && !friends.share.workouts ? 'opacity-50' : ''"
+          :class="available(option.key, friends.share) ? '' : 'opacity-50'"
         >
           <span class="min-w-0 flex-1">
             <span class="block text-[15px]">{{ option.label }}</span>
@@ -53,7 +60,7 @@ async function toggle(key: keyof ShareSettings) {
             type="checkbox"
             role="switch"
             :checked="friends.share[option.key]"
-            :disabled="option.key !== 'workouts' && !friends.share.workouts"
+            :disabled="!available(option.key, friends.share)"
             class="peer sr-only"
             @change="toggle(option.key)"
           />
