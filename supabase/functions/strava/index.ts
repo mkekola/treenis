@@ -99,6 +99,16 @@ async function callback(code: unknown, state: unknown, scope: unknown) {
   }
 
   const tokens = await tokenRequest({ grant_type: 'authorization_code', code })
+  // Stravaan kirjautunut omistaa tilin, joten yhteys siirtyy toiselta Treenis-tililtä tälle
+  // (Marian päätös 17.11.). Vanha tili unohtaa yhteyden kuten katkaisussa, mutta Stravalle ei
+  // ilmoiteta katkaisusta, koska se peruisi myös juuri saadun luvan.
+  const { data: previous } = await admin
+    .from('strava_connections')
+    .select('user_id')
+    .eq('athlete_id', tokens.athlete.id)
+    .neq('user_id', row.user_id)
+    .maybeSingle()
+  if (previous) await forget(previous.user_id)
   const { error } = await admin.from('strava_connections').upsert({
     user_id: row.user_id,
     athlete_id: tokens.athlete.id,
