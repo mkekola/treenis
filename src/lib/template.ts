@@ -78,7 +78,8 @@ export function setTarget(
 
 /**
  * Vaihtaa toisto- tai painoliikkeen tavoitteen toistoista aikaan tai takaisin. Sarjamäärä
- * säilyy, arvo alkaa oletuksesta. Aikaliikkeellä (lankku) tavoite on aina aika.
+ * säilyy, arvo alkaa oletuksesta. Aikaliikkeellä (lankku) tavoite on aina aika. Vaihtuvassa
+ * liikkeessä jokaisella kierron liikkeellä on oma tavoitteensa.
  */
 export function setTargetKind(
   template: WorkoutTemplate,
@@ -86,10 +87,12 @@ export function setTargetKind(
   measurement: Measurement,
   kind: 'reps' | 'time',
 ): WorkoutTemplate {
-  const entry = template.blocks[at.block].exercises[at.exercise]
+  const block = template.blocks[at.block].exercises[at.exercise]
+  const entry = at.option ? block.alternatives![at.option - 1] : block
   if (measurement === 'time' || hasTimeTarget(entry.sets, measurement) === (kind === 'time')) return template
   const next = clone(template)
-  const target = next.blocks[at.block].exercises[at.exercise]
+  const nextBlock = next.blocks[at.block].exercises[at.exercise]
+  const target = at.option ? nextBlock.alternatives![at.option - 1] : nextBlock
   target.sets = target.sets.map(() =>
     kind === 'time' ? { durationSec: DEFAULT_WORK_SEC, done: false } : { reps: DEFAULT_REPS, done: false },
   )

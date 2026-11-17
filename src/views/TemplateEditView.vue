@@ -473,21 +473,33 @@ async function deleteTemplate() {
               Tee vaihtuvaksi
               <span class="text-[13px] font-normal text-ink-muted">Liikkeet vuorottelevat kerta kerralta</span>
             </button>
-            <!-- Toisto- ja painoliikkeen tavoite voi olla aika: niin monta toistoa kuin ehtii. -->
+          </template>
+          <!--
+            Toisto- ja painoliikkeen tavoite voi olla aika: niin monta toistoa kuin ehtii.
+            Vaihtuvassa liikkeessä jokaisella kierron liikkeellä on oma tavoitteensa.
+          -->
+          <p
+            v-if="isRotating(menuEntry) && optionsOf(menuEntry).some((option) => measurementOf(option.exerciseId) !== 'time')"
+            class="-mb-1 text-[13px] font-semibold tracking-[0.06em] text-ink-muted uppercase">
+            Tavoite
+          </p>
+          <template v-for="(option, o) in optionsOf(menuEntry)" :key="option.exerciseId">
             <div
-              v-if="measurementOf(menuEntry.exerciseId) !== 'time'"
+              v-if="measurementOf(option.exerciseId) !== 'time'"
               class="flex items-center justify-between gap-3 rounded-(--radius-button) border border-line py-1.5 pr-1.5 pl-3.5"
             >
-              <span id="tavoitteen-laji" class="text-[15px] font-semibold">Tavoite</span>
-              <span role="radiogroup" aria-labelledby="tavoitteen-laji" class="flex rounded-full bg-surface p-1">
+              <span :id="`tavoitteen-laji-${o}`" class="min-w-0 text-[15px] font-semibold">
+                {{ isRotating(menuEntry) ? nameOf(option.exerciseId) : 'Tavoite' }}
+              </span>
+              <span role="radiogroup" :aria-labelledby="`tavoitteen-laji-${o}`" class="flex flex-none rounded-full bg-surface p-1">
                 <button
                   v-for="kind in (['reps', 'time'] as const)"
                   :key="kind"
                   type="button"
                   role="radio"
-                  :aria-checked="hasTimeTarget(menuEntry.sets, measurementOf(menuEntry.exerciseId)) === (kind === 'time')"
+                  :aria-checked="hasTimeTarget(option.sets, measurementOf(option.exerciseId)) === (kind === 'time')"
                   class="min-h-10 rounded-full px-4 text-[15px] font-semibold aria-checked:bg-action aria-checked:text-on-action"
-                  @click="update(setTargetKind(template, menuAt, measurementOf(menuEntry.exerciseId), kind))"
+                  @click="update(setTargetKind(template, { ...menuAt, option: o }, measurementOf(option.exerciseId), kind))"
                 >
                   {{ kind === 'time' ? 'Aika' : 'Toistot' }}
                 </button>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { applyDeviations, findDeviations } from '@/lib/deviation'
 import { formatSet } from '@/lib/format'
 import { sessionsFor } from '@/lib/history'
-import { buildSession, completeSet, nextSetLabel, setValues, startWork, stopWork } from '@/lib/session'
+import { buildSession, completeSet, nextSetLabel, rotationChoice, setValues, startWork, stopWork } from '@/lib/session'
 import { estimateDurationSec, fromSession, setTarget, setTargetKind, targetOf } from '@/lib/template'
 import { formatWorkTime, hasTimeTarget, isTimedSet } from '@/lib/timed'
 import { lookup } from '@/test/fixtures'
@@ -62,6 +62,23 @@ describe('aikasarja treenissä', () => {
   const session = buildSession({ id: 's', now: NOW, template: core, history, exercises: lookup })
   const crunch = session.blocks[0].exercises[0]
 
+  it('vaihtuvan liikkeen aikatavoite tulee mukaan, kun kierrosta valitaan liike', () => {
+    const rotating: WorkoutTemplate = {
+      ...core,
+      blocks: [
+        {
+          id: 'r1',
+          restSec: 60,
+          exercises: [{ exerciseId: 'hanging-leg-raise', sets: [{ reps: 12, done: false }], alternatives: [{ exerciseId: 'crunch', sets: minute(2) }] }],
+        },
+      ],
+    }
+    const first = buildSession({ id: 's', now: NOW, template: rotating, history: [], exercises: lookup }).blocks[0].exercises[0]
+    expect(first.target.durationSec).toBeUndefined()
+    const switched = rotationChoice(first, 'crunch', [], lookup)
+    expect(switched?.target).toEqual({ sets: 2, reps: 0, durationSec: 60 })
+  })
+
   it('tavoite on aika, toistot tyhjinä ja viimeksi paras aikasarjan toistomäärä', () => {
     expect(crunch.target).toEqual({ sets: 3, reps: 0, durationSec: 60 })
     expect(crunch.sets.every((set) => set.reps === undefined && set.durationSec === 60)).toBe(true)
@@ -111,6 +128,24 @@ describe('aikatavoite pohjassa', () => {
     const back = setTargetKind(timed, at, 'reps', 'reps')
     expect(back.blocks[1].exercises[0].sets).toEqual([{ reps: 10, done: false }])
     expect(setTargetKind(core, at, 'reps', 'reps')).toBe(core)
+  })
+
+  it('vaihtuvan liikkeen kierron liike saa oman aikatavoitteensa', () => {
+    const rotating: WorkoutTemplate = {
+      ...core,
+      blocks: [
+        {
+          id: 'r1',
+          restSec: 60,
+          exercises: [
+            { exerciseId: 'back-squat', sets: [{ reps: 10, done: false }], alternatives: [{ exerciseId: 'burpee', sets: [{ reps: 10, done: false }] }] },
+          ],
+        },
+      ],
+    }
+    const timed = setTargetKind(rotating, { block: 0, exercise: 0, option: 1 }, 'reps', 'time')
+    expect(timed.blocks[0].exercises[0].alternatives![0].sets).toEqual(minute(1))
+    expect(timed.blocks[0].exercises[0].sets).toEqual([{ reps: 10, done: false }])
   })
 
   it('aikatavoitteen arvo on kesto', () => {
