@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 
-export type NotifyType = 'friend_request' | 'friend_accepted' | 'reaction' | 'challenge_invite'
+export type NotifyType = 'friend_request' | 'friend_accepted' | 'reaction' | 'comment' | 'challenge_invite'
 
 /**
  * Pyytää palvelinta ilmoittamaan toiminnosta, jonka käyttäjä juuri teki. Palvelin

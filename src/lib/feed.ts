@@ -35,7 +35,21 @@ export interface FeedRow {
   records: { exerciseId: string; name: string | null; weightKg: number | null }[] | null
   /** name on null, jos reagoija ei ole sinä eikä kaverisi. */
   reactions: { reaction: ReactionKey; userId: string; name: string | null }[]
+  /** Vanhimmasta uusimpaan. Puuttuu vanhalta palvelimelta. */
+  comments?: FeedComment[]
 }
+
+export interface FeedComment {
+  id: string
+  userId: string
+  /** Kommentoijan nimi näkyy kaikille ketjun lukijoille (Marian päätös). */
+  name: string
+  body: string
+  createdAt: string
+}
+
+/** Kommentin enimmäispituus, sama kuin tietokannan tarkistus. */
+export const COMMENT_MAX = 500
 
 export interface ReactionSummary {
   key: ReactionKey
@@ -123,4 +137,12 @@ export function feedLines(row: FeedRow): { who: string; what: string; detail: st
     row.from_strava ? 'Strava' : null,
   ]
   return { who, what: SPORT_LABELS[row.sport], detail: detail.filter(Boolean).join(' · ') }
+}
+
+/** Kommentin aika: tänään "17.28", aiemmin "15.11. klo 17.28". */
+export function commentTime(iso: string, now: Date): string {
+  const d = new Date(iso)
+  const clock = d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' })
+  if (d.toDateString() === now.toDateString()) return clock
+  return `${d.getDate()}.${d.getMonth() + 1}. klo ${clock}`
 }

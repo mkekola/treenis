@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import ChallengeCard from '@/components/ChallengeCard.vue'
 import FeedItem from '@/components/FeedItem.vue'
 import PoweredByStrava from '@/components/PoweredByStrava.vue'
@@ -33,6 +34,14 @@ async function load() {
 }
 
 onMounted(load)
+
+/** Kommentti-ilmoitus avaa syötteen osoitteella /kaverit?treeni=<id>. */
+const route = useRoute()
+const focusedWorkout = computed(() => (typeof route.query.treeni === 'string' ? route.query.treeni : null))
+// Ilmoitus voi tulla, kun syöte on jo auki: uusi kommentti haetaan.
+watch(focusedWorkout, (id) => {
+  if (id) load()
+})
 
 async function respond(friendshipId: string, accept: boolean) {
   busy.value = true
@@ -188,6 +197,7 @@ async function hide(workoutId: string) {
                 v-for="row in day.rows"
                 :key="row.workout_id"
                 :row="row"
+                :focused="row.workout_id === focusedWorkout"
                 @react="react(row.workout_id, $event)"
                 @hide="hide(row.workout_id)"
               />

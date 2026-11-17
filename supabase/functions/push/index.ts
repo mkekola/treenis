@@ -92,7 +92,7 @@ async function sendTo(userId: string, message: Message): Promise<number> {
 
 // ------------------------------------------------------------------ tapahtumat
 
-type Preference = 'friend_requests' | 'reactions' | 'challenges' | 'streak' | 'rest'
+type Preference = 'friend_requests' | 'reactions' | 'comments' | 'challenges' | 'streak' | 'rest'
 
 /** Asetusriviä ei ole ennen käyttöönottoa, jolloin kaikki on päällä (Marian päätös). */
 async function wants(userId: string, preference: Preference): Promise<boolean> {
@@ -190,6 +190,47 @@ async function notify(actor: string, type: string, id: string | undefined): Prom
         url: '/kaverit',
         tag: `reaction-${id}-${actor}`,
       })
+    }
+    // Kommentti: treenin tekijälle ja ketjuun aiemmin kommentoineille, jotka näkevät treenin yhä.
+    case 'comment': {
+      const { data: comment } = await admin
+        .from('comments')
+        .select('workout_id, user_id, body, created_at')
+        .eq('id', id)
+        .maybeSingle()
+      if (!comment || comment.user_id !== actor || !fresh(comment.created_at)) return 0
+      // Merkintä ennen lähetystä: kahdesta samanaikaisesta pyynnöstä vain toinen ilmoittaa.
+      const { data: claimed } = await admin
+        .from('comments')
+        .update({ notified_at: new Date().toISOString() })
+        .eq('id', id)
+        .is('notified_at', null)
+        .select('id')
+      if (!claimed?.length) return 0
+      const { data: workout } = await admin.from('workouts').select('user_id').eq('id', comment.workout_id).maybeSingle()
+      if (!workout) return 0
+      const owner = workout.user_id as string
+      const { data: earlier } = await admin.from('comments').select('user_id').eq('workout_id', comment.workout_id)
+      const { data: friendships } = await admin
+        .from('friendships')
+        .select('requester, addressee')
+        .eq('status', 'accepted')
+        .or(`requester.eq.${owner},addressee.eq.${owner}`)
+      const ownersFriends = new Set((friendships ?? []).map((f) => (f.requester === owner ? f.addressee : f.requester)))
+      const recipients = new Set([owner, ...(earlier ?? []).map((c) => c.user_id as string)])
+      recipients.delete(actor)
+      let sent = 0
+      for (const userId of recipients) {
+        if (userId !== owner && !ownersFriends.has(userId)) continue
+        if (!(await wants(userId, 'comments'))) continue
+        sent += await sendTo(userId, {
+          title: `${actorName} 💬`,
+          body: comment.body.length > 120 ? `${comment.body.slice(0, 119)}…` : comment.body,
+          url: `/kaverit?treeni=${comment.workout_id}`,
+          tag: `comment-${comment.workout_id}`,
+        })
+      }
+      return sent
     }
     // Haastekutsu kaikille kutsutuille, jotka eivät ole vielä vastanneet.
     case 'challenge_invite': {

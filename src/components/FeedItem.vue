@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import FeedComments from './FeedComments.vue'
 import SportIcon from './SportIcon.vue'
 import { useTheme } from '@/composables/useTheme'
 import { REACTIONS, feedLines, myReaction, reactionNames, summarizeReactions, type FeedRow, type ReactionKey } from '@/lib/feed'
@@ -8,10 +9,14 @@ import { useExercises } from '@/stores/exercises'
 import { recordVars, sportVars, useSportColors } from '@/stores/sportColors'
 
 /**
- * Syötteen rivi: kiinni yhden rivin yhteenveto ja ennätykset, auki liikkeet, reagoijat
- * ja omissa treeneissä piilotus. Reaktio annetaan rivin lopun +-napista.
+ * Syötteen rivi: kiinni yhden rivin yhteenveto ja ennätykset, auki liikkeet, reagoijat,
+ * kommentit ja omissa treeneissä piilotus. Reaktio annetaan rivin lopun +-napista.
  */
-const props = defineProps<{ row: FeedRow }>()
+const props = defineProps<{
+  row: FeedRow
+  /** Kommentti-ilmoituksesta avattu treeni: rivi aukeaa ja vierii näkyviin. */
+  focused?: boolean
+}>()
 const emit = defineEmits<{ react: [key: ReactionKey]; hide: [] }>()
 
 const auth = useAuth()
@@ -24,10 +29,11 @@ const lines = computed(() => feedLines(props.row))
 const summary = computed(() => summarizeReactions(props.row.reactions, auth.userId ?? ''))
 const mine = computed(() => myReaction(props.row.reactions, auth.userId ?? ''))
 
+const commentCount = computed(() => props.row.comments?.length ?? 0)
+
 const open = ref(false)
 const picking = ref(false)
-/** Avattavaa on, jos on liikkeitä tai reaktioita, ja omassa treenissä aina (piilotus). */
-const expandable = computed(() => props.row.is_me || summary.value.length > 0 || Boolean(props.row.exercises?.length))
+const rowEl = useTemplateRef<HTMLLIElement>('rowEl')
 const detailsId = computed(() => `tiedot-${props.row.workout_id}`)
 
 /** Liikekirjaston nimi omasta sovelluksesta, kaverin oma liike palvelimen antamalla nimellä. */
@@ -37,6 +43,17 @@ function nameOf(exerciseId: string, serverName: string | null) {
 
 const kg = (value: number) => value.toLocaleString('fi-FI', { maximumFractionDigits: 2 })
 
+watch(
+  () => props.focused,
+  async (focused) => {
+    if (!focused) return
+    open.value = true
+    await nextTick()
+    rowEl.value?.scrollIntoView({ block: 'center' })
+  },
+  { immediate: true },
+)
+
 function pick(key: ReactionKey) {
   picking.value = false
   emit('react', key)
@@ -44,15 +61,14 @@ function pick(key: ReactionKey) {
 </script>
 
 <template>
-  <li :style="vars" class="border-t border-line py-2.5 first:border-t-0">
+  <li ref="rowEl" :style="vars" class="scroll-mt-4 border-t border-line py-2.5 first:border-t-0">
     <div class="flex items-center gap-2">
-      <component
-        :is="expandable ? 'button' : 'div'"
-        :type="expandable ? 'button' : undefined"
-        :aria-expanded="expandable ? open : undefined"
-        :aria-controls="expandable ? detailsId : undefined"
+      <button
+        type="button"
+        :aria-expanded="open"
+        :aria-controls="detailsId"
         class="flex min-w-0 flex-1 items-center gap-2.5 rounded-[6px] text-left"
-        @click="expandable && (open = !open)"
+        @click="open = !open"
       >
         <span
           aria-hidden="true"
@@ -74,7 +90,23 @@ function pick(key: ReactionKey) {
             <span class="sr-only">{{ item.label }} {{ item.count }}</span>
           </span>
         </span>
-      </component>
+        <span v-if="commentCount" class="inline-flex flex-none items-center gap-0.5 text-ink-muted" data-numeric>
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H10l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+          </svg>
+          <span class="text-[12px] font-semibold">{{ commentCount }}</span>
+          <span class="sr-only">{{ commentCount === 1 ? 'kommentti' : 'kommenttia' }}</span>
+        </span>
+      </button>
 
       <button
         v-if="!row.is_me"
@@ -120,7 +152,7 @@ function pick(key: ReactionKey) {
       </button>
     </div>
 
-    <div v-if="expandable && open" :id="detailsId" class="mt-2 ml-[46px] flex flex-col gap-2 text-[13px]">
+    <div v-if="open" :id="detailsId" class="mt-2 ml-[46px] flex flex-col gap-2 text-[13px]">
       <ul v-if="row.exercises?.length" class="flex flex-col gap-0.5 text-ink-muted" data-numeric>
         <li v-for="(exercise, index) in row.exercises" :key="index">
           <span class="text-ink">{{ nameOf(exercise.exerciseId, exercise.name) }}</span>
@@ -135,6 +167,8 @@ function pick(key: ReactionKey) {
           <span aria-hidden="true" class="mr-1">{{ item.emoji }}</span><span class="sr-only">{{ item.label }}: </span>{{ reactionNames(item) }}
         </li>
       </ul>
+
+      <FeedComments :row="row" />
 
       <div v-if="row.is_me">
         <button

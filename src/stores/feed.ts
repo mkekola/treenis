@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { nextReaction, myReaction, type FeedRow, type ReactionKey } from '@/lib/feed'
+import { nextReaction, myReaction, type FeedComment, type FeedRow, type ReactionKey } from '@/lib/feed'
 import { localDate } from '@/lib/session'
 import { notify } from '@/lib/notify'
 import { supabase } from '@/lib/supabase'
@@ -69,5 +69,30 @@ export const useFeed = defineStore('feed', () => {
     if (next) notify('reaction', workoutId)
   }
 
-  return { rows, loaded, lastHidden, load, react, hide, undoHide }
+  /** Kommentti näkyy vasta, kun palvelin on tallentanut sen: tunnus tarvitaan poistoon. */
+  async function addComment(workoutId: string, body: string) {
+    const me = auth.userId
+    const row = rows.value.find((r) => r.workout_id === workoutId)
+    if (!me || !row) return
+    const { data, error } = await supabase.rpc('add_comment', { target_workout: workoutId, comment_body: body })
+    if (error) throw error
+    const comment: FeedComment = { id: data as string, userId: me, name: auth.name ?? '', body: body.trim(), createdAt: new Date().toISOString() }
+    row.comments = [...(row.comments ?? []), comment]
+    notify('comment', comment.id)
+  }
+
+  /** Poisto näkyy heti ja palautetaan, jos tallennus epäonnistuu. */
+  async function deleteComment(workoutId: string, commentId: string) {
+    const row = rows.value.find((r) => r.workout_id === workoutId)
+    if (!row?.comments) return
+    const before = row.comments
+    row.comments = before.filter((c) => c.id !== commentId)
+    const { error } = await supabase.rpc('delete_comment', { target_comment: commentId })
+    if (error) {
+      row.comments = before
+      throw error
+    }
+  }
+
+  return { rows, loaded, lastHidden, load, react, hide, undoHide, addComment, deleteComment }
 })

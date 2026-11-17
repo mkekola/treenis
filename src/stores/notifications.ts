@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 export interface NotificationSettings {
   friend_requests: boolean
   reactions: boolean
+  comments: boolean
   challenges: boolean
   streak: boolean
   rest: boolean
@@ -34,10 +35,10 @@ export const useNotifications = defineStore('notifications', () => {
     enabled.value = Notification.permission === 'granted' && !!(await subscription())
     const { data, error } = await supabase
       .from('notification_settings')
-      .select('friend_requests, reactions, challenges, streak, rest')
+      .select('friend_requests, reactions, comments, challenges, streak, rest')
       .maybeSingle()
     if (error) throw error
-    settings.value = data ?? { friend_requests: true, reactions: true, challenges: true, streak: true, rest: true }
+    settings.value = data ?? { friend_requests: true, reactions: true, comments: true, challenges: true, streak: true, rest: true }
   }
 
   /** Kysyy luvan ja tallentaa laitteen ilmoitusosoitteen. Kutsutaan napin painalluksesta (iOS vaatii). */

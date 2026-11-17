@@ -19,6 +19,7 @@ onMounted(async () => {
 const OPTIONS: { key: keyof NotificationSettings; label: string; hint: string }[] = [
   { key: 'friend_requests', label: 'Kaveripyynnöt', hint: 'Uusi pyyntö ja hyväksytty pyyntö' },
   { key: 'reactions', label: 'Reaktiot', hint: 'Kun joku reagoi treeniisi' },
+  { key: 'comments', label: 'Kommentit', hint: 'Treeniisi ja ketjuihin, joita olet kommentoinut' },
   { key: 'challenges', label: 'Haasteet', hint: 'Kutsu, 2 päivää jäljellä ja lopputulos' },
   { key: 'streak', label: 'Viikkoputki', hint: 'Lauantaina, jos viikolla on alle 2 treeniä' },
   { key: 'rest', label: 'Lepo päättyy', hint: 'Kun olet treenin aikana toisessa sovelluksessa' },

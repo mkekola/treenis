@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  commentTime,
   feedLines,
   groupByDay,
   myReaction,
@@ -89,5 +90,17 @@ describe('syötteen rivit', () => {
     expect(lines({ is_me: true, sport: 'strength', distance_m: null, duration_sec: 3900 }))
       .toEqual({ who: 'Sinä', what: 'Sali', detail: '1 t 5 min' })
     expect(lines({ from_strava: true })).toEqual({ who: 'Beni', what: 'Juoksu', detail: '35 min · 5,00 km · Strava' })
+  })
+})
+
+describe('kommentit', () => {
+  const now = new Date(2026, 10, 17, 18, 0)
+
+  it('tämän päivän kommentista vain kellonaika', () => {
+    expect(commentTime(new Date(2026, 10, 17, 9, 5).toISOString(), now)).toBe('09.05')
+  })
+
+  it('aiemmasta kommentista päivä ja kellonaika', () => {
+    expect(commentTime(new Date(2026, 10, 15, 17, 28).toISOString(), now)).toBe('15.11. klo 17.28')
   })
 })
